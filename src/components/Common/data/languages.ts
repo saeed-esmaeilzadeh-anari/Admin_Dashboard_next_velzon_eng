@@ -6,6 +6,7 @@ const flagrussia = "/images/flags/russia.svg";
 const flagchina = "/images/flags/china.svg";
 const flagfrench = "/images/flags/french.svg";
 const flagarabic = "/images/flags/ae.svg";
+const flagiran = "/images/flags/iran.png";
 
 const languages = {
   sp: {
@@ -39,6 +40,10 @@ const languages = {
   ar: {
     label: "Arabic",
     flag: flagarabic,
+  },
+  fa: {
+    label: "فارسی",
+    flag: flagiran,
   },
 };
 

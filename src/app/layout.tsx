@@ -1,7 +1,7 @@
 import ClientProviders from "@/components/ClientProviders";
 import { Metadata } from "next";
 import React from "react";
-// import { hkGrotesk } from '@/config/fonts';
+import { hkGrotesk, iransansweb } from '@/config/fonts';
 import "../assets/scss/themes.scss";
 // ApexCharts default styles
 import "apexcharts/dist/apexcharts.css";
@@ -22,7 +22,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body suppressHydrationWarning={true}>
+      <body
+        suppressHydrationWarning={true}
+        className={`${hkGrotesk.variable} ${iransansweb.variable}`}
+      >
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>

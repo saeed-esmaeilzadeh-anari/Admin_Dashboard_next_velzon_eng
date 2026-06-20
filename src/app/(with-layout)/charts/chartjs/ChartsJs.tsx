@@ -72,14 +72,16 @@ const LineChart = ({ dataColors }: any) => {
     x: {
       ticks: {
         font: {
-          family: "Poppins",
+          // family: "Poppins",
+          family: "iransansweb",
         },
       },
     },
     y: {
       ticks: {
         font: {
-          family: "Poppins",
+          // family: "Poppins",
+          family: "iransansweb",
         },
       },
     },
@@ -88,7 +90,8 @@ const LineChart = ({ dataColors }: any) => {
         labels: {
           // This more specific font property overrides the global property
           font: {
-            family: "Poppins",
+            // family: "Poppins",
+            family: "iransansweb",
           },
         },
       },
@@ -121,14 +124,16 @@ const BarChart = ({ dataColors }: any) => {
     x: {
       ticks: {
         font: {
-          family: "Poppins",
+          // family: "Poppins",
+          family: "iransansweb",
         },
       },
     },
     y: {
       ticks: {
         font: {
-          family: "Poppins",
+          // family: "Poppins",
+          family: "iransansweb",
         },
       },
     },
@@ -136,7 +141,8 @@ const BarChart = ({ dataColors }: any) => {
       legend: {
         labels: {
           font: {
-            family: "Poppins",
+            // family: "Poppins",
+            family: "iransansweb",
           },
         },
       },
@@ -167,7 +173,8 @@ const PieChart = ({ dataColors }: any) => {
         legend: {
           labels: {
             font: {
-              family: "Poppins",
+              // family: "Poppins",
+              family: "iransansweb",
             },
           },
         },
@@ -198,7 +205,8 @@ const DonutChart = ({ dataColors }: any) => {
         legend: {
           labels: {
             font: {
-              family: "Poppins",
+              // family: "Poppins",
+              family: "iransansweb",
             },
           },
         },
@@ -229,7 +237,8 @@ const PolarChart = ({ dataColors }: any) => {
       legend: {
         labels: {
           font: {
-            family: "Poppins",
+            // family: "Poppins",
+            family: "iransansweb",
           },
         },
       },
@@ -282,7 +291,8 @@ const RadarChart = ({ dataColors }: any) => {
         legend: {
           labels: {
             font: {
-              family: "Poppins",
+              // family: "Poppins",
+              family: "iransansweb",
             },
           },
         },

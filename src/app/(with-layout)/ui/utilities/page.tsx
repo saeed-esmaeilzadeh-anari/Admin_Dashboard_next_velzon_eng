@@ -833,7 +833,8 @@ const UiUtilities = () => {
                           <tbody>
                             <tr>
                               <td>
-                                font-family: &apos;Poppins&apos;, sans-serif;
+                                {/* font-family: &apos;Poppins&apos;, sans-serif; */}
+                                font-family: &apos;iransansweb&apos;, sans-serif;
                               </td>
                               <td>
                                 <code>.ff-base</code>
@@ -841,7 +842,7 @@ const UiUtilities = () => {
                             </tr>
                             <tr>
                               <td>
-                                font-family: &apos;hkgrotesk&apos;, sans-serif;
+                                font-family: &apos;iransansweb&apos;, sans-serif;
                               </td>
                               <td>
                                 <code>.ff-secondary</code>

@@ -68,7 +68,8 @@ const UiTypography = () => {
                           <div>
                             <p className="mb-2">Font Family</p>
                             <h5 className="mb-0">
-                              &quot;Poppins&quot;, sans-serif
+                              {/* &quot;Poppins&quot;, sans-serif */}
+                              &quot;iransansweb&quot;, sans-serif
                             </h5>
                           </div>
                         </div>
@@ -85,7 +86,8 @@ const UiTypography = () => {
                           <div>
                             <p className="mb-2">Font Family</p>
                             <h5 className="mb-0">
-                              &quot;Poppins&quot;, sans-serif
+                              {/* &quot;Poppins&quot;, sans-serif */}
+                              &quot;iransansweb&quot;, sans-serif
                             </h5>
                           </div>
                         </div>

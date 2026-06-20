@@ -44,7 +44,8 @@ const LineChart = ({ dataColors }: any) => {
       },
     ],
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     color: chartLineColors,
   };
@@ -137,7 +138,8 @@ const StackedLineChart = ({ dataColors }: any) => {
       },
     ],
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     color: chartLineStackedColors,
   };
@@ -191,7 +193,8 @@ const AreaChart = ({ dataColors }: any) => {
       },
     ],
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     color: chartAreaColors[0],
     backgroundColor: chartAreaColors[1],
@@ -261,7 +264,8 @@ const StackedAreaChart = ({ dataColors }: any) => {
       },
     },
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     color: chartAreaStackedColors,
     series: [
@@ -377,7 +381,8 @@ const StepLineChart = ({ dataColors }: any) => {
       },
     },
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     color: chartStepLineColors,
     series: [
@@ -466,7 +471,8 @@ const LineYChart = ({ dataColors }: any) => {
       },
     },
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     color: chartLineYColors,
     series: [
@@ -528,7 +534,8 @@ const BasicBarChart = ({ dataColors }: any) => {
       },
     },
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     color: chartBarColors,
     series: [
@@ -720,7 +727,8 @@ const BarLabelChart = ({ dataColors }: any) => {
       },
     },
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     series: [
       {
@@ -821,7 +829,8 @@ const HorizontalBarChart = ({ dataColors }: any) => {
       },
     },
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     color: chartBarLabelRotationColors,
     series: [
@@ -897,7 +906,8 @@ const StackedHorizontalBarChart = ({ dataColors }: any) => {
       },
     },
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     series: [
       {
@@ -1023,7 +1033,8 @@ const PieChart = ({ dataColors }: any) => {
       },
     ],
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
   };
 
@@ -1095,7 +1106,8 @@ const DoughnutChart = ({ dataColors }: any) => {
       },
     ],
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
   };
 
@@ -1142,7 +1154,8 @@ const BasicScatterChart = ({ dataColors }: any) => {
       },
     },
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     series: [
       {
@@ -1221,7 +1234,8 @@ const CandleStickChart = ({ dataColors }: any) => {
       },
     },
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     series: [
       {
@@ -1343,7 +1357,8 @@ const GraphChart = ({ dataColors }: any) => {
       },
     ],
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
   };
   return (
@@ -1396,7 +1411,8 @@ const TreemapChart = ({ dataColors }: any) => {
       },
     ],
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
   };
   return (
@@ -1486,7 +1502,8 @@ const SunburstChart = ({ dataColors }: any) => {
       },
     },
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
   };
   return (
@@ -1540,7 +1557,8 @@ const ParallelChart = ({ dataColors }: any) => {
       ],
     },
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
   };
   return (
@@ -1615,7 +1633,8 @@ const SankeyChart = ({ dataColors }: any) => {
       ],
     },
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
   };
   return (
@@ -1709,7 +1728,8 @@ const FunnelChart = ({ dataColors }: any) => {
       },
     ],
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
   };
   return (
@@ -1728,7 +1748,8 @@ const GaugeChart = ({ dataColors }: any) => {
     },
     color: chartGaugeColors,
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     series: [
       {
@@ -1792,7 +1813,8 @@ const HeatmapChart = ({ dataColors }: any) => {
     },
     color: chartHeatmapColors,
     textStyle: {
-      fontFamily: "Poppins, sans-serif",
+      // fontFamily: "Poppins, sans-serif",
+      fontFamily: "iransansweb, sans-serif",
     },
     series: {
       type: "heatmap",
