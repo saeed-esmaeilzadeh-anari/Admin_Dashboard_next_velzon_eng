@@ -45,9 +45,12 @@
     );
 
     // Font Family
-    --#{$prefix}font-family-primary: 'Rubik', sans-serif;
-    --#{$prefix}font-family-secondary: 'Montserrat', sans-serif;
-    --#{$prefix}headings-font-family: 'Montserrat', sans-serif;
+    // --#{$prefix}font-family-primary: 'Rubik', sans-serif;
+    --#{$prefix}font-family-primary: var(--font-iransansweb);
+    // --#{$prefix}font-family-secondary: 'Montserrat', sans-serif;
+    --#{$prefix}font-family-secondary: var(--font-iransansweb);
+    // --#{$prefix}headings-font-family: 'Montserrat', sans-serif;
+    --#{$prefix}headings-font-family: var(--font-iransansweb);
 
     --#{$prefix}grid-gutter-width: 1.5rem;
 

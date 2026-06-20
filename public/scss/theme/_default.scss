@@ -3,8 +3,15 @@
     //Typography
 
     // Font Family
-    --#{$prefix}font-family-primary: 'iransansweb', sans-serif;
-    --#{$prefix}font-family-secondary: 'Poppins', sans-serif;
+    // --#{$prefix}font-family-primary: 'iransansweb';//, sans-serif;
+    // // --#{$prefix}font-family-secondary: 'Poppins', sans-serif;
+    // --#{$prefix}font-family-secondary: 'iransansweb'//, sans-serif;
+
+    //  --#{$prefix}body-font-family: var(--#{$prefix}font-family-primary);
+
+    --#{$prefix}font-family-primary: 'IRANSansWeb';
+    --#{$prefix}font-family-secondary: 'IRANSansWeb';
+    --#{$prefix}body-font-family: 'IRANSansWeb';
 
     $font-sizes: (
       '10': 0.625rem,

@@ -21,10 +21,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="fa" dir="rtl" className={iransansweb.variable}>
       <body
         suppressHydrationWarning={true}
-        className={`${hkGrotesk.variable} ${iransansweb.variable}`}
       >
         <ClientProviders>{children}</ClientProviders>
       </body>

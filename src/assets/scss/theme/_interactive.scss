@@ -45,8 +45,10 @@
     );
 
     // Font Family
-    --#{$prefix}font-family-primary: 'Outfit', sans-serif;
-    --#{$prefix}font-family-secondary: 'Outfit', sans-serif;
+    // --#{$prefix}font-family-primary: 'Outfit', sans-serif;
+        --#{$prefix}font-family-primary: var(--font-iransansweb);
+    // --#{$prefix}font-family-secondary: 'Outfit', sans-serif;
+       --#{$prefix}font-family-secondary: var(--font-iransansweb);
 
     --#{$prefix}grid-gutter-width: 1.5rem;
 

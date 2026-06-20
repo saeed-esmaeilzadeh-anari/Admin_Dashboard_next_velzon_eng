@@ -1,0 +1,10 @@
+:root {
+  --vz-font-family-primary: var(--font-iransansweb);
+  --vz-font-family-secondary: var(--font-iransansweb);
+  --vz-body-font-family: var(--font-iransansweb);
+}
+
+html,
+body {
+  font-family: var(--font-iransansweb), sans-serif;
+}
