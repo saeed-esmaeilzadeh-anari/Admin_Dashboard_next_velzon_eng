@@ -1,6 +1,6 @@
 @if $theme-minimal {
   // Google Font
-  @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap');
+  // @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap');
 
   [data-theme='minimal'] {
     $primary: #25a0e2;
@@ -44,8 +44,8 @@
     );
 
     // Font Family
-    --#{$prefix}font-family-primary: 'Open Sans', sans-serif;
-    --#{$prefix}font-family-secondary: 'Open Sans', sans-serif;
+    --#{$prefix}font-family-primary:var(--font-iransansweb); // 'Open Sans', sans-serif;
+    --#{$prefix}font-family-secondary:var(--font-iransansweb); // 'Open Sans', sans-serif;
 
     --#{$prefix}grid-gutter-width: 1.5rem;
 

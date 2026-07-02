@@ -1,6 +1,6 @@
 @if $theme-galaxy {
   //Google Font
-  @import url('https://fonts.googleapis.com/css2?family=Saira:wght@300;400;500;600;700&display=swap');
+  // @import url('https://fonts.googleapis.com/css2?family=Saira:wght@300;400;500;600;700&display=swap');
 
   [data-theme='galaxy'] {
     $primary: #8c68cd;
@@ -50,8 +50,8 @@
     );
 
     // Font Family
-    --#{$prefix}font-family-primary: 'Saira', sans-serif;
-    --#{$prefix}font-family-secondary: 'Saira', sans-serif;
+    --#{$prefix}font-family-primary:var(--font-iransansweb); // 'Saira', sans-serif;
+    --#{$prefix}font-family-secondary:var(--font-iransansweb); // 'Saira', sans-serif;
 
     --#{$prefix}grid-gutter-width: 1.5rem;
 

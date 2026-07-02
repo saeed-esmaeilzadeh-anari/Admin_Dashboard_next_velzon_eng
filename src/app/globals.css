@@ -4,7 +4,9 @@
   --vz-body-font-family: var(--font-iransansweb);
 }
 
-html,
+html {
+    @apply font-iransansweb;
+  }
 body {
-  font-family: var(--font-iransansweb), sans-serif;
+  font-family: var(--font-iransansweb), iransansweb;
 }

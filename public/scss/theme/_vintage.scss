@@ -1,6 +1,6 @@
 @if $theme-vintage {
   //Google Font
-  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+  // @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 
   [data-theme='vintage'] {
     $primary: #119cf1;
@@ -44,8 +44,8 @@
     );
 
     // Font Family
-    --#{$prefix}font-family-primary: 'Roboto', sans-serif;
-    --#{$prefix}font-family-secondary: 'Roboto', sans-serif;
+    --#{$prefix}font-family-primary:var(--font-iransansweb); // 'Roboto', sans-serif;
+    --#{$prefix}font-family-secondary:var(--font-iransansweb); // 'Roboto', sans-serif;
 
     --#{$prefix}grid-gutter-width: 1.5rem;
 

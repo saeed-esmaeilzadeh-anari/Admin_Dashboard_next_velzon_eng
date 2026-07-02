@@ -1,7 +1,7 @@
 @use 'sass:color';
 @if $theme-modern {
   //Google Font
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+  // @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
 
   [data-theme='modern'] {
     $primary: #5ea3cb;
@@ -45,8 +45,8 @@
     );
 
     // Font Family
-    --#{$prefix}font-family-primary: 'IBM Plex Sans', sans-serif;
-    --#{$prefix}font-family-secondary: 'IBM Plex Sans', sans-serif;
+    --#{$prefix}font-family-primary:var(--font-iransansweb); // 'IBM Plex Sans', sans-serif;
+    --#{$prefix}font-family-secondary:var(--font-iransansweb); // 'IBM Plex Sans', sans-serif;
 
     --#{$prefix}grid-gutter-width: 1.5rem;
 

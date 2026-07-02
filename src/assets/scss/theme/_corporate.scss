@@ -1,7 +1,7 @@
 @use 'sass:color';
 @if $theme-corporate {
   //Google Font
-  @import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap');
+  // @import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap');
 
   [data-theme='corporate'] {
     $primary: #687cfe;
@@ -45,8 +45,8 @@
     );
 
     // Font Family
-    --#{$prefix}font-family-primary: 'Public Sans', sans-serif;
-    --#{$prefix}font-family-secondary: 'Public Sans', sans-serif;
+    --#{$prefix}font-family-primary:var(--font-iransansweb); // 'Public Sans', sans-serif;
+    --#{$prefix}font-family-secondary:var(--font-iransansweb); // 'Public Sans', sans-serif;
 
     --#{$prefix}grid-gutter-width: 1.5rem;
 

@@ -5,7 +5,7 @@
     //Typography
 
     // Font Family
-    --#{$prefix}font-family-primary: 'iransansweb', sans-serif;
+    --#{$prefix}font-family-primary:var(--font-iransansweb); // 'iransansweb', sans-serif;
     // --#{$prefix}font-family-secondary: 'Poppins', sans-serif;
 
     $font-sizes: (

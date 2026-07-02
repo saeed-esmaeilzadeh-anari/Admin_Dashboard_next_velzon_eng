@@ -1,7 +1,7 @@
 @use 'sass:color';
 @if $theme-classic {
   //Google Font
-  @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap');
+  // @import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap');
 
   [data-theme='classic'] {
     $primary: #7c4baf;
@@ -45,8 +45,8 @@
     );
 
     // Font Family
-    --#{$prefix}font-family-primary: 'Jost', sans-serif;
-    --#{$prefix}font-family-secondary: 'Jost', sans-serif;
+    --#{$prefix}font-family-primary: var(--font-iransansweb);   //'Jost', sans-serif;
+    --#{$prefix}font-family-secondary:var(--font-iransansweb); // 'Jost', sans-serif;
 
     --#{$prefix}grid-gutter-width: 1.5rem;
 
