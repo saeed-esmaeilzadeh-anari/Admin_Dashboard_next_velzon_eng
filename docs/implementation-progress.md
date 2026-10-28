@@ -13,14 +13,14 @@
 - [x] Added transactional order creation, server-side price calculation and atomic stock decrements.
 - [x] Added initial implementation audit, data dictionary and relationship documentation.
 - [ ] Frontend page-by-page integration with the new endpoints.
-- [ ] Full test suite and successful CI result.
+- [x] Backend CI: Prisma validation/generation, TypeScript check, unit tests and build have passed for the CMS core.\n- [ ] Frontend production type-check/build is still pending on the latest branch tip.
 - [ ] Password reset/email verification, refresh-token rotation, rate limiting, detailed audit writes and file storage.
 - [ ] Add jobs, invoices, messaging, file manager, settings and other workflows after analyzing their source forms.
 - [ ] Deployment and production database provisioning.
 
 ## Verification status
 
-The execution environment could not clone the GitHub repository because outbound DNS lookup for github.com failed. The backend has therefore not been installed, generated or built in this run. GitHub Actions is configured to run Prisma generation, TypeScript checking and a build when dependencies are available. Verify the workflow results before merging.
+The repository was changed through GitHub's API because a local clone was not possible in this environment. Do not treat the source edits alone as proof of a successful build. Backend CI has subsequently passed (see the dated CMS increment below); the latest frontend CI needs its final type-check/build result before the PR is considered verified.
 
 
 ## Multilingual CMS core and management UI — 2026-10-28
@@ -38,7 +38,7 @@ The execution environment could not clone the GitHub repository because outbound
 
 ### CI verification
 
-- Backend CI run https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40660468629 completed successfully at commit `b585894bf440124c9b21bd2ce261cc7192653187` (Prisma validate/generate, TypeScript type-check, unit tests and backend build).
+- Backend CI run https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40660666166 completed successfully at commit `9801924b839d53494219bb7a3efc086b125935d8` (Prisma validate/generate, TypeScript type-check, unit tests and backend build).
 - Frontend CI was introduced and initially exposed a pre-existing peer-dependency conflict (`react-dual-listbox@6` declares React 16–18 peers while this repo has React 19); the workflow now uses `npm install --legacy-peer-deps` to match the repo's existing npm compatibility configuration. Its type-check/build result must be read from the latest run before claiming it is green.
 
 ### Explicitly not complete yet
