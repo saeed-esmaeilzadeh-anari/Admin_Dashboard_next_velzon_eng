@@ -14,7 +14,8 @@
 | Media Library / storage | Not implemented | Design local/S3 interface and metadata lifecycle |
 | Taxonomy / menus / redirects / SEO sitemap | Not implemented | Follow after the content UX is connected |
 | Page builder / blocks | Not implemented | Build only after core content editor contract stabilizes |
-| CMS management UI | Initial real screens implemented | Content list/create/edit, dynamic content-type fields and language administration; responsive/manual QA still needed |\n| Fine-grained RBAC | Not implemented | Replace coarse role checks with permission matrix |
+| CMS management UI | Initial real screens implemented | Content list/create/edit, dynamic content-type fields and language administration; responsive/manual QA still needed |
+| Fine-grained RBAC | Not implemented | Replace coarse role checks with permission matrix |
 | Production scheduler | Not solved for serverless | Use durable scheduler or external cron trigger |
 
 
