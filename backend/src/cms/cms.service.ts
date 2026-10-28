@@ -566,7 +566,7 @@ export class CmsService {
   private validateFieldValue(field: FieldDefinition, value: unknown) {
     const config = asRecord(field.config);
     const wrong = (): never => { throw new BadRequestException("Invalid value for field " + field.key + " (" + field.type + ")."); };
-    const stringTypes = [CmsFieldType.TEXT, CmsFieldType.TEXTAREA, CmsFieldType.RICH_TEXT, CmsFieldType.MARKDOWN, CmsFieldType.EMAIL, CmsFieldType.URL];
+    const stringTypes: CmsFieldType[] = [CmsFieldType.TEXT, CmsFieldType.TEXTAREA, CmsFieldType.RICH_TEXT, CmsFieldType.MARKDOWN, CmsFieldType.EMAIL, CmsFieldType.URL];
     if (stringTypes.includes(field.type)) {
       if (typeof value !== "string") return wrong();
       if (typeof config.maxLength === "number" && value.length > config.maxLength) return wrong();
