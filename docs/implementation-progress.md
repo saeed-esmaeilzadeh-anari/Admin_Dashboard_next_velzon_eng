@@ -13,7 +13,8 @@
 - [x] Added transactional order creation, server-side price calculation and atomic stock decrements.
 - [x] Added initial implementation audit, data dictionary and relationship documentation.
 - [ ] Frontend page-by-page integration with the new endpoints.
-- [x] Backend CI: Prisma validation/generation, TypeScript check, unit tests and build have passed for the CMS core.\n- [ ] Frontend production type-check/build is still pending on the latest branch tip.
+- [x] Backend CI: Prisma validation/generation, TypeScript check, unit tests and build have passed for the CMS core.
+- [ ] Frontend production type-check/build is still pending on the latest branch tip.
 - [ ] Password reset/email verification, refresh-token rotation, rate limiting, detailed audit writes and file storage.
 - [ ] Add jobs, invoices, messaging, file manager, settings and other workflows after analyzing their source forms.
 - [ ] Deployment and production database provisioning.
