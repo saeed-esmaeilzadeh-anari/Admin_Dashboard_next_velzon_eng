@@ -20,5 +20,5 @@
 
 ## CI notes
 
-- Backend CI completed successfully at commit `b585894bf440124c9b21bd2ce261cc7192653187`: [workflow run](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40660468629).
+- Backend CI completed successfully at commit `9801924b839d53494219bb7a3efc086b125935d8`: [workflow run](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40660666166).
 - Frontend CI status should be checked on the latest run before the CMS UI is treated as validated.
