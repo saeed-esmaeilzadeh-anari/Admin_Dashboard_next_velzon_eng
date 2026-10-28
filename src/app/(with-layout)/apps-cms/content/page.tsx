@@ -83,6 +83,7 @@ export default function CmsContentListPage() {
       <div className="d-flex gap-1 flex-wrap">
         <Link className="btn btn-sm btn-soft-primary" href={`/apps-cms/content/${content.id}?localeCode=${encodeURIComponent(locale)}`}>{t("Edit")}</Link>
         {translation.status === "DRAFT" && <Button size="sm" color="info" disabled={busy} onClick={() => void performWorkflow(content.id, locale, "submit")}>{t("Submit for review")}</Button>}
+        {translation.status === "DRAFT" && translation.publishedSlug && <Button size="sm" color="warning" outline disabled={busy} onClick={() => void performWorkflow(content.id, locale, "unpublish")}>{t("Unpublish live copy")}</Button>}
         {translation.status === "IN_REVIEW" && <>
           <Button size="sm" color="success" disabled={busy} onClick={() => void performWorkflow(content.id, locale, "publish")}>{t("Publish")}</Button>
           <Button size="sm" color="warning" outline disabled={busy} onClick={() => void performWorkflow(content.id, locale, "reject")}>{t("Reject")}</Button>
