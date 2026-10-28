@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: 20
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
       - name: Type-check
         env:
           NEXT_PUBLIC_DEFAULT_AUTH: fake
