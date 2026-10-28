@@ -1,4 +1,7 @@
 name: Frontend CMS CI
+concurrency:
+  group: cms-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 # Keeps the CMS branch type-check and production build reproducible.
 on:
   push:
