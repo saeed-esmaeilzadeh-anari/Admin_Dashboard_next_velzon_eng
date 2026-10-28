@@ -60,6 +60,9 @@ export const cmsApi = {
   async createContent(input: { typeKey: string; localeCode: string; title: string; slug: string; excerpt?: string; seoTitle?: string; seoDescription?: string; fields: Record<string, unknown> }): Promise<CmsContent> {
     return (await backendApi.post<CmsContent>("/cms/contents", input)).data;
   },
+  async createTranslation(id: string, input: { localeCode: string; title: string; slug: string; excerpt?: string; seoTitle?: string; seoDescription?: string; fields: Record<string, unknown> }): Promise<CmsContent> {
+    return (await backendApi.post<CmsContent>(`/cms/contents/${id}/translations`, input)).data;
+  },
   async updateTranslation(id: string, localeCode: string, input: Partial<{ title: string; slug: string; excerpt: string; seoTitle: string; seoDescription: string; fields: Record<string, unknown> }>): Promise<CmsContent> {
     return (await backendApi.patch<CmsContent>(`/cms/contents/${id}/translations/${encodeURIComponent(localeCode)}`, input)).data;
   },
