@@ -114,6 +114,7 @@ export default function NewCmsContentPage() {
     const sharedFields: Record<string, unknown> = {};
     for (const field of selectedType?.fields ?? []) {
       let value = values[field.key];
+      if (value === "" && !field.isRequired) continue;
       if ((field.type === "INTEGER" || field.type === "DECIMAL") && value !== "") value = Number(value);
       if (field.type === "JSON" && typeof value === "string" && value.trim()) {
         try { value = JSON.parse(value); } catch { errors[field.key] = t("Invalid JSON"); }
