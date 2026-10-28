@@ -7,6 +7,7 @@ const Navdata = () => {
   //state data
   const [isDashboard, setIsDashboard] = useState<boolean>(false);
   const [isApps, setIsApps] = useState<boolean>(false);
+  const [isCMS, setIsCMS] = useState<boolean>(false);
   const [isAuth, setIsAuth] = useState<boolean>(false);
   const [isPages, setIsPages] = useState<boolean>(false);
   const [isBaseUi, setIsBaseUi] = useState<boolean>(false);
@@ -758,6 +759,24 @@ const Navdata = () => {
             { id: 5, label: "Offline Page", link: "/authinner/offline" },
           ],
         },
+      ],
+    },
+    {
+      id: "cms",
+      label: "CMS",
+      icon: "ri-file-text-line",
+      link: "/#",
+      click: function (e: any) {
+        e.preventDefault();
+        setIsCMS(!isCMS);
+        setIscurrentState("CMS");
+        updateIconSidebar(e);
+      },
+      stateVariables: isCMS,
+      subItems: [
+        { id: "cms-content", label: "CMS Content", link: "/apps-cms/content", parentId: "cms" },
+        { id: "cms-types", label: "Content Types and Fields", link: "/apps-cms/content-types", parentId: "cms" },
+        { id: "cms-languages", label: "Languages and Locales", link: "/apps-cms/languages", parentId: "cms" },
       ],
     },
     {

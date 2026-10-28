@@ -91,6 +91,8 @@ model User {
   assignedTickets Ticket[]  @relation("TicketAssignee")
   createdTickets  Ticket[]  @relation("TicketCreator")
   auditLogs       AuditLog[]
+  createdCmsContents Content[] @relation("CmsContentCreator")
+  cmsRevisions ContentRevision[] @relation("CmsRevisionAuthor")
 
   @@index([role, isActive])
   @@map("users")
@@ -268,4 +270,153 @@ model AuditLog {
   @@index([entity, entityId, createdAt])
   @@index([userId, createdAt])
   @@map("audit_logs")
+}
+
+
+enum LocaleDirection {
+  LTR
+  RTL
+}
+
+enum CmsFieldType {
+  TEXT
+  TEXTAREA
+  RICH_TEXT
+  MARKDOWN
+  INTEGER
+  DECIMAL
+  BOOLEAN
+  DATE
+  DATETIME
+  SELECT
+  MULTISELECT
+  EMAIL
+  URL
+  JSON
+}
+
+enum CmsContentStatus {
+  DRAFT
+  IN_REVIEW
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+model Locale {
+  id               String                @id @default(uuid()) @db.Uuid
+  code             String                @unique
+  name             String
+  nativeName       String
+  direction        LocaleDirection       @default(LTR)
+  isDefault        Boolean               @default(false)
+  isActive         Boolean               @default(true)
+  fallbackLocaleId String?               @db.Uuid
+  fallbackLocale   Locale?               @relation("LocaleFallback", fields: [fallbackLocaleId], references: [id], onDelete: SetNull)
+  fallbacks        Locale[]              @relation("LocaleFallback")
+  translations     ContentTranslation[]
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@index([isActive, isDefault])
+  @@index([fallbackLocaleId])
+  @@map("locales")
+}
+
+model ContentType {
+  id          String             @id @default(uuid()) @db.Uuid
+  key         String             @unique
+  name        String
+  description String?
+  isActive    Boolean            @default(true)
+  fields      ContentTypeField[]
+  contents    Content[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([isActive, createdAt])
+  @@map("content_types")
+}
+
+model ContentTypeField {
+  id            String      @id @default(uuid()) @db.Uuid
+  contentTypeId String      @db.Uuid
+  contentType   ContentType @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
+  key           String
+  label         String
+  type          CmsFieldType
+  isRequired    Boolean     @default(false)
+  isLocalized   Boolean     @default(true)
+  isActive      Boolean     @default(true)
+  sortOrder     Int         @default(0)
+  config        Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([contentTypeId, key])
+  @@index([contentTypeId, isActive, sortOrder])
+  @@map("content_type_fields")
+}
+
+model Content {
+  id            String               @id @default(uuid()) @db.Uuid
+  contentTypeId String               @db.Uuid
+  contentType   ContentType          @relation(fields: [contentTypeId], references: [id], onDelete: Restrict)
+  createdById   String?              @db.Uuid
+  createdBy     User?                @relation("CmsContentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  data          Json                 @default("{}")
+  translations  ContentTranslation[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([contentTypeId, createdAt])
+  @@index([createdById])
+  @@map("cms_contents")
+}
+
+model ContentTranslation {
+  id                String           @id @default(uuid()) @db.Uuid
+  contentId         String           @db.Uuid
+  content           Content          @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  localeId          String           @db.Uuid
+  locale            Locale           @relation(fields: [localeId], references: [id], onDelete: Restrict)
+  title             String
+  slug              String
+  excerpt           String?
+  data              Json             @default("{}")
+  seoTitle          String?
+  seoDescription    String?
+  status            CmsContentStatus @default(DRAFT)
+  version           Int              @default(1)
+  publishedAt       DateTime?
+  scheduledAt       DateTime?
+  publishedSlug     String?
+  publishedSnapshot Json?
+  revisions         ContentRevision[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([contentId, localeId])
+  @@unique([localeId, slug])
+  @@unique([localeId, publishedSlug])
+  @@index([localeId, status, updatedAt])
+  @@index([status, scheduledAt])
+  @@index([publishedAt])
+  @@map("cms_content_translations")
+}
+
+model ContentRevision {
+  id            String             @id @default(uuid()) @db.Uuid
+  translationId String             @db.Uuid
+  translation   ContentTranslation @relation(fields: [translationId], references: [id], onDelete: Cascade)
+  version       Int
+  snapshot      Json
+  changeNote    String?
+  createdById   String?            @db.Uuid
+  createdBy     User?              @relation("CmsRevisionAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime           @default(now())
+
+  @@unique([translationId, version])
+  @@index([translationId, createdAt])
+  @@map("cms_content_revisions")
 }

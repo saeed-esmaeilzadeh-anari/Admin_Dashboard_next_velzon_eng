@@ -47,3 +47,35 @@ List endpoints support page, limit (up to 100) and search. Responses include dat
 ## Current limitations
 
 The initial backend is not a claim that all legacy pages are production-ready. Page-by-page UI integration, tests, rate limiting, password reset, refresh-token rotation, detailed audit writes, uploads, notifications, jobs/invoices/chat/mail modules and deployment infrastructure remain to be implemented. Check docs/implementation-progress.md before treating the system as complete.
+
+
+## CMS endpoints
+
+The branch contains a multilingual CMS core under `/api/v1/cms`. Administrative routes require a valid Bearer token.
+
+- Locale metadata: `GET/POST /cms/locales`, `PATCH /cms/locales/:id`.
+- Content types: `GET/POST /cms/content-types`, `PATCH /cms/content-types/:id`.
+- Dynamic fields: `POST /cms/content-types/:id/fields`, `PATCH /cms/content-types/:id/fields/:fieldId`.
+- Content: `GET /cms/contents`, `GET /cms/contents/:id`, `POST /cms/contents`.
+- Translation: `POST /cms/contents/:id/translations`, `PATCH /cms/contents/:id/translations/:localeCode`.
+- Shared fields: `PATCH /cms/contents/:id/shared-fields`.
+- Editorial actions: `POST /cms/contents/:id/translations/:localeCode/submit|publish|reject|schedule|unpublish|archive|restore-to-draft`.
+- Revisions: `GET /cms/contents/:id/translations/:localeCode/revisions` and restore endpoint below the same route.
+- Public delivery returns published snapshots only: `GET /public/cms/:typeKey/:localeCode` and `GET /public/cms/:typeKey/:localeCode/:slug`.
+
+Dynamic fields are initially backed by JSON and server-side schema validation. Supported types include text/textarea, rich text, Markdown, integer/decimal, boolean, date/datetime, select/multi-select, email, URL and JSON. Media, relation and repeater fields are not yet implemented.
+
+## Connecting the dashboard to real CMS authentication
+
+For a local run, start PostgreSQL and the API as above. In the Next.js environment set:
+
+```dotenv
+NEXT_PUBLIC_DEFAULT_AUTH=backend
+NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001/api/v1
+```
+
+Then restart Next.js, sign in with the administrator created from `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and open `/apps-cms/content`. The template's `fake` login remains the default until this variable is explicitly changed.
+
+## CMS boundaries
+
+This increment wires the CMS-specific screens to real API endpoints; it does not replace the legacy mock backend of every e-commerce/CRM/task/template screen. Fine-grained permissions, media storage, taxonomies, menus, page-builder blocks, redirects/sitemap/hreflang, rich-text sanitization and durable serverless scheduling remain required before a production launch.

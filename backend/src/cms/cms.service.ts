@@ -1,0 +1,639 @@
+import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { CmsContentStatus, CmsFieldType, LocaleDirection, Prisma } from "@prisma/client";
+import { AuthenticatedUser } from "../common/decorators/current-user.decorator";
+import { PrismaService } from "../prisma/prisma.service";
+import {
+  CreateContentDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto, CreateTranslationDto,
+  ListCmsContentsQuery, ListPublicContentQuery, RejectContentDto, ScheduleContentDto,
+  UpdateContentTranslationDto, UpdateContentTypeDto, UpdateContentTypeFieldDto,
+  UpdateLocaleDto, UpdateSharedFieldsDto,
+} from "./dto/cms.dto";
+
+type FieldDefinition = {
+  key: string; type: CmsFieldType; isRequired: boolean; isLocalized: boolean; isActive: boolean;
+  config: Prisma.JsonValue | null;
+};
+type TranslationRecord = {
+  id: string; contentId: string; localeId: string; title: string; slug: string; excerpt: string | null;
+  data: Prisma.JsonValue; seoTitle: string | null; seoDescription: string | null;
+  status: CmsContentStatus; version: number; publishedAt: Date | null; scheduledAt: Date | null;
+  publishedSlug: string | null; publishedSnapshot: Prisma.JsonValue | null;
+  content: { id: string; data: Prisma.JsonValue; contentType: { key: string; name: string; isActive: boolean; fields: FieldDefinition[] } };
+};
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function asRecord(value: unknown): Record<string, unknown> { return isRecord(value) ? value : {}; }
+function isMissing(value: unknown): boolean {
+  return value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0);
+}
+function asJson(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value ?? {})) as Prisma.InputJsonValue;
+}
+
+@Injectable()
+export class CmsService {
+  private readonly logger = new Logger(CmsService.name);
+  constructor(private readonly prisma: PrismaService) {}
+
+  async listLocales(includeInactive = false) {
+    return this.prisma.locale.findMany({
+      where: includeInactive ? undefined : { isActive: true },
+      orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+      include: { fallbackLocale: { select: { id: true, code: true, name: true } } },
+    });
+  }
+
+  async createLocale(dto: CreateLocaleDto) {
+    if (dto.fallbackLocaleId && !await this.prisma.locale.findUnique({ where: { id: dto.fallbackLocaleId } })) {
+      throw new BadRequestException("Fallback locale was not found.");
+    }
+    return this.prisma.$transaction(async tx => {
+      const currentDefault = await tx.locale.findFirst({ where: { isDefault: true } });
+      const makeDefault = dto.isDefault === true || !currentDefault;
+      if (makeDefault) await tx.locale.updateMany({ where: { isDefault: true }, data: { isDefault: false } });
+      return tx.locale.create({
+        data: {
+          code: dto.code, name: dto.name, nativeName: dto.nativeName,
+          direction: dto.direction ?? LocaleDirection.LTR, isDefault: makeDefault,
+          fallbackLocaleId: dto.fallbackLocaleId,
+        },
+        include: { fallbackLocale: { select: { id: true, code: true, name: true } } },
+      });
+    });
+  }
+
+  async updateLocale(id: string, dto: UpdateLocaleDto) {
+    const locale = await this.prisma.locale.findUnique({ where: { id } });
+    if (!locale) throw new NotFoundException("Locale not found.");
+    if (dto.fallbackLocaleId === id) throw new BadRequestException("A locale cannot fall back to itself.");
+    if (dto.fallbackLocaleId && !await this.prisma.locale.findUnique({ where: { id: dto.fallbackLocaleId } })) {
+      throw new BadRequestException("Fallback locale was not found.");
+    }
+    if (locale.isDefault && dto.isDefault === false) throw new BadRequestException("Set another locale as default first.");
+    if (locale.isDefault && dto.isActive === false) throw new BadRequestException("The default locale cannot be disabled.");
+    const data: Prisma.LocaleUpdateInput = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.nativeName !== undefined) data.nativeName = dto.nativeName;
+    if (dto.direction !== undefined) data.direction = dto.direction;
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+    if (dto.fallbackLocaleId !== undefined) {
+      data.fallbackLocale = dto.fallbackLocaleId === null ? { disconnect: true } : { connect: { id: dto.fallbackLocaleId } };
+    }
+    return this.prisma.$transaction(async tx => {
+      if (dto.isDefault === true) {
+        await tx.locale.updateMany({ where: { isDefault: true, id: { not: id } }, data: { isDefault: false } });
+        data.isDefault = true;
+      }
+      return tx.locale.update({
+        where: { id }, data,
+        include: { fallbackLocale: { select: { id: true, code: true, name: true } } },
+      });
+    });
+  }
+
+  async listContentTypes(includeInactive = false) {
+    return this.prisma.contentType.findMany({
+      where: includeInactive ? undefined : { isActive: true },
+      orderBy: { name: "asc" },
+      include: {
+        fields: { where: includeInactive ? undefined : { isActive: true }, orderBy: { sortOrder: "asc" } },
+        _count: { select: { contents: true } },
+      },
+    });
+  }
+
+  async createContentType(dto: CreateContentTypeDto) {
+    return this.prisma.contentType.create({
+      data: {
+        key: dto.key, name: dto.name, description: dto.description, isActive: dto.isActive ?? true,
+        fields: { create: dto.fields.map(field => ({
+          key: field.key, label: field.label, type: field.type,
+          isRequired: field.isRequired ?? false, isLocalized: field.isLocalized ?? true,
+          sortOrder: field.sortOrder ?? 0, ...(field.config ? { config: asJson(field.config) } : {}),
+        })) },
+      },
+      include: { fields: { orderBy: { sortOrder: "asc" } } },
+    });
+  }
+
+  async updateContentType(id: string, dto: UpdateContentTypeDto) {
+    if (!await this.prisma.contentType.findUnique({ where: { id } })) throw new NotFoundException("Content type not found.");
+    const data: Prisma.ContentTypeUpdateInput = {};
+    if (dto.name !== undefined) data.name = dto.name;
+    if (dto.description !== undefined) data.description = dto.description;
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+    return this.prisma.contentType.update({
+      where: { id }, data,
+      include: { fields: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
+    });
+  }
+
+  async addContentTypeField(contentTypeId: string, dto: CreateContentTypeFieldDto) {
+    if (!await this.prisma.contentType.findUnique({ where: { id: contentTypeId } })) throw new NotFoundException("Content type not found.");
+    return this.prisma.contentTypeField.create({
+      data: {
+        contentTypeId, key: dto.key, label: dto.label, type: dto.type,
+        isRequired: dto.isRequired ?? false, isLocalized: dto.isLocalized ?? true,
+        sortOrder: dto.sortOrder ?? 0, ...(dto.config ? { config: asJson(dto.config) } : {}),
+      },
+    });
+  }
+
+  async updateContentTypeField(contentTypeId: string, fieldId: string, dto: UpdateContentTypeFieldDto) {
+    const field = await this.prisma.contentTypeField.findFirst({ where: { id: fieldId, contentTypeId } });
+    if (!field) throw new NotFoundException("Content type field not found.");
+    const data: Prisma.ContentTypeFieldUpdateInput = {};
+    if (dto.label !== undefined) data.label = dto.label;
+    if (dto.isRequired !== undefined) data.isRequired = dto.isRequired;
+    if (dto.isActive !== undefined) data.isActive = dto.isActive;
+    if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
+    if (dto.config !== undefined) data.config = asJson(dto.config);
+    if (dto.isLocalized !== undefined && dto.isLocalized !== field.isLocalized) {
+      const rows = await this.prisma.content.findMany({
+        where: { contentTypeId },
+        select: { data: true, translations: { select: { data: true } } },
+      });
+      const hasData = rows.some(row =>
+        Object.prototype.hasOwnProperty.call(asRecord(row.data), field.key) ||
+        row.translations.some(translation => Object.prototype.hasOwnProperty.call(asRecord(translation.data), field.key)),
+      );
+      if (hasData) throw new BadRequestException("Field localization cannot change after values exist; migrate values to a replacement field.");
+      data.isLocalized = dto.isLocalized;
+    }
+    return this.prisma.contentTypeField.update({ where: { id: fieldId }, data });
+  }
+
+  async listContents(query: ListCmsContentsQuery) {
+    const page = Number(query.page) || 1;
+    const limit = Math.min(100, Number(query.limit) || 20);
+    const translationWhere: Prisma.ContentTranslationWhereInput = {};
+    if (query.localeCode) translationWhere.locale = { is: { code: query.localeCode } };
+    if (query.status) translationWhere.status = query.status;
+    if (query.search?.trim()) {
+      translationWhere.OR = [
+        { title: { contains: query.search.trim(), mode: "insensitive" } },
+        { slug: { contains: query.search.trim(), mode: "insensitive" } },
+      ];
+    }
+    const where: Prisma.ContentWhereInput = {};
+    if (query.typeKey) where.contentType = { is: { key: query.typeKey } };
+    if (Object.keys(translationWhere).length) where.translations = { some: translationWhere };
+    const [data, total] = await Promise.all([
+      this.prisma.content.findMany({
+        where, skip: (page - 1) * limit, take: limit, orderBy: { updatedAt: "desc" },
+        include: {
+          contentType: { select: { id: true, key: true, name: true } },
+          translations: {
+            where: query.localeCode ? { locale: { is: { code: query.localeCode } } } : undefined,
+            include: { locale: { select: { code: true, name: true, direction: true } } },
+            orderBy: { updatedAt: "desc" },
+          },
+        },
+      }),
+      this.prisma.content.count({ where }),
+    ]);
+    return { data, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+  }
+
+  async getContent(id: string) {
+    const item = await this.prisma.content.findUnique({
+      where: { id },
+      include: {
+        contentType: { include: { fields: { orderBy: { sortOrder: "asc" } } } },
+        createdBy: { select: { id: true, name: true, email: true } },
+        translations: {
+          include: {
+            locale: { select: { id: true, code: true, name: true, nativeName: true, direction: true } },
+            revisions: { orderBy: { version: "desc" }, take: 20 },
+          },
+          orderBy: { updatedAt: "desc" },
+        },
+      },
+    });
+    if (!item) throw new NotFoundException("Content not found.");
+    return item;
+  }
+
+  async createContent(dto: CreateContentDto, user: AuthenticatedUser) {
+    const [type, locale] = await Promise.all([
+      this.prisma.contentType.findUnique({
+        where: { key: dto.typeKey }, include: { fields: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
+      }),
+      this.prisma.locale.findUnique({ where: { code: dto.localeCode } }),
+    ]);
+    if (!type || !type.isActive) throw new BadRequestException("Active content type was not found.");
+    if (!locale || !locale.isActive) throw new BadRequestException("Active locale was not found.");
+    const split = this.validateAndSplitFields(dto.fields ?? {}, type.fields, true);
+    const created = await this.prisma.$transaction(async tx => {
+      const item = await tx.content.create({
+        data: { contentTypeId: type.id, createdById: user.id, data: asJson(split.sharedData) },
+      });
+      const translation = await tx.contentTranslation.create({
+        data: {
+          contentId: item.id, localeId: locale.id, title: dto.title, slug: dto.slug,
+          excerpt: dto.excerpt, seoTitle: dto.seoTitle, seoDescription: dto.seoDescription,
+          data: asJson(split.localizedData),
+        },
+      });
+      await tx.contentRevision.create({
+        data: {
+          translationId: translation.id, version: 1, createdById: user.id,
+          changeNote: "Initial draft", snapshot: this.snapshot(translation, split.sharedData),
+        },
+      });
+      await tx.auditLog.create({
+        data: { userId: user.id, action: "cms.content.created", entity: "Content", entityId: item.id,
+          metadata: asJson({ typeKey: type.key, localeCode: locale.code }) },
+      });
+      return item;
+    });
+    return this.getContent(created.id);
+  }
+
+  async createTranslation(contentId: string, dto: CreateTranslationDto, user: AuthenticatedUser) {
+    const content = await this.prisma.content.findUnique({
+      where: { id: contentId },
+      include: {
+        contentType: { include: { fields: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } } },
+        translations: { include: { locale: true } },
+      },
+    });
+    if (!content) throw new NotFoundException("Content not found.");
+    if (content.translations.some(item => item.locale.code === dto.localeCode)) {
+      throw new BadRequestException("A translation already exists for this locale.");
+    }
+    const locale = await this.prisma.locale.findUnique({ where: { code: dto.localeCode } });
+    if (!locale || !locale.isActive) throw new BadRequestException("Active locale was not found.");
+    const localizedDefinitions = content.contentType.fields.filter(field => field.isLocalized && field.isActive);
+    const split = this.validateAndSplitFields(dto.fields ?? {}, localizedDefinitions, true);
+    const shared = asRecord(content.data);
+    const created = await this.prisma.$transaction(async tx => {
+      const translation = await tx.contentTranslation.create({
+        data: {
+          contentId, localeId: locale.id, title: dto.title, slug: dto.slug,
+          excerpt: dto.excerpt, seoTitle: dto.seoTitle, seoDescription: dto.seoDescription,
+          data: asJson(split.localizedData),
+        },
+      });
+      await tx.contentRevision.create({
+        data: { translationId: translation.id, version: 1, createdById: user.id,
+          changeNote: "Translation created", snapshot: this.snapshot(translation, shared) },
+      });
+      await tx.auditLog.create({
+        data: { userId: user.id, action: "cms.translation.created", entity: "ContentTranslation",
+          entityId: translation.id, metadata: asJson({ contentId, localeCode: locale.code }) },
+      });
+      return translation;
+    });
+    return this.getContent(created.contentId);
+  }
+
+  async updateTranslation(contentId: string, localeCode: string, dto: UpdateContentTranslationDto, user: AuthenticatedUser) {
+    const tr = await this.findTranslation(contentId, localeCode);
+    if (tr.status === CmsContentStatus.ARCHIVED) throw new BadRequestException("Restore the archived translation before editing.");
+    if (![dto.title, dto.slug, dto.excerpt, dto.seoTitle, dto.seoDescription, dto.fields].some(value => value !== undefined)) {
+      throw new BadRequestException("No changes were provided.");
+    }
+    const currentData = asRecord(tr.data);
+    const nextData = dto.fields === undefined ? currentData
+      : this.mergeFieldPatch(currentData, dto.fields, tr.content.contentType.fields.filter(field => field.isLocalized && field.isActive));
+    const next = {
+      ...tr, title: dto.title ?? tr.title, slug: dto.slug ?? tr.slug,
+      excerpt: dto.excerpt !== undefined ? dto.excerpt : tr.excerpt,
+      seoTitle: dto.seoTitle !== undefined ? dto.seoTitle : tr.seoTitle,
+      seoDescription: dto.seoDescription !== undefined ? dto.seoDescription : tr.seoDescription,
+      data: asJson(nextData),
+    };
+    const version = tr.version + 1;
+    await this.prisma.$transaction(async tx => {
+      const updated = await tx.contentTranslation.update({
+        where: { id: tr.id },
+        data: {
+          title: next.title, slug: next.slug, excerpt: next.excerpt,
+          seoTitle: next.seoTitle, seoDescription: next.seoDescription,
+          data: asJson(nextData), version,
+          ...(tr.status === CmsContentStatus.PUBLISHED || tr.status === CmsContentStatus.IN_REVIEW || tr.status === CmsContentStatus.SCHEDULED
+            ? { status: CmsContentStatus.DRAFT, scheduledAt: null } : {}),
+        },
+      });
+      await tx.contentRevision.create({
+        data: { translationId: tr.id, version, createdById: user.id, changeNote: "Content edited",
+          snapshot: this.snapshot(updated, tr.content.data) },
+      });
+      await tx.auditLog.create({
+        data: { userId: user.id, action: "cms.content.updated", entity: "ContentTranslation", entityId: tr.id,
+          metadata: asJson({ contentId, localeCode, version }) },
+      });
+    });
+    return this.getContent(contentId);
+  }
+
+  async updateSharedFields(contentId: string, dto: UpdateSharedFieldsDto, user: AuthenticatedUser) {
+    const item = await this.prisma.content.findUnique({
+      where: { id: contentId },
+      include: { contentType: { include: { fields: { where: { isActive: true } } } }, translations: true },
+    });
+    if (!item) throw new NotFoundException("Content not found.");
+    const defs = item.contentType.fields.filter(field => !field.isLocalized);
+    const patch = this.validateAndSplitFields(dto.fields, defs, false).sharedData;
+    if (!Object.keys(patch).length) throw new BadRequestException("No shared fields were provided.");
+    const nextData = { ...asRecord(item.data), ...patch };
+    this.assertRequiredFields(nextData, defs);
+    await this.prisma.$transaction(async tx => {
+      await tx.content.update({ where: { id: contentId }, data: { data: asJson(nextData) } });
+      for (const translation of item.translations) {
+        const version = translation.version + 1;
+        const updated = await tx.contentTranslation.update({ where: { id: translation.id }, data: { version } });
+        await tx.contentRevision.create({
+          data: { translationId: translation.id, version, createdById: user.id,
+            changeNote: "Shared fields updated", snapshot: this.snapshot(updated, nextData) },
+        });
+      }
+      await tx.auditLog.create({
+        data: { userId: user.id, action: "cms.content.shared_fields_updated", entity: "Content", entityId: contentId,
+          metadata: asJson({ changedKeys: Object.keys(patch) }) },
+      });
+    });
+    return this.getContent(contentId);
+  }
+
+  async submitForReview(id: string, locale: string, user: AuthenticatedUser) {
+    return this.transition(id, locale, CmsContentStatus.IN_REVIEW, [CmsContentStatus.DRAFT], user, "Submitted for review");
+  }
+  async publish(id: string, locale: string, user: AuthenticatedUser) {
+    return this.transition(id, locale, CmsContentStatus.PUBLISHED, [CmsContentStatus.IN_REVIEW], user, "Published");
+  }
+  async reject(id: string, locale: string, dto: RejectContentDto, user: AuthenticatedUser) {
+    return this.transition(id, locale, CmsContentStatus.DRAFT, [CmsContentStatus.IN_REVIEW], user, "Rejected: " + dto.reason, dto.reason);
+  }
+  async schedule(id: string, locale: string, dto: ScheduleContentDto, user: AuthenticatedUser) {
+    const scheduledAt = new Date(dto.scheduledAt);
+    if (Number.isNaN(scheduledAt.getTime()) || scheduledAt.getTime() <= Date.now()) {
+      throw new BadRequestException("scheduledAt must be a future date and time.");
+    }
+    return this.transition(id, locale, CmsContentStatus.SCHEDULED, [CmsContentStatus.IN_REVIEW], user, "Publication scheduled", undefined, scheduledAt);
+  }
+  async unpublish(id: string, locale: string, user: AuthenticatedUser) {
+    const tr = await this.findTranslation(id, locale);
+    if (!tr.publishedSnapshot) throw new BadRequestException("This translation has no published version.");
+    return this.transition(id, locale, CmsContentStatus.DRAFT,
+      [CmsContentStatus.PUBLISHED, CmsContentStatus.DRAFT, CmsContentStatus.IN_REVIEW, CmsContentStatus.SCHEDULED],
+      user, "Unpublished", undefined, undefined, true);
+  }
+  async archive(id: string, locale: string, user: AuthenticatedUser) {
+    return this.transition(id, locale, CmsContentStatus.ARCHIVED,
+      [CmsContentStatus.DRAFT, CmsContentStatus.IN_REVIEW, CmsContentStatus.SCHEDULED, CmsContentStatus.PUBLISHED],
+      user, "Archived", undefined, undefined, true);
+  }
+  async restoreToDraft(id: string, locale: string, user: AuthenticatedUser) {
+    return this.transition(id, locale, CmsContentStatus.DRAFT, [CmsContentStatus.ARCHIVED], user, "Restored to draft", undefined, undefined, true);
+  }
+
+  async listRevisions(contentId: string, localeCode: string) {
+    const tr = await this.findTranslation(contentId, localeCode);
+    return this.prisma.contentRevision.findMany({ where: { translationId: tr.id }, orderBy: { version: "desc" } });
+  }
+
+  async restoreRevision(contentId: string, localeCode: string, revisionId: string, user: AuthenticatedUser) {
+    const tr = await this.findTranslation(contentId, localeCode);
+    const rev = await this.prisma.contentRevision.findFirst({ where: { id: revisionId, translationId: tr.id } });
+    if (!rev) throw new NotFoundException("Revision not found for this translation.");
+    const snapshot = asRecord(rev.snapshot);
+    if (typeof snapshot.title !== "string" || typeof snapshot.slug !== "string" || !isRecord(snapshot.data) || !isRecord(snapshot.sharedData)) {
+      throw new BadRequestException("Revision snapshot is incompatible with the current content model.");
+    }
+    const version = tr.version + 1;
+    await this.prisma.$transaction(async tx => {
+      await tx.content.update({ where: { id: contentId }, data: { data: asJson(snapshot.sharedData) } });
+      const updated = await tx.contentTranslation.update({
+        where: { id: tr.id },
+        data: {
+          title: snapshot.title as string, slug: snapshot.slug as string,
+          excerpt: typeof snapshot.excerpt === "string" ? snapshot.excerpt : null,
+          seoTitle: typeof snapshot.seoTitle === "string" ? snapshot.seoTitle : null,
+          seoDescription: typeof snapshot.seoDescription === "string" ? snapshot.seoDescription : null,
+          data: asJson(snapshot.data), status: CmsContentStatus.DRAFT, scheduledAt: null, version,
+        },
+      });
+      await tx.contentRevision.create({
+        data: { translationId: tr.id, version, createdById: user.id, changeNote: "Restored revision " + rev.version,
+          snapshot: this.snapshot(updated, snapshot.sharedData) },
+      });
+      await tx.auditLog.create({
+        data: { userId: user.id, action: "cms.content.revision_restored", entity: "ContentTranslation", entityId: tr.id,
+          metadata: asJson({ contentId, localeCode, sourceVersion: rev.version }) },
+      });
+    });
+    return this.getContent(contentId);
+  }
+
+  async listPublicContent(typeKey: string, localeCode: string, query: ListPublicContentQuery) {
+    const page = Number(query.page) || 1;
+    const limit = Math.min(100, Number(query.limit) || 20);
+    const where: Prisma.ContentTranslationWhereInput = {
+      locale: { is: { code: localeCode, isActive: true } },
+      content: { is: { contentType: { is: { key: typeKey, isActive: true } } } },
+      publishedSlug: { not: null },
+    };
+    const [items, total] = await Promise.all([
+      this.prisma.contentTranslation.findMany({
+        where, skip: (page - 1) * limit, take: limit, orderBy: { publishedAt: "desc" },
+        include: { locale: { select: { code: true, name: true, direction: true } },
+          content: { select: { data: true, contentType: { select: { key: true, name: true } } } } },
+      }),
+      this.prisma.contentTranslation.count({ where }),
+    ]);
+    return { data: items.map(item => this.toPublicView(item)), pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+  }
+
+  async getPublicContent(typeKey: string, localeCode: string, slug: string) {
+    const item = await this.prisma.contentTranslation.findFirst({
+      where: {
+        publishedSlug: slug, locale: { is: { code: localeCode, isActive: true } },
+        content: { is: { contentType: { is: { key: typeKey, isActive: true } } } },
+      },
+      include: { locale: { select: { code: true, name: true, direction: true } },
+        content: { select: { data: true, contentType: { select: { key: true, name: true } } } } },
+    });
+    if (!item) throw new NotFoundException("Published content was not found.");
+    return this.toPublicView(item);
+  }
+
+  async publishDueContents(): Promise<number> {
+    const now = new Date();
+    const due = await this.prisma.contentTranslation.findMany({
+      where: { status: CmsContentStatus.SCHEDULED, scheduledAt: { lte: now } },
+      take: 100, orderBy: { scheduledAt: "asc" }, include: { content: true },
+    });
+    let count = 0;
+    for (const item of due) {
+      try {
+        const didPublish = await this.prisma.$transaction(async tx => {
+          const claimed = await tx.contentTranslation.updateMany({
+            where: { id: item.id, status: CmsContentStatus.SCHEDULED, scheduledAt: { lte: now } },
+            data: { status: CmsContentStatus.PUBLISHED, publishedAt: now, publishedSlug: item.slug, scheduledAt: null, version: { increment: 1 } },
+          });
+          if (claimed.count !== 1) return false;
+          const updated = await tx.contentTranslation.findUniqueOrThrow({ where: { id: item.id } });
+          const snapshot = this.snapshot(updated, item.content.data);
+          await tx.contentTranslation.update({ where: { id: item.id }, data: { publishedSnapshot: snapshot } });
+          await tx.contentRevision.create({
+            data: { translationId: item.id, version: updated.version, changeNote: "Automatically published on schedule", snapshot },
+          });
+          await tx.auditLog.create({
+            data: { action: "cms.content.auto_published", entity: "ContentTranslation", entityId: item.id,
+              metadata: asJson({ scheduledAt: item.scheduledAt?.toISOString() }) },
+          });
+          return true;
+        });
+        if (didPublish) count++;
+      } catch (error) {
+        this.logger.error("Scheduled publishing failed for " + item.id, error instanceof Error ? error.stack : String(error));
+      }
+    }
+    return count;
+  }
+
+  private async transition(
+    contentId: string, localeCode: string, target: CmsContentStatus, allowed: CmsContentStatus[],
+    user: AuthenticatedUser, note: string, reason?: string, scheduledAt?: Date, clearPublication = false,
+  ) {
+    const tr = await this.findTranslation(contentId, localeCode);
+    if (!allowed.includes(tr.status)) throw new BadRequestException("Invalid workflow transition from " + tr.status + " to " + target + ".");
+    if (target === CmsContentStatus.PUBLISHED && !tr.content.contentType.isActive) {
+      throw new BadRequestException("Content under an inactive content type cannot be published.");
+    }
+    const version = tr.version + 1;
+    await this.prisma.$transaction(async tx => {
+      const update: Prisma.ContentTranslationUpdateInput = { status: target, version };
+      if (target === CmsContentStatus.PUBLISHED) {
+        update.publishedAt = new Date(); update.scheduledAt = null; update.publishedSlug = tr.slug;
+        update.publishedSnapshot = this.snapshot(tr, tr.content.data);
+      } else if (target === CmsContentStatus.SCHEDULED) {
+        update.scheduledAt = scheduledAt ?? null;
+      } else {
+        update.scheduledAt = null;
+        if (target !== CmsContentStatus.DRAFT || clearPublication) update.publishedAt = null;
+      }
+      if (clearPublication) { update.publishedSlug = null; update.publishedSnapshot = Prisma.DbNull; }
+      const updated = await tx.contentTranslation.update({ where: { id: tr.id }, data: update });
+      await tx.contentRevision.create({ data: {
+        translationId: tr.id, version, createdById: user.id, changeNote: note,
+        snapshot: this.snapshot(updated, tr.content.data),
+      } });
+      await tx.auditLog.create({ data: {
+        userId: user.id, action: "cms.workflow." + target.toLowerCase(),
+        entity: "ContentTranslation", entityId: tr.id,
+        metadata: asJson({ contentId, localeCode, from: tr.status, to: target, reason }),
+      } });
+    });
+    return this.getContent(contentId);
+  }
+
+  private async findTranslation(contentId: string, localeCode: string): Promise<TranslationRecord> {
+    const tr = await this.prisma.contentTranslation.findFirst({
+      where: { contentId, locale: { is: { code: localeCode } } },
+      include: { content: { include: { contentType: { include: { fields: true } } } } },
+    });
+    if (!tr) throw new NotFoundException("Translation was not found for this content and locale.");
+    return tr as unknown as TranslationRecord;
+  }
+
+  private snapshot(source: {
+    title: string; slug: string; excerpt: string | null; seoTitle: string | null;
+    seoDescription: string | null; data: unknown;
+  }, sharedData: unknown): Prisma.InputJsonValue {
+    return asJson({
+      title: source.title, slug: source.slug, excerpt: source.excerpt,
+      seoTitle: source.seoTitle, seoDescription: source.seoDescription,
+      data: asRecord(source.data), sharedData: asRecord(sharedData),
+    });
+  }
+
+  private toPublicView(item: {
+    id: string; locale: { code: string; name: string; direction: LocaleDirection };
+    publishedSlug: string | null; publishedAt: Date | null; publishedSnapshot: Prisma.JsonValue | null;
+    content: { data: Prisma.JsonValue; contentType: { key: string; name: string } };
+  }) {
+    const snapshot = asRecord(item.publishedSnapshot);
+    return {
+      id: item.id, type: item.content.contentType, locale: item.locale, title: snapshot.title,
+      slug: item.publishedSlug, excerpt: snapshot.excerpt ?? null,
+      seoTitle: snapshot.seoTitle ?? null, seoDescription: snapshot.seoDescription ?? null,
+      fields: { ...asRecord(snapshot.sharedData), ...asRecord(snapshot.data) }, publishedAt: item.publishedAt,
+    };
+  }
+
+  private mergeFieldPatch(current: Record<string, unknown>, patch: Record<string, unknown>, definitions: FieldDefinition[]) {
+    const validated = this.validateAndSplitFields(patch, definitions, false).localizedData;
+    const merged = { ...current, ...validated };
+    this.assertRequiredFields(merged, definitions);
+    return merged;
+  }
+
+  private validateAndSplitFields(input: Record<string, unknown>, definitions: FieldDefinition[], requireComplete: boolean) {
+    if (!isRecord(input)) throw new BadRequestException("fields must be a JSON object.");
+    const active = definitions.filter(field => field.isActive);
+    const allowed = new Map(active.map(field => [field.key, field]));
+    for (const key of Object.keys(input)) {
+      if (!allowed.has(key)) throw new BadRequestException("Unknown or inactive content field: " + key);
+    }
+    this.assertRequiredFields(input, active, requireComplete);
+    const localizedData: Record<string, unknown> = {};
+    const sharedData: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(input)) {
+      const field = allowed.get(key);
+      if (!field) continue;
+      if (value !== null && value !== undefined && value !== "") this.validateFieldValue(field, value);
+      if (field.isLocalized) localizedData[key] = value;
+      else sharedData[key] = value;
+    }
+    return { localizedData, sharedData };
+  }
+
+  private assertRequiredFields(values: Record<string, unknown>, definitions: FieldDefinition[], enforce = true) {
+    if (!enforce) return;
+    for (const field of definitions) {
+      if (field.isActive && field.isRequired && isMissing(values[field.key])) {
+        throw new BadRequestException("Required field is missing: " + field.key);
+      }
+    }
+  }
+
+  private validateFieldValue(field: FieldDefinition, value: unknown) {
+    const config = asRecord(field.config);
+    const wrong = (): never => { throw new BadRequestException("Invalid value for field " + field.key + " (" + field.type + ")."); };
+    const stringTypes: CmsFieldType[] = [CmsFieldType.TEXT, CmsFieldType.TEXTAREA, CmsFieldType.RICH_TEXT, CmsFieldType.MARKDOWN, CmsFieldType.EMAIL, CmsFieldType.URL];
+    if (stringTypes.includes(field.type)) {
+      if (typeof value !== "string") return wrong();
+      if (typeof config.maxLength === "number" && value.length > config.maxLength) return wrong();
+      if (field.type === CmsFieldType.EMAIL && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return wrong();
+      if (field.type === CmsFieldType.URL) {
+        try { const url = new URL(value); if (!["http:", "https:"].includes(url.protocol)) return wrong(); }
+        catch { return wrong(); }
+      }
+      return;
+    }
+    if (field.type === CmsFieldType.INTEGER) { if (typeof value !== "number" || !Number.isInteger(value)) return wrong(); return; }
+    if (field.type === CmsFieldType.DECIMAL) { if (typeof value !== "number" || !Number.isFinite(value)) return wrong(); return; }
+    if (field.type === CmsFieldType.BOOLEAN) { if (typeof value !== "boolean") return wrong(); return; }
+    if (field.type === CmsFieldType.DATE || field.type === CmsFieldType.DATETIME) {
+      if (typeof value !== "string" || Number.isNaN(Date.parse(value))) return wrong();
+      if (field.type === CmsFieldType.DATE && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return wrong();
+      return;
+    }
+    if (field.type === CmsFieldType.SELECT || field.type === CmsFieldType.MULTISELECT) {
+      const options = Array.isArray(config.options) ? config.options.map(option =>
+        typeof option === "string" ? option : (isRecord(option) && typeof option.value === "string" ? option.value : ""),
+      ).filter(Boolean) : [];
+      if (field.type === CmsFieldType.SELECT && typeof value !== "string") return wrong();
+      if (field.type === CmsFieldType.MULTISELECT && (!Array.isArray(value) || !value.every(item => typeof item === "string"))) return wrong();
+      const selected = field.type === CmsFieldType.SELECT ? [value] : value as unknown[];
+      if (options.length && selected.some(item => !options.includes(String(item)))) return wrong();
+      return;
+    }
+    if (field.type === CmsFieldType.JSON) { if (isRecord(value) || Array.isArray(value)) return; return wrong(); }
+    return wrong();
+  }
+}
