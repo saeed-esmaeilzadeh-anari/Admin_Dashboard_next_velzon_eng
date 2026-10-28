@@ -1,4 +1,7 @@
 name: Backend CI
+concurrency:
+  group: cms-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 on:
   push:
     branches: [main, "feat/**"]
