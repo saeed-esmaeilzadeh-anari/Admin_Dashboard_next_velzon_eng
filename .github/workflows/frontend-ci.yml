@@ -1,4 +1,5 @@
 name: Frontend CMS CI
+# Keeps the CMS branch type-check and production build reproducible.
 on:
   push:
     branches: [main, "feat/**"]
