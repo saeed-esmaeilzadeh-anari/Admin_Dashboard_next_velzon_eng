@@ -3,7 +3,7 @@ import { CmsContentStatus, CmsFieldType, LocaleDirection, Prisma } from "@prisma
 import { AuthenticatedUser } from "../common/decorators/current-user.decorator";
 import { PrismaService } from "../prisma/prisma.service";
 import {
-  CreateContentDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto,
+  CreateContentDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto, CreateTranslationDto,
   ListCmsContentsQuery, ListPublicContentQuery, RejectContentDto, ScheduleContentDto,
   UpdateContentTranslationDto, UpdateContentTypeDto, UpdateContentTypeFieldDto,
   UpdateLocaleDto, UpdateSharedFieldsDto,
