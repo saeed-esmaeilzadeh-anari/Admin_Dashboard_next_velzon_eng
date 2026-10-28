@@ -1,6 +1,7 @@
 //Include Both Helper File with needed methods
 import { getFirebaseBackend } from "../../../helpers/firebase_helper";
 import { postJwtLogin } from "../../../helpers/fakebackend_helper";
+import backendApi from "../../../helpers/backendApi";
 
 import Cookies from "js-cookie";
 
@@ -21,20 +22,23 @@ export const loginUser = (user: any, router: any) => async (dispatch: any) => {
     if (defaultAuth === "firebase") {
       const fireBaseBackend: any = getFirebaseBackend();
       response = fireBaseBackend.loginUser(user.email, user.password);
+    } else if (defaultAuth === "backend") {
+      response = backendApi.post("/auth/login", { email: user.email, password: user.password })
+        .then(result => result.data);
     } else {
-      // JWT or fake auth use the same JWT login endpoint (mocked by fake backend)
-      response = postJwtLogin({
-        email: user.email,
-        password: user.password,
-      });
+      response = postJwtLogin({ email: user.email, password: user.password });
     }
 
-    const data = await response;
+    const rawData = await response;
+    const data = defaultAuth === "backend" && rawData?.user
+      ? { ...rawData, ...rawData.user, user: rawData.user, accessToken: rawData.accessToken }
+      : rawData;
 
     if (data) {
-      // Store in cookie for persistence
       Cookies.set("authUser", JSON.stringify(data), { expires: 1 }); // 1 day
-      // Dispatch login success and redirect
+      if (defaultAuth === "backend" && typeof window !== "undefined") {
+        window.sessionStorage.setItem("authUser", JSON.stringify(data));
+      }
       dispatch(loginSuccess(data));
       router.push("/dashboard");
     }
@@ -46,6 +50,7 @@ export const loginUser = (user: any, router: any) => async (dispatch: any) => {
 export const logoutUser = () => async (dispatch: any) => {
   try {
     Cookies.remove("authUser");
+    if (typeof window !== "undefined") window.sessionStorage.removeItem("authUser");
     let fireBaseBackend: any = getFirebaseBackend();
     if (process.env.NEXT_PUBLIC_DEFAULTAUTH === "firebase") {
       const response = fireBaseBackend.logout;
