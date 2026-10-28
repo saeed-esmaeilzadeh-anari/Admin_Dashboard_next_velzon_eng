@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Query, UseGuards } 
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { Role } from "@prisma/client";
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
@@ -16,7 +16,7 @@ class ListUsersQuery {
 class UpdateUserDto {
   @IsOptional() @IsEnum(Role) role?: Role;
   @IsOptional() @IsBoolean() isActive?: boolean;
-  @IsOptional() @IsString() @Min(2) @MaxLength(100) name?: string;
+  @IsOptional() @IsString() @MinLength(2) @MaxLength(100) name?: string;
 }
 
 @ApiTags("users")

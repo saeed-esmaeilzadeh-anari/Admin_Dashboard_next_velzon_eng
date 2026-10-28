@@ -1,6 +1,6 @@
 import { Type } from "class-transformer";
 import {
-  IsArray, IsDateString, IsEmail, IsEnum, IsInt, IsNumber, IsOptional,
+  ArrayMinSize, IsArray, IsDateString, IsEmail, IsEnum, IsInt, IsNumber, IsOptional,
   IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateNested,
 } from "class-validator";
 import {
@@ -80,7 +80,7 @@ export class CreateOrderItemDto {
 }
 export class CreateOrderDto {
   @IsUUID() customerId!: string;
-  @IsArray() @Min(1) @ValidateNested({ each: true }) @Type(() => CreateOrderItemDto)
+  @IsArray() @ArrayMinSize(1) @ValidateNested({ each: true }) @Type(() => CreateOrderItemDto)
   items!: CreateOrderItemDto[];
   @Type(() => Number) @IsOptional() @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) tax = 0;
 }

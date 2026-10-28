@@ -3,6 +3,7 @@ import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import helmet from "helmet";
+import { PrismaExceptionFilter } from "./prisma-exception.filter";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
@@ -11,6 +12,7 @@ async function bootstrap() {
     .split(",").map((origin) => origin.trim()).filter(Boolean);
 
   app.use(helmet());
+  app.useGlobalFilters(new PrismaExceptionFilter());
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin || allowedOrigins.includes(origin)) return callback(null, true);

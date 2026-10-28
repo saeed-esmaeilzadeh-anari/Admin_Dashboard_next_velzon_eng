@@ -337,7 +337,7 @@ export class BusinessService {
       const current = await tx.order.findUnique({ where: { id }, include: { items: true } });
       if (!current) throw new NotFoundException("Order not found.");
       if (current.status === status) return current;
-      if ([OrderStatus.CANCELLED, OrderStatus.REFUNDED].includes(current.status)) {
+      if (current.status === OrderStatus.CANCELLED || current.status === OrderStatus.REFUNDED) {
         throw new BadRequestException("A cancelled or refunded order cannot be changed.");
       }
       if (status === OrderStatus.CANCELLED) {
