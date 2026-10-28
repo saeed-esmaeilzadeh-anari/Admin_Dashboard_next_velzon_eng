@@ -7,7 +7,7 @@ import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { CmsService } from "./cms.service";
 import {
-  CreateContentDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto,
+  CreateContentDto, CreateTranslationDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto,
   ListCmsContentsQuery, RejectContentDto, ScheduleContentDto, UpdateContentTranslationDto,
   UpdateContentTypeDto, UpdateContentTypeFieldDto, UpdateLocaleDto, UpdateSharedFieldsDto,
 } from "./dto/cms.dto";
@@ -31,7 +31,7 @@ export class CmsController {
   @Get("contents") list(@Query() q: ListCmsContentsQuery) { return this.cms.listContents(q); }
   @Get("contents/:id") get(@Param("id", new ParseUUIDPipe()) id: string) { return this.cms.getContent(id); }
   @Post("contents") @Roles(Role.ADMIN, Role.MANAGER) create(@Body() dto: CreateContentDto, @CurrentUser() user: AuthenticatedUser) { return this.cms.createContent(dto, user); }
-  @Patch("contents/:id/translations/:localeCode") @Roles(Role.ADMIN, Role.MANAGER) updateTranslation(@Param("id", new ParseUUIDPipe()) id: string, @Param("localeCode") locale: string, @Body() dto: UpdateContentTranslationDto, @CurrentUser() user: AuthenticatedUser) { return this.cms.updateTranslation(id, locale, dto, user); }
+  @Post("contents/:id/translations") @Roles(Role.ADMIN, Role.MANAGER) createTranslation(@Param("id", new ParseUUIDPipe()) id: string, @Body() dto: CreateTranslationDto, @CurrentUser() user: AuthenticatedUser) { return this.cms.createTranslation(id, dto, user); }\n  @Patch("contents/:id/translations/:localeCode") @Roles(Role.ADMIN, Role.MANAGER) updateTranslation(@Param("id", new ParseUUIDPipe()) id: string, @Param("localeCode") locale: string, @Body() dto: UpdateContentTranslationDto, @CurrentUser() user: AuthenticatedUser) { return this.cms.updateTranslation(id, locale, dto, user); }
   @Patch("contents/:id/shared-fields") @Roles(Role.ADMIN, Role.MANAGER) updateShared(@Param("id", new ParseUUIDPipe()) id: string, @Body() dto: UpdateSharedFieldsDto, @CurrentUser() user: AuthenticatedUser) { return this.cms.updateSharedFields(id, dto, user); }
 
   @Post("contents/:id/translations/:localeCode/submit") @Roles(Role.ADMIN, Role.MANAGER) submit(@Param("id", new ParseUUIDPipe()) id: string, @Param("localeCode") locale: string, @CurrentUser() user: AuthenticatedUser) { return this.cms.submitForReview(id, locale, user); }
