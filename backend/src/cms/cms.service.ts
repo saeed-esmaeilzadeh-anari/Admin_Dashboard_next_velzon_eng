@@ -251,6 +251,44 @@ export class CmsService {
     return this.getContent(created.id);
   }
 
+  async createTranslation(contentId: string, dto: CreateTranslationDto, user: AuthenticatedUser) {
+    const content = await this.prisma.content.findUnique({
+      where: { id: contentId },
+      include: {
+        contentType: { include: { fields: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } } },
+        translations: { include: { locale: true } },
+      },
+    });
+    if (!content) throw new NotFoundException("Content not found.");
+    if (content.translations.some(item => item.locale.code === dto.localeCode)) {
+      throw new BadRequestException("A translation already exists for this locale.");
+    }
+    const locale = await this.prisma.locale.findUnique({ where: { code: dto.localeCode } });
+    if (!locale || !locale.isActive) throw new BadRequestException("Active locale was not found.");
+    const localizedDefinitions = content.contentType.fields.filter(field => field.isLocalized && field.isActive);
+    const split = this.validateAndSplitFields(dto.fields ?? {}, localizedDefinitions, true);
+    const shared = asRecord(content.data);
+    const created = await this.prisma.$transaction(async tx => {
+      const translation = await tx.contentTranslation.create({
+        data: {
+          contentId, localeId: locale.id, title: dto.title, slug: dto.slug,
+          excerpt: dto.excerpt, seoTitle: dto.seoTitle, seoDescription: dto.seoDescription,
+          data: asJson(split.localizedData),
+        },
+      });
+      await tx.contentRevision.create({
+        data: { translationId: translation.id, version: 1, createdById: user.id,
+          changeNote: "Translation created", snapshot: this.snapshot(translation, shared) },
+      });
+      await tx.auditLog.create({
+        data: { userId: user.id, action: "cms.translation.created", entity: "ContentTranslation",
+          entityId: translation.id, metadata: asJson({ contentId, localeCode: locale.code }) },
+      });
+      return translation;
+    });
+    return this.getContent(created.contentId);
+  }
+
   async updateTranslation(contentId: string, localeCode: string, dto: UpdateContentTranslationDto, user: AuthenticatedUser) {
     const tr = await this.findTranslation(contentId, localeCode);
     if (tr.status === CmsContentStatus.ARCHIVED) throw new BadRequestException("Restore the archived translation before editing.");
