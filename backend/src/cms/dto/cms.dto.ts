@@ -67,6 +67,15 @@ export class CreateContentDto {
   @IsOptional() @IsString() @MaxLength(1000) seoDescription?: string;
   @IsOptional() @IsObject() fields?: Record<string, unknown>;
 }
+export class CreateTranslationDto {
+  @IsString() @Matches(localeCodePattern) localeCode!: string;
+  @IsString() @Length(1, 300) title!: string;
+  @IsString() @Length(1, 180) @Matches(slugPattern) slug!: string;
+  @IsOptional() @IsString() @MaxLength(2000) excerpt?: string;
+  @IsOptional() @IsString() @MaxLength(300) seoTitle?: string;
+  @IsOptional() @IsString() @MaxLength(1000) seoDescription?: string;
+  @IsOptional() @IsObject() fields?: Record<string, unknown>;
+}
 export class UpdateContentTranslationDto {
   @IsOptional() @IsString() @Length(1, 300) title?: string;
   @IsOptional() @IsString() @Length(1, 180) @Matches(slugPattern) slug?: string;
