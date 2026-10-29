@@ -21,7 +21,7 @@ const nextConfig = {
   i18n: {
     locales: ["fa", "en"],
     defaultLocale: "fa",
-    localeDetection: true,
+    localeDetection: false,
   },
   webpack: config => {
     // Handle asset files like fonts and images
