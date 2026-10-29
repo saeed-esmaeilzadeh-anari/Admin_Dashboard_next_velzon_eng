@@ -79,7 +79,6 @@ export default async function PublishedCmsPage({params}:RouteProps){
     return next;
   });
   const base=process.env.NEXT_PUBLIC_BACKEND_API_URL??"http://localhost:3001/api/v1";
-  const mediaOrigin=new URL(base).origin;
   const assets=[...mediaMap.values()].map(asset=>({...asset,url:absoluteMediaUrl(asset.url)}));
   return <main style={{minHeight:"100vh",padding:"clamp(16px,4vw,48px)",background:"var(--vz-body-bg, #f3f3f9)"}}>
     <PagePreview title={content.title} excerpt={content.excerpt} fields={fields} mediaAssets={assets} direction={content.locale.direction}/>
