@@ -689,5 +689,6 @@
   "Old URLs and redirects": "آدرس‌های قدیمی و تغییر مسیرها",
   "Move structured content as JSON": "انتقال محتوای ساختاریافته با JSON",
   "Configure role-level access": "پیکربندی دسترسی نقش‌ها",
-  "CMS overview is unavailable.": "نمای کلی CMS در دسترس نیست."
+  "CMS overview is unavailable.": "نمای کلی CMS در دسترس نیست.",
+  "Markdown or plain text; HTML tags are displayed as text for safety": "متن Markdown یا متن ساده؛ برچسب‌های HTML برای امنیت به‌صورت متن نمایش داده می‌شوند"
 }

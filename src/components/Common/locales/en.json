@@ -689,5 +689,6 @@
   "Old URLs and redirects": "Old URLs and redirects",
   "Move structured content as JSON": "Move structured content as JSON",
   "Configure role-level access": "Configure role-level access",
-  "CMS overview is unavailable.": "CMS overview is unavailable."
+  "CMS overview is unavailable.": "CMS overview is unavailable.",
+  "Markdown or plain text; HTML tags are displayed as text for safety": "Markdown or plain text; HTML tags are displayed as text for safety"
 }
