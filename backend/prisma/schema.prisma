@@ -93,6 +93,7 @@ model User {
   auditLogs       AuditLog[]
   createdCmsContents Content[] @relation("CmsContentCreator")
   cmsRevisions ContentRevision[] @relation("CmsRevisionAuthor")
+  mediaUploads MediaAsset[] @relation("MediaUploader")
 
   @@index([role, isActive])
   @@map("users")
@@ -315,6 +316,9 @@ model Locale {
   fallbackLocale   Locale?               @relation("LocaleFallback", fields: [fallbackLocaleId], references: [id], onDelete: SetNull)
   fallbacks        Locale[]              @relation("LocaleFallback")
   translations     ContentTranslation[]
+  termTranslations CmsTaxonomyTermTranslation[]
+  menus            CmsMenu[]
+  redirects        CmsRedirect[]
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
@@ -366,6 +370,8 @@ model Content {
   createdBy     User?                @relation("CmsContentCreator", fields: [createdById], references: [id], onDelete: SetNull)
   data          Json                 @default("{}")
   translations  ContentTranslation[]
+  taxonomyTerms ContentTaxonomyTerm[]
+  menuItems     CmsMenuItem[]
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 
@@ -420,3 +426,257 @@ model ContentRevision {
   @@index([translationId, createdAt])
   @@map("cms_content_revisions")
 }
+
+
+enum CmsMediaKind {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  OTHER
+}
+
+enum CmsFormSubmissionStatus {
+  NEW
+  REVIEWED
+  RESOLVED
+  SPAM
+}
+
+enum CmsWebhookDeliveryStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model MediaAsset {
+  id             String    @id @default(uuid()) @db.Uuid
+  storageKey     String    @unique
+  originalName   String
+  mimeType       String
+  kind           CmsMediaKind @default(OTHER)
+  sizeBytes      Int
+  url            String
+  altText        String?
+  caption        String?
+  uploadedById   String?   @db.Uuid
+  uploadedBy     User?     @relation("MediaUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([kind, createdAt])
+  @@index([uploadedById, createdAt])
+  @@map("cms_media_assets")
+}
+
+model Taxonomy {
+  id             String        @id @default(uuid()) @db.Uuid
+  key            String        @unique
+  name           String
+  description    String?
+  isHierarchical Boolean       @default(true)
+  isActive       Boolean       @default(true)
+  terms          TaxonomyTerm[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([isActive, name])
+  @@map("cms_taxonomies")
+}
+
+model TaxonomyTerm {
+  id            String                       @id @default(uuid()) @db.Uuid
+  taxonomyId    String                       @db.Uuid
+  taxonomy      Taxonomy                     @relation(fields: [taxonomyId], references: [id], onDelete: Cascade)
+  parentId      String?                      @db.Uuid
+  parent        TaxonomyTerm?                @relation("TermHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children      TaxonomyTerm[]               @relation("TermHierarchy")
+  name          String
+  slug          String
+  description   String?
+  sortOrder     Int                          @default(0)
+  isActive      Boolean                      @default(true)
+  translations  CmsTaxonomyTermTranslation[]
+  contents      ContentTaxonomyTerm[]
+  createdAt     DateTime                     @default(now())
+  updatedAt     DateTime                     @updatedAt
+
+  @@unique([taxonomyId, slug])
+  @@index([taxonomyId, parentId, sortOrder])
+  @@index([isActive, name])
+  @@map("cms_taxonomy_terms")
+}
+
+model CmsTaxonomyTermTranslation {
+  id            String       @id @default(uuid()) @db.Uuid
+  termId        String       @db.Uuid
+  term          TaxonomyTerm @relation(fields: [termId], references: [id], onDelete: Cascade)
+  localeId      String       @db.Uuid
+  locale        Locale       @relation(fields: [localeId], references: [id], onDelete: Cascade)
+  name          String
+  slug          String
+  description   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@unique([termId, localeId])
+  @@unique([localeId, slug])
+  @@index([localeId, name])
+  @@map("cms_taxonomy_term_translations")
+}
+
+model ContentTaxonomyTerm {
+  contentId String       @db.Uuid
+  content   Content      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  termId    String       @db.Uuid
+  term      TaxonomyTerm @relation(fields: [termId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@id([contentId, termId])
+  @@index([termId, contentId])
+  @@map("cms_content_taxonomy_terms")
+}
+
+model CmsMenu {
+  id        String        @id @default(uuid()) @db.Uuid
+  key       String
+  name      String
+  localeId  String        @db.Uuid
+  locale    Locale        @relation(fields: [localeId], references: [id], onDelete: Restrict)
+  isActive  Boolean       @default(true)
+  items     CmsMenuItem[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([key, localeId])
+  @@index([localeId, isActive])
+  @@map("cms_menus")
+}
+
+model CmsMenuItem {
+  id           String        @id @default(uuid()) @db.Uuid
+  menuId       String        @db.Uuid
+  menu         CmsMenu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parentId     String?       @db.Uuid
+  parent       CmsMenuItem?  @relation("MenuItemHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children     CmsMenuItem[] @relation("MenuItemHierarchy")
+  contentId    String?       @db.Uuid
+  content      Content?      @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  label        String
+  url          String?
+  targetBlank  Boolean       @default(false)
+  sortOrder    Int           @default(0)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([menuId, parentId, sortOrder])
+  @@index([contentId])
+  @@map("cms_menu_items")
+}
+
+model CmsRedirect {
+  id           String   @id @default(uuid()) @db.Uuid
+  sourcePath   String
+  destinationPath String
+  statusCode   Int      @default(301)
+  isActive     Boolean  @default(true)
+  hitCount     Int      @default(0)
+  localeId     String?  @db.Uuid
+  locale       Locale?  @relation(fields: [localeId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([sourcePath, localeId])
+  @@index([isActive, sourcePath])
+  @@map("cms_redirects")
+}
+
+model CmsForm {
+  id           String               @id @default(uuid()) @db.Uuid
+  key          String               @unique
+  name         String
+  description  String?
+  schema       Json                 @default("{}")
+  successMessage String?
+  isActive     Boolean              @default(true)
+  submissions  CmsFormSubmission[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([isActive, name])
+  @@map("cms_forms")
+}
+
+model CmsFormSubmission {
+  id          String                    @id @default(uuid()) @db.Uuid
+  formId      String                    @db.Uuid
+  form        CmsForm                   @relation(fields: [formId], references: [id], onDelete: Cascade)
+  data        Json
+  status      CmsFormSubmissionStatus   @default(NEW)
+  internalNote String?
+  processedAt DateTime?
+  createdAt   DateTime                  @default(now())
+
+  @@index([formId, status, createdAt])
+  @@map("cms_form_submissions")
+}
+
+model CmsWebhook {
+  id           String              @id @default(uuid()) @db.Uuid
+  name         String
+  endpointUrl  String
+  secret       String
+  events       String[]
+  isActive     Boolean             @default(true)
+  deliveries   CmsWebhookDelivery[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([isActive, name])
+  @@map("cms_webhooks")
+}
+
+model CmsWebhookDelivery {
+  id                String                  @id @default(uuid()) @db.Uuid
+  webhookId         String                  @db.Uuid
+  webhook           CmsWebhook              @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  eventKey          String
+  payload           Json
+  status            CmsWebhookDeliveryStatus @default(PENDING)
+  attempts          Int                     @default(0)
+  responseStatus    Int?
+  lastError         String?
+  nextAttemptAt     DateTime                @default(now())
+  deliveredAt       DateTime?
+  createdAt         DateTime                @default(now())
+
+  @@index([status, nextAttemptAt])
+  @@index([webhookId, createdAt])
+  @@map("cms_webhook_deliveries")
+}
+
+model CmsPermission {
+  id          String            @id @default(uuid()) @db.Uuid
+  code        String            @unique
+  name        String
+  description String?
+  grants      CmsRolePermission[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("cms_permissions")
+}
+
+model CmsRolePermission {
+  id           String        @id @default(uuid()) @db.Uuid
+  role         Role
+  permissionId String        @db.Uuid
+  permission   CmsPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+
+  @@unique([role, permissionId])
+  @@index([role])
+  @@map("cms_role_permissions")
+}
+
