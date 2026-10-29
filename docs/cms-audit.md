@@ -9,14 +9,14 @@
 | Dynamic content types / fields | Backend API implemented for initial field types | Field schema and validation tests added |
 | Translation records | Backend data model and write API implemented | Editor supports selecting an existing locale or creating a new language version; UI test coverage still needed |
 | Workflow and revision API | Backend methods/routes implemented | CI and integration tests still needed |
-| Public published-content API | Backend API reads published snapshot | HTML sanitization/rendering and end-to-end tests required |
+| Public published-content API | Backend API + public Next.js content route | Published snapshots only; structured preview renders safe text; full browser/E2E verification remains required |
 | Legacy Fake Backend removal | Not complete | New CMS screens use the real API client; existing template business pages still require page-by-page migration after tests |
-| Media Library / storage | Not implemented | Design local/S3 interface and metadata lifecycle |
+| Media Library / storage | Local storage + media API/UI implemented | Use persistent disk or external provider for deployment; media files are not bundled into JSON exports |
 | Taxonomy / menus / redirects / SEO sitemap | Not implemented | Follow after the content UX is connected |
-| Page builder / blocks | Not implemented | Build only after core content editor contract stabilizes |
+| Page builder / blocks | Initial block editor implemented | Hero, text/Markdown, image, gallery, CTA, FAQ and card grid; block design/template extensions remain possible |
 | CMS management UI | Initial real screens implemented | Content list/create/edit, dynamic content-type fields and language administration; responsive/manual QA still needed |
 | Fine-grained RBAC | Not implemented | Replace coarse role checks with permission matrix |
-| Production scheduler | Not solved for serverless | Use durable scheduler or external cron trigger |
+| Production scheduler | In-process worker implemented | Add external durable scheduler/worker for serverless production |
 
 
 ## CI notes
