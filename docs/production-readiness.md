@@ -57,7 +57,7 @@ Use separate POST requests and never expose these calls to browser code.
 
 ## 6. Mandatory smoke tests
 
-- [ ] Test health, login, logout and expired-token behavior.
+- [ ] Test health, login, logout and expired-token behavior; verify 401 clears the stale session and redirects to login, while 403 keeps the session intact.
 - [ ] Create Persian and English pages, add media and builder blocks, preview, submit for review, publish, edit after publication, and confirm the old live snapshot remains until republishing.
 - [ ] Verify both language URLs, SEO metadata, language alternates and sitemap.
 - [ ] Add localized main-menu items and verify RTL/LTR rendering and HTTPS-only external menu links.
