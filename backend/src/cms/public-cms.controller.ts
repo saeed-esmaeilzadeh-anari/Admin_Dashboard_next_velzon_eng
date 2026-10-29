@@ -11,7 +11,11 @@ export class PublicCmsController {
   @ApiOperation({ summary: "Generate an XML sitemap for published CMS translations, including language alternates" })
   sitemap() { return this.cms.publicSitemapXml(); }
 
-  @Get("sitemap")\n  @ApiOperation({ summary: "List published localized URLs and alternates for sitemap generation" })\n  sitemap() { return this.cms.publicSitemap(); }\n\n  @Get(":typeKey/:localeCode")
+  @Get("sitemap")
+  @ApiOperation({ summary: "List published localized URLs and alternates for sitemap generation" })
+  sitemapJson() { return this.cms.publicSitemap(); }
+
+  @Get(":typeKey/:localeCode")
   @ApiOperation({ summary: "List published content for a content type and locale" })
   list(@Param("typeKey") type: string, @Param("localeCode") locale: string, @Query() q: ListPublicContentQuery) { return this.cms.listPublicContent(type, locale, q); }
   @Get(":typeKey/:localeCode/:slug")
