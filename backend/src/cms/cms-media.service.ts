@@ -143,12 +143,56 @@ export class CmsMediaService {
           : { data: { path: [field.key], array_contains: [mediaId] } } as Prisma.ContentTranslationWhereInput,
       ),
     ];
-    const [contentReference, translationReference] = await Promise.all([
+    // Keep assets used by a live publication or a restorable historical revision too.
+    // Otherwise editing a draft and deleting its old media could silently break the public snapshot
+    // or make a revision impossible to restore.
+    const snapshotConditions = (
+      field: { key: string; type: CmsFieldType; isLocalized: boolean },
+      snapshotRoot: "data" | "sharedData",
+      column: "publishedSnapshot" | "snapshot",
+    ): Prisma.ContentTranslationWhereInput | Prisma.ContentRevisionWhereInput => {
+      const path = [snapshotRoot, field.key];
+      return column === "publishedSnapshot"
+        ? field.type === CmsFieldType.MEDIA
+          ? { publishedSnapshot: { path, equals: mediaId } }
+          : { publishedSnapshot: { path, array_contains: [mediaId] } }
+        : field.type === CmsFieldType.MEDIA
+          ? { snapshot: { path, equals: mediaId } }
+          : { snapshot: { path, array_contains: [mediaId] } };
+    };
+    const snapshotBlockConditions = (column: "publishedSnapshot" | "snapshot") => {
+      const make = (path: string[]) => column === "publishedSnapshot"
+        ? { publishedSnapshot: { path, array_contains: [{ mediaId }] } }
+        : { snapshot: { path, array_contains: [{ mediaId }] } };
+      const makeGallery = (path: string[]) => column === "publishedSnapshot"
+        ? { publishedSnapshot: { path, array_contains: [{ mediaIds: [mediaId] }] } }
+        : { snapshot: { path, array_contains: [{ mediaIds: [mediaId] }] } };
+      return [
+        make([column === "publishedSnapshot" ? "data" : "data", "blocks"]),
+        make([column === "publishedSnapshot" ? "sharedData" : "sharedData", "blocks"]),
+        makeGallery(["data", "blocks"]),
+        makeGallery(["sharedData", "blocks"]),
+      ];
+    };
+    const publicationConditions = [
+      ...snapshotBlockConditions("publishedSnapshot"),
+      ...definitions.map(field => snapshotConditions(field, field.isLocalized ? "data" : "sharedData", "publishedSnapshot")),
+    ] as Prisma.ContentTranslationWhereInput[];
+    const revisionConditions = [
+      ...snapshotBlockConditions("snapshot"),
+      ...definitions.map(field => snapshotConditions(field, field.isLocalized ? "data" : "sharedData", "snapshot")),
+    ] as Prisma.ContentRevisionWhereInput[];
+    const [contentReference, translationReference, publicationReference, revisionReference] = await Promise.all([
       this.prisma.content.findFirst({ where: { OR: contentConditions }, select: { id: true } }),
       this.prisma.contentTranslation.findFirst({ where: { OR: translationConditions }, select: { id: true } }),
+      this.prisma.contentTranslation.findFirst({
+        where: { publishedSlug: { not: null }, OR: publicationConditions },
+        select: { id: true },
+      }),
+      this.prisma.contentRevision.findFirst({ where: { OR: revisionConditions }, select: { id: true } }),
     ]);
-    if (contentReference || translationReference) {
-      throw new ConflictException("This media asset is used by CMS content. Remove its references before deleting it.");
+    if (contentReference || translationReference || publicationReference || revisionReference) {
+      throw new ConflictException("This media asset is used by current content, a published snapshot, or a saved revision. Remove its references before deleting it.");
     }
   }
 }
