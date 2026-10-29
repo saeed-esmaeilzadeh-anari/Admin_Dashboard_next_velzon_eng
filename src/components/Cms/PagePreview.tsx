@@ -26,7 +26,7 @@ export default function CmsPagePreview({title,excerpt,fields,mediaAssets=[],dire
 }){
  const mediaById=new Map(mediaAssets.map(asset=>[asset.id,asset]));
  const blocks=Array.isArray(fields.blocks)?fields.blocks.filter(item=>typeof item==="object"&&item!==null) as Block[]:[];
- const renderMedia=(asset:CmsMediaAsset,alt?:string,caption?:string)=><figure className="m-0" key={asset.id}><img src={asset.url} alt={alt||asset.altText||""} style={{maxWidth:"100%",height:"auto",borderRadius:10}}/><figcaption className="text-muted small mt-2">{caption||asset.caption||""}</figcaption></figure>;
+ const renderMedia=(asset:PreviewMedia,alt?:string,caption?:string)=><figure className="m-0" key={asset.id}><img src={asset.url} alt={alt||asset.altText||""} style={{maxWidth:"100%",height:"auto",borderRadius:10}}/><figcaption className="text-muted small mt-2">{caption||asset.caption||""}</figcaption></figure>;
  return <article className="cms-page-preview" dir={direction==="RTL"?"rtl":"ltr"} style={{maxWidth:960,margin:"0 auto",padding:"clamp(16px,3vw,36px)",background:"var(--vz-card-bg, #fff)",borderRadius:16}}>
   {statusLabel&&<div className="mb-3"><span className="badge bg-warning-subtle text-warning-emphasis">{statusLabel}</span></div>}
   <header className="mb-4"><h1 className="display-6 fw-bold mb-3">{title}</h1>{excerpt&&<p className="lead text-muted">{excerpt}</p>}</header>
