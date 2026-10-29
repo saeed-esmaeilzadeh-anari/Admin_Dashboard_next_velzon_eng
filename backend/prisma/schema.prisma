@@ -296,6 +296,9 @@ enum CmsFieldType {
   JSON
   MEDIA
   MEDIA_MULTIPLE
+  RELATION
+  RELATION_MULTIPLE
+  REPEATER
 }
 
 enum CmsContentStatus {
