@@ -3,8 +3,7 @@ import {
 } from "@nestjs/common";
 import { CmsMediaKind, Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
-import { basename, extname, resolve } from "node:path";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { CmsMediaStorageService } from "./cms-media-storage.service";
 import { Express } from "express";
 import { PrismaService } from "../prisma/prisma.service";
 import { ListMediaQueryDto, UpdateMediaAssetDto } from "./cms-management.dto";
@@ -48,7 +47,7 @@ function mediaKind(mime: string): CmsMediaKind {
 @Injectable()
 export class CmsMediaService {
   private readonly logger = new Logger(CmsMediaService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly storage: CmsMediaStorageService) {}
 
   async list(query: ListMediaQueryDto) {
     const page = Math.max(1, Number(query.page) || 1);
@@ -82,25 +81,20 @@ export class CmsMediaService {
     const safeOriginalName = basename(file.originalname || "upload").replace(/[\r\n\u0000-\u001f]/g, "").slice(0, 255) || "upload";
     const extension = MIME_EXTENSIONS[file.mimetype];
     const storageKey = randomUUID() + extension;
-    const root = resolve(process.env.UPLOAD_DIR ?? "uploads", "media");
-    await mkdir(root, { recursive: true });
-    const fullPath = resolve(root, storageKey);
-    if (resolve(fullPath) !== fullPath || basename(fullPath) !== storageKey || extname(fullPath) !== extension) {
-      throw new BadRequestException("Unable to create a safe storage path.");
-    }
-    await writeFile(fullPath, file.buffer, { flag: "wx", mode: 0o640 });
+    const url = this.storage.publicUrl(storageKey);
+    await this.storage.put(storageKey, file.mimetype, file.buffer);
     try {
       return await this.prisma.mediaAsset.create({
         data: {
           storageKey, originalName: safeOriginalName, mimeType: file.mimetype,
           kind: mediaKind(file.mimetype), sizeBytes: file.buffer.length,
-          url: "/uploads/media/" + storageKey, altText: altText?.slice(0, 500), caption: caption?.slice(0, 1000),
+          url, altText: altText?.slice(0, 500), caption: caption?.slice(0, 1000),
           uploadedById: userId,
         },
         include: { uploadedBy: { select: { id: true, name: true, email: true } } },
       });
     } catch (error) {
-      await unlink(fullPath).catch(unlinkError => this.logger.warn("Failed to clean up orphan media upload: " + String(unlinkError)));
+      await this.storage.delete(storageKey).catch(cleanupError => this.logger.warn("Failed to clean up orphan media upload: " + String(cleanupError)));
       throw error;
     }
   }
@@ -118,17 +112,9 @@ export class CmsMediaService {
     const asset = await this.prisma.mediaAsset.findUnique({ where: { id } });
     if (!asset) throw new NotFoundException("Media asset not found.");
     await this.prisma.mediaAsset.delete({ where: { id } });
-    const root = resolve(process.env.UPLOAD_DIR ?? "uploads", "media");
-    const safeKey = basename(asset.storageKey);
-    if (safeKey !== asset.storageKey || !/^[a-f0-9-]{36}\.[a-z0-9]{1,8}$/i.test(safeKey)) {
-      this.logger.error("Refusing to remove a path that is outside the media key format: " + asset.storageKey);
-      return { id, deleted: true, fileRemoved: false };
-    }
-    try { await unlink(resolve(root, safeKey)); return { id, deleted: true, fileRemoved: true }; }
+    try { await this.storage.delete(asset.storageKey); return { id, deleted: true, fileRemoved: true }; }
     catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (code === "ENOENT") return { id, deleted: true, fileRemoved: true };
-      this.logger.error("Media metadata was deleted but the physical file could not be removed: " + String(error));
+      this.logger.error("Media metadata was deleted but the stored object could not be removed: " + String(error));
       return { id, deleted: true, fileRemoved: false };
     }
   }
