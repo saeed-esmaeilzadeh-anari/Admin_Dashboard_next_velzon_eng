@@ -230,7 +230,7 @@ export class CmsService {
         include: {
           contentType: { select: { id: true, key: true, name: true } },
           translations: {
-            where: query.localeCode ? { locale: { is: { code: query.localeCode } } } : undefined,
+            where: Object.keys(translationWhere).length ? translationWhere : undefined,
             include: { locale: { select: { code: true, name: true, direction: true } } },
             orderBy: { updatedAt: "desc" },
           },
