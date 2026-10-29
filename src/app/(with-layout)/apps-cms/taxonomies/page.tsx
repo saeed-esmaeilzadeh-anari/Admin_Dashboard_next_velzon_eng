@@ -118,7 +118,7 @@ export default function CmsTaxonomiesPage() {
       <td><Badge color={term.isActive ? "success" : "secondary"}>{t(term.isActive ? "Active" : "Inactive")}</Badge></td>
       <td><div className="d-flex flex-wrap gap-1"><Button size="sm" color="light" onClick={() => openTranslation(term)}>{t("Translate")}</Button><Button size="sm" outline color={term.isActive ? "warning" : "success"} disabled={busyId===term.id} onClick={() => void toggleTerm(term)}>{t(term.isActive ? "Disable" : "Enable")}</Button></div></td>
     </tr>,
-    ...(termsByParent.get(term.id) ?? []).length ? renderTermRows(termsByParent.get(term.id)!, depth + 1) : []
+    ...(((termsByParent.get(term.id) ?? []).length > 0) ? renderTermRows(termsByParent.get(term.id)!, depth + 1) : [])
   ]);
 
   return <div className="page-content" dir={["fa","ar"].includes(i18n.language.split("-")[0]) ? "rtl" : "ltr"}>
