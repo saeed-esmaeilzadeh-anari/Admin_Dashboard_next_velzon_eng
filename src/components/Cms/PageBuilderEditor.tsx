@@ -114,14 +114,14 @@ export default function PageBuilderEditor({ value, onChange, label = "Page build
               {textInput(index,"heading","Section heading",block.heading)}
               <div className="d-grid gap-2">{list.map((item,itemIndex)=><div key={itemIndex} className="border rounded p-3">
                 <div className="d-flex justify-content-between align-items-center mb-2"><strong>{t(block.type==="faq"?"Question":"Card")} {itemIndex+1}</strong><Button type="button" color="danger" outline size="sm" onClick={()=>patch(index,{[block.type==="faq"?"items":"cards"]:list.filter((_,i)=>i!==itemIndex)})}>{t("Remove")}</Button></div>
-                {block.type==="faq"?<>{textInputForArray("question","Question","Question",item.question)}{textInputForArray("answer","Answer","Answer",item.answer,true)}</>:<>{textInputForArray("title","Card title","Title",item.title)}{textInputForArray("description","Card description","Description",item.description,true)}{textInputForArray("url","Card URL","URL",item.url)}</>}
+                {block.type==="faq"?<>{textInputForArray(itemIndex,"question","Question",item.question)}{textInputForArray(itemIndex,"answer","Answer",item.answer,true)}</>:<>{textInputForArray(itemIndex,"title","Card title",item.title)}{textInputForArray(itemIndex,"description","Card description",item.description,true)}{textInputForArray(itemIndex,"url","Card URL",item.url)}</>}
               </div>)}</div>
               <Button type="button" color="light" size="sm" className="mt-2" onClick={()=>patch(index,{[block.type==="faq"?"items":"cards"]:[...list,block.type==="faq"?{question:"",answer:""}:{title:"",description:"",url:""}]})}><i className="ri-add-line me-1"/>{t(block.type==="faq"?"Add question":"Add card")}</Button>
             </>}
           </div>
         </section>;
-        function textInputForArray(key: string, label: string, _id: string, value: unknown, multiline = false) {
-          return <div className="mb-2" key={key}><Label>{t(label)}</Label><Input type={multiline?"textarea":"text"} rows={multiline?3:undefined} value={asText(value)} maxLength={5000} onChange={event=>patch(index,{[block.type==="faq"?"items":"cards"]:list.map((item,itemIndex)=>itemIndex===list.findIndex(target=>target===item)?{...item,[key]:event.target.value}:item)})}/></div>;
+        function textInputForArray(itemIndex: number, key: string, label: string, value: unknown, multiline = false) {
+          return <div className="mb-2" key={key}><Label>{t(label)}</Label><Input type={multiline?"textarea":"text"} rows={multiline?3:undefined} value={asText(value)} maxLength={5000} onChange={event=>patch(index,{[block.type==="faq"?"items":"cards"]:list.map((item,currentIndex)=>currentIndex===itemIndex?{...item,[key]:event.target.value}:item)})}/></div>;
         }
       })}
     </div>
