@@ -19,7 +19,7 @@ type TranslationRecord = {
   data: Prisma.JsonValue; seoTitle: string | null; seoDescription: string | null;
   status: CmsContentStatus; version: number; publishedAt: Date | null; scheduledAt: Date | null;
   publishedSlug: string | null; publishedSnapshot: Prisma.JsonValue | null;
-  content: { id: string; data: Prisma.JsonValue; contentType: { key: string; name: string; isActive: boolean; fields: FieldDefinition[] } };
+  content: { id: string; data: Prisma.JsonValue; updatedAt: Date; contentType: { key: string; name: string; isActive: boolean; fields: FieldDefinition[] } };
 };
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -476,33 +476,105 @@ export class CmsService {
 
   async restoreRevision(contentId: string, localeCode: string, revisionId: string, user: AuthenticatedUser) {
     const tr = await this.findTranslation(contentId, localeCode);
-    const rev = await this.prisma.contentRevision.findFirst({ where: { id: revisionId, translationId: tr.id } });
-    if (!rev) throw new NotFoundException("Revision not found for this translation.");
-    const snapshot = asRecord(rev.snapshot);
-    if (typeof snapshot.title !== "string" || typeof snapshot.slug !== "string" || !isRecord(snapshot.data) || !isRecord(snapshot.sharedData)) {
+    const revision = await this.prisma.contentRevision.findFirst({ where: { id: revisionId, translationId: tr.id } });
+    if (!revision) throw new NotFoundException("Revision not found for this translation.");
+    const snapshot = asRecord(revision.snapshot);
+    if (typeof snapshot.title !== "string" || typeof snapshot.slug !== "string" ||
+        !isRecord(snapshot.data) || !isRecord(snapshot.sharedData)) {
       throw new BadRequestException("Revision snapshot is incompatible with the current content model.");
     }
-    const version = tr.version + 1;
+
+    const localizedDefinitions = tr.content.contentType.fields.filter(field => field.isLocalized);
+    const sharedDefinitions = tr.content.contentType.fields.filter(field => !field.isLocalized);
+    await this.assertMediaReferences(snapshot.data, localizedDefinitions);
+    await this.assertMediaReferences(snapshot.sharedData, sharedDefinitions);
+
+    const currentContent = await this.prisma.content.findUnique({
+      where: { id: contentId },
+      include: { translations: true },
+    });
+    if (!currentContent) throw new NotFoundException("Content not found.");
+    const currentTarget = currentContent.translations.find(translation => translation.id === tr.id);
+    if (!currentTarget) throw new NotFoundException("Translation not found.");
+    if (currentTarget.version !== tr.version || currentTarget.status !== tr.status ||
+        currentContent.updatedAt.getTime() !== tr.content.updatedAt.getTime()) {
+      throw new ConflictException("The content changed while the revision was being selected. Reload and retry.");
+    }
+
     await this.prisma.$transaction(async tx => {
-      await tx.content.update({ where: { id: contentId }, data: { data: asJson(snapshot.sharedData) } });
-      const updated = await tx.contentTranslation.update({
-        where: { id: tr.id },
+      const contentClaim = await tx.content.updateMany({
+        where: { id: contentId, updatedAt: currentContent.updatedAt },
+        data: { data: asJson(snapshot.sharedData) },
+      });
+      if (contentClaim.count !== 1) {
+        throw new ConflictException("Shared content changed while the revision was being restored. Reload and retry.");
+      }
+
+      for (const translation of currentContent.translations) {
+        const nextVersion = translation.version + 1;
+        const isTarget = translation.id === tr.id;
+        const updateData: Prisma.ContentTranslationUpdateManyMutationInput = isTarget
+          ? {
+              title: snapshot.title as string,
+              slug: snapshot.slug as string,
+              excerpt: typeof snapshot.excerpt === "string" ? snapshot.excerpt : null,
+              seoTitle: typeof snapshot.seoTitle === "string" ? snapshot.seoTitle : null,
+              seoDescription: typeof snapshot.seoDescription === "string" ? snapshot.seoDescription : null,
+              data: asJson(snapshot.data),
+              status: CmsContentStatus.DRAFT,
+              scheduledAt: null,
+              version: nextVersion,
+            }
+          : {
+              version: nextVersion,
+              ...(translation.status === CmsContentStatus.PUBLISHED ||
+                  translation.status === CmsContentStatus.IN_REVIEW ||
+                  translation.status === CmsContentStatus.SCHEDULED
+                ? { status: CmsContentStatus.DRAFT, scheduledAt: null }
+                : {}),
+            };
+        const translationClaim = await tx.contentTranslation.updateMany({
+          where: { id: translation.id, version: translation.version, status: translation.status },
+          data: updateData,
+        });
+        if (translationClaim.count !== 1) {
+          throw new ConflictException("A language version changed while the revision was being restored. Reload and retry.");
+        }
+
+        const updated = await tx.contentTranslation.findUniqueOrThrow({ where: { id: translation.id } });
+        await tx.contentRevision.create({
+          data: {
+            translationId: translation.id,
+            version: nextVersion,
+            createdById: user.id,
+            changeNote: isTarget
+              ? "Restored revision " + revision.version
+              : "Shared fields restored from revision " + revision.version,
+            snapshot: this.snapshot(updated, snapshot.sharedData),
+          },
+        });
+      }
+
+      await tx.auditLog.create({
         data: {
-          title: snapshot.title as string, slug: snapshot.slug as string,
-          excerpt: typeof snapshot.excerpt === "string" ? snapshot.excerpt : null,
-          seoTitle: typeof snapshot.seoTitle === "string" ? snapshot.seoTitle : null,
-          seoDescription: typeof snapshot.seoDescription === "string" ? snapshot.seoDescription : null,
-          data: asJson(snapshot.data), status: CmsContentStatus.DRAFT, scheduledAt: null, version,
+          userId: user.id,
+          action: "cms.content.revision_restored",
+          entity: "ContentTranslation",
+          entityId: tr.id,
+          metadata: asJson({
+            contentId,
+            localeCode,
+            sourceVersion: revision.version,
+            affectedTranslations: currentContent.translations.length,
+          }),
         },
       });
-      await tx.contentRevision.create({
-        data: { translationId: tr.id, version, createdById: user.id, changeNote: "Restored revision " + rev.version,
-          snapshot: this.snapshot(updated, snapshot.sharedData) },
-      });
-      await tx.auditLog.create({
-        data: { userId: user.id, action: "cms.content.revision_restored", entity: "ContentTranslation", entityId: tr.id,
-          metadata: asJson({ contentId, localeCode, sourceVersion: rev.version }) },
-      });
+    });
+    await this.notifyCmsEvent("content.revision_restored", {
+      contentId,
+      localeCode,
+      translationId: tr.id,
+      sourceVersion: revision.version,
     });
     return this.getContent(contentId);
   }
