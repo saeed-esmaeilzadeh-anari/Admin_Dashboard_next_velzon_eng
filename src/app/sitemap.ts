@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { cmsApi } from "@/helpers/cmsApi";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl=process.env.NEXT_PUBLIC_SITE_URL;
+  const siteUrl=process.env.NEXT_PUBLIC_SITE_URL ?? process.env.PUBLIC_SITE_URL;
   if(!siteUrl)return [];
   let base:URL;
   try{base=new URL(siteUrl);}catch{return [];}
