@@ -52,3 +52,27 @@ The repository was changed through GitHub's API because a local clone was not po
 - No production database or frontend/backend deployment has been provisioned or smoke-tested by this increment.
 
 Do not describe the complete enterprise scope as finished until these limitations are addressed and tests cover the real workflows.
+
+
+## Final CMS surface added (2026-10-29)
+
+- [x] Added a public frontend route for published content at `/content/:typeKey/:localeCode/:slug`; the route resolves content through the public-only backend API and uses a safe plain-text/structured-block renderer.
+- [x] Added sitemap and robots metadata routes. `/sitemap.xml` reads published localized records and emits hreflang alternates when `NEXT_PUBLIC_SITE_URL` is configured.
+- [x] Added public menu URL generation pointing to the CMS public content route.
+- [x] Added public sitemap JSON endpoint plus backend XML sitemap endpoint.
+- [x] Added JSON content import/export with schema versioning, per-record results, and import-as-draft behavior. Media binaries are not embedded into transfer files; references remain IDs and must exist in the destination database.
+- [x] Added a visual block editor and preview route for hero, text/Markdown, image, gallery, CTA, FAQ and card grid blocks.
+- [x] Added media, taxonomy, menu, redirect, form submission, webhook delivery/retry, permission and audit-log management surfaces.
+
+### Final verification condition
+
+The latest feature branch has active CI checks for both the backend and frontend. Do not merge the draft PR until both current-tip workflows complete successfully. A successful backend workflow on an earlier commit is not a substitute for a green check on the exact PR head.
+
+### Remaining deployment / production boundaries
+
+- Local media storage is implemented. On ephemeral/serverless hosting, uploads need persistent mounted storage or a durable external storage provider; filesystem persistence is not guaranteed by the CMS code.
+- The in-process minute scheduler and webhook worker are suitable for continuously running Node processes. Serverless deployments require a durable external scheduler/worker.
+- UI/API scope is focused on CMS. Existing legacy e-commerce/CRM/projects/tasks/demo pages are not all migrated from the template's fake API.
+- Rich-text/Markdown preview renders text safely rather than executing user-provided HTML. A production frontend that intentionally renders rich HTML must sanitize it with a well-tested allowlist renderer.
+- The import report marks partial imports, but import operations are per record, not one global all-or-nothing transaction. Review partial results before retrying.
+- Final production database setup, secret provisioning, a deployed smoke test, accessibility/manual QA and end-to-end browser tests remain deployment tasks.
