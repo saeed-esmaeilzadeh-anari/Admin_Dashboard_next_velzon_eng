@@ -121,7 +121,7 @@ export class CmsMediaService {
 
   private async assertAssetIsNotReferenced(mediaId: string) {
     const definitions = await this.prisma.contentTypeField.findMany({
-      where: { isActive: true, type: { in: [CmsFieldType.MEDIA, CmsFieldType.MEDIA_MULTIPLE] } },
+      where: { type: { in: [CmsFieldType.MEDIA, CmsFieldType.MEDIA_MULTIPLE] } },
       select: { key: true, type: true, isLocalized: true },
     });
     const contentConditions: Prisma.ContentWhereInput[] = [
