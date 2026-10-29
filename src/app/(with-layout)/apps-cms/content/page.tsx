@@ -89,6 +89,7 @@ export default function CmsContentListPage() {
           <Button size="sm" color="warning" outline disabled={busy} onClick={() => void performWorkflow(content.id, locale, "reject")}>{t("Reject")}</Button>
         </>}
         {translation.status === "PUBLISHED" && <Button size="sm" color="warning" outline disabled={busy} onClick={() => void performWorkflow(content.id, locale, "unpublish")}>{t("Unpublish")}</Button>}
+        {translation.status === "SCHEDULED" && <><Button size="sm" color="success" disabled={busy} onClick={() => void performWorkflow(content.id, locale, "publish")}>{t("Publish now")}</Button><Button size="sm" color="warning" outline disabled={busy} onClick={() => void performWorkflow(content.id, locale, "unpublish")}>{t("Cancel schedule")}</Button></>}
         {translation.status !== "ARCHIVED" && <Button size="sm" color="danger" outline disabled={busy} onClick={() => void performWorkflow(content.id, locale, "archive")}>{t("Archive")}</Button>}
         {translation.status === "ARCHIVED" && <Button size="sm" color="secondary" outline disabled={busy} onClick={() => void performWorkflow(content.id, locale, "restore-to-draft")}>{t("Restore to draft")}</Button>}
       </div>
