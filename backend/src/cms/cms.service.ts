@@ -226,6 +226,8 @@ export class CmsService {
     if (!type || !type.isActive) throw new BadRequestException("Active content type was not found.");
     if (!locale || !locale.isActive) throw new BadRequestException("Active locale was not found.");
     const split = this.validateAndSplitFields(dto.fields ?? {}, type.fields, true);
+    await this.assertMediaReferences(split.localizedData, type.fields.filter(field => field.isLocalized));
+    await this.assertMediaReferences(split.sharedData, type.fields.filter(field => !field.isLocalized));
     const created = await this.prisma.$transaction(async tx => {
       const item = await tx.content.create({
         data: { contentTypeId: type.id, createdById: user.id, data: asJson(split.sharedData) },
@@ -269,6 +271,7 @@ export class CmsService {
     if (!locale || !locale.isActive) throw new BadRequestException("Active locale was not found.");
     const localizedDefinitions = content.contentType.fields.filter(field => field.isLocalized && field.isActive);
     const split = this.validateAndSplitFields(dto.fields ?? {}, localizedDefinitions, true);
+    await this.assertMediaReferences(split.localizedData, localizedDefinitions);
     const shared = asRecord(content.data);
     const created = await this.prisma.$transaction(async tx => {
       const translation = await tx.contentTranslation.create({
@@ -301,6 +304,7 @@ export class CmsService {
     const currentData = asRecord(tr.data);
     const nextData = dto.fields === undefined ? currentData
       : this.mergeFieldPatch(currentData, dto.fields, tr.content.contentType.fields.filter(field => field.isLocalized && field.isActive));
+    await this.assertMediaReferences(nextData, tr.content.contentType.fields.filter(field => field.isLocalized));
     const next = {
       ...tr, title: dto.title ?? tr.title, slug: dto.slug ?? tr.slug,
       excerpt: dto.excerpt !== undefined ? dto.excerpt : tr.excerpt,
@@ -344,6 +348,7 @@ export class CmsService {
     if (!Object.keys(patch).length) throw new BadRequestException("No shared fields were provided.");
     const nextData = { ...asRecord(item.data), ...patch };
     this.assertRequiredFields(nextData, defs);
+    await this.assertMediaReferences(nextData, defs);
     await this.prisma.$transaction(async tx => {
       await tx.content.update({ where: { id: contentId }, data: { data: asJson(nextData) } });
       for (const translation of item.translations) {
@@ -621,6 +626,20 @@ export class CmsService {
     }
   }
 
+  private async assertMediaReferences(values: Record<string, unknown>, definitions: FieldDefinition[]) {
+    const mediaIds = new Set<string>();
+    for (const field of definitions) {
+      const value = values[field.key];
+      if (field.type === CmsFieldType.MEDIA && typeof value === "string") mediaIds.add(value);
+      if (field.type === CmsFieldType.MEDIA_MULTIPLE && Array.isArray(value)) {
+        for (const id of value) if (typeof id === "string") mediaIds.add(id);
+      }
+    }
+    if (!mediaIds.size) return;
+    const existing = await this.prisma.mediaAsset.findMany({ where: { id: { in: [...mediaIds] } }, select: { id: true } });
+    if (existing.length !== mediaIds.size) throw new BadRequestException("One or more selected media assets no longer exist.");
+  }
+
   private validateFieldValue(field: FieldDefinition, value: unknown) {
     const config = asRecord(field.config);
     const wrong = (): never => { throw new BadRequestException("Invalid value for field " + field.key + " (" + field.type + ")."); };
@@ -651,6 +670,14 @@ export class CmsService {
       if (field.type === CmsFieldType.MULTISELECT && (!Array.isArray(value) || !value.every(item => typeof item === "string"))) return wrong();
       const selected = field.type === CmsFieldType.SELECT ? [value] : value as unknown[];
       if (options.length && selected.some(item => !options.includes(String(item)))) return wrong();
+      return;
+    }
+    if (field.type === CmsFieldType.MEDIA) {
+      if (typeof value !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) return wrong();
+      return;
+    }
+    if (field.type === CmsFieldType.MEDIA_MULTIPLE) {
+      if (!Array.isArray(value) || value.length > 100 || !value.every(item => typeof item === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item))) return wrong();
       return;
     }
     if (field.type === CmsFieldType.JSON) { if (isRecord(value) || Array.isArray(value)) return; return wrong(); }
