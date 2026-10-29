@@ -269,6 +269,7 @@ export class CmsManagementService implements OnModuleInit {
     const localeId = await this.getOptionalLocaleId(dto.localeCode);
     const duplicate = await this.prisma.cmsRedirect.findFirst({ where: { sourcePath: dto.sourcePath, localeId } });
     if (duplicate) throw new ConflictException("A redirect for this source path and locale already exists.");
+    if (dto.isActive ?? true) await this.assertNoRedirectCycle(dto.sourcePath, dto.destinationPath, localeId);
     return this.prisma.cmsRedirect.create({
       data: { sourcePath: dto.sourcePath, destinationPath: dto.destinationPath, statusCode: dto.statusCode ?? 301,
         localeId, isActive: dto.isActive ?? true },
@@ -285,6 +286,8 @@ export class CmsManagementService implements OnModuleInit {
     const localeId = dto.localeCode === undefined ? current.localeId : await this.getOptionalLocaleId(dto.localeCode);
     const duplicate = await this.prisma.cmsRedirect.findFirst({ where: { sourcePath, localeId, id: { not: id } } });
     if (duplicate) throw new ConflictException("A redirect for this source path and locale already exists.");
+    const willBeActive = dto.isActive ?? current.isActive;
+    if (willBeActive) await this.assertNoRedirectCycle(sourcePath, destinationPath, localeId, id);
     const data: Prisma.CmsRedirectUpdateInput = { sourcePath, destinationPath };
     if (dto.statusCode !== undefined) data.statusCode = dto.statusCode;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
@@ -555,6 +558,37 @@ export class CmsManagementService implements OnModuleInit {
     const locale = await this.prisma.locale.findUnique({ where: { code: localeCode } });
     if (!locale || !locale.isActive) throw new BadRequestException("Active locale was not found.");
     return locale.id;
+  }
+
+  private async assertNoRedirectCycle(sourcePath: string, destinationPath: string, localeId: string | null, currentId?: string) {
+    if (!safePath(destinationPath)) return;
+    const visited = new Set<string>([sourcePath]);
+    let candidatePath = destinationPath.split(/[?#]/, 1)[0];
+    const maximumHops = 50;
+
+    for (let hop = 0; hop < maximumHops; hop++) {
+      if (visited.has(candidatePath)) {
+        throw new BadRequestException("Redirect rules cannot create a redirect loop.");
+      }
+      visited.add(candidatePath);
+
+      const excludingCurrent = currentId ? { id: { not: currentId } } : {};
+      let next = localeId
+        ? await this.prisma.cmsRedirect.findFirst({
+            where: { sourcePath: candidatePath, isActive: true, localeId, ...excludingCurrent },
+            select: { destinationPath: true },
+          })
+        : null;
+      if (!next) {
+        next = await this.prisma.cmsRedirect.findFirst({
+          where: { sourcePath: candidatePath, isActive: true, localeId: null, ...excludingCurrent },
+          select: { destinationPath: true },
+        });
+      }
+      if (!next || !safePath(next.destinationPath)) return;
+      candidatePath = next.destinationPath.split(/[?#]/, 1)[0];
+    }
+    throw new BadRequestException("Redirect chain exceeds 50 active rules; shorten the redirect chain before saving.");
   }
 
   private assertRedirectPaths(sourcePath: string, destinationPath: string) {

@@ -10,9 +10,14 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
+const siteName = process.env.NEXT_PUBLIC_SITE_NAME?.trim() || "Velzon CMS";
+
 export const metadata: Metadata = {
-  title: "Velzon - Next.js TypeScript Admin & Dashboard Template",
-  description: "Admin dashboard template",
+  title: {
+    default: siteName + " | Multilingual CMS",
+    template: "%s | " + siteName,
+  },
+  description: "Multilingual content management with editorial workflow, media library and localized publishing.",
 };
 
 export default function RootLayout({

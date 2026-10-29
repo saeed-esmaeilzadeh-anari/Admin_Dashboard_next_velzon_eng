@@ -7,10 +7,10 @@ Branch: feat/full-stack-foundation
 - PostgreSQL/Prisma models and migrations for locale metadata, dynamic content types and fields, stable content identities, per-locale translations, publication snapshots/revisions, media assets, taxonomies and term translations, navigation menus, redirects, forms/submissions, webhook configuration/delivery, role permissions, and audit records.
 - NestJS APIs for CMS content CRUD, language versions, workflow transitions, content type/field administration, media upload and metadata, taxonomies, menus, redirects, forms, webhook delivery/retry, role permission grants, audit log, import/export, and published-only content delivery.
 - Seeded Persian (fa-IR, RTL) and English (en-US, LTR) locales, starter Page/Article content types, dynamic fields for media/gallery/page blocks, a permission catalog, and default ADMIN/MANAGER grants.
-- Dashboard UI for content listing, creation, translation/editing, workflow and revision restore, content type/field management, languages, page builder and preview, media, taxonomies, menus, redirects, forms, webhooks, permissions, audit logs and import/export.
+- Dashboard UI for CMS overview with real database counters/recent content, content listing, creation, translation/editing, workflow and revision restore, content type/field management, languages, page builder and preview, media, taxonomies, menus, redirects, forms, webhooks, permissions, audit logs and import/export.
 - Public Next.js content route at /content/:typeKey/:localeCode/:slug with locale direction, basic SEO metadata and language alternates. Public rich text is rendered as text rather than executing arbitrary author HTML.
 - Next.js sitemap metadata route and backend JSON/XML sitemap endpoints for active, published language versions.
-- HMAC-signed webhook delivery with public HTTPS/DNS checks and retry records; configurable local/S3 media storage adapter.
+- HMAC-signed webhook delivery with public HTTPS/DNS checks and retry records; configurable local/S3 media storage adapter; actual database-backed public redirect rules are wired through safe middleware.
 - Backend and frontend CI workflows are configured for Prisma validation/generation, TypeScript checks, unit tests, Nest build, frontend TypeScript check, and production Next.js build.
 
 ## Current verification

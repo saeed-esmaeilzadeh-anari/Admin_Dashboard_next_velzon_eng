@@ -12,8 +12,8 @@ This is a status ledger for the current feature branch. Items described as imple
 | Visual page builder | Implemented first version | Hero, text/Markdown, image, gallery, CTA, FAQ and card-grid blocks; not a general-purpose drag/drop layout engine yet |
 | Media library | Implemented | Validated local file storage, metadata, API/UI, public media resolution and configurable local/S3 storage; deployment must configure persistent storage/secrets |
 | Taxonomies and term translations | Implemented | Hierarchical terms, localized term data and content assignment; public display/filtering still needs end-to-end coverage |
-| Navigation menus | Implemented | Localized menus, nested items and public menu endpoint; automatic page linking has basic URL validation |
-| Redirect manager | Implemented | Local-path redirect rules and hit tracking; routing/middleware must be connected in the deployed public app if it should automatically redirect requests |
+| Navigation menus | Implemented | Seed creates editable `main` menus for Persian/English; nested items and localized public navigation are rendered on published pages; menu cycles are rejected and defensively guarded |
+| Redirect manager | Implemented | Middleware resolves active locale-aware redirect rules for public GET/HEAD requests; server rejects redirect chains/loops and safely falls through if the CMS API is unavailable |
 | Forms and submissions | Implemented | Configurable schemas, public validation/submission, throttling and admin status/note management; CAPTCHA/spam filtering/email notifications remain follow-up |
 | Webhooks | Implemented first version | HMAC signatures, public-HTTPS endpoint checks, retry/delivery history and manager UI; needs a continuously running worker or durable queue |
 | Import/export | Implemented | Versioned JSON package, bounded record count, per-record results and imports as drafts; binary files are not bundled and must already exist at the destination |

@@ -115,7 +115,7 @@ export default async function PublishedCmsPage({params}:RouteProps){
   return <main lang={content.locale.code} dir={content.locale.direction==="RTL"?"rtl":"ltr"} style={{minHeight:"100vh",padding:"clamp(16px,4vw,48px)",background:"var(--vz-body-bg, #f3f3f9)"}}>
     {publicMenu ? <header style={{maxWidth:1120,margin:"0 auto 24px",padding:"14px 18px",border:"1px solid var(--vz-border-color, #e9ebec)",borderRadius:14,background:"var(--vz-card-bg, #fff)"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
-        <a href="/" style={{fontWeight:700,color:"inherit",textDecoration:"none",fontSize:18}}>{publicMenu.name}</a>
+        <a href="/" style={{fontWeight:700,color:"inherit",textDecoration:"none",fontSize:18}}>{process.env.NEXT_PUBLIC_SITE_NAME?.trim() || publicMenu.name}</a>
         <nav aria-label={content.locale.code.toLowerCase().startsWith("fa") ? "ناوبری اصلی" : "Main navigation"}>{renderMenuItems(publicMenu.items)}</nav>
       </div>
     </header> : null}
