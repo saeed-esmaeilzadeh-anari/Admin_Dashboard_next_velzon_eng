@@ -22,7 +22,7 @@ export type CmsTranslation = {
 };
 export type CmsContent = {
   id: string; contentType: Pick<CmsContentType, "id" | "key" | "name"> & { fields?: CmsField[] };
-  data: Record<string, unknown>; translations: CmsTranslation[]; createdAt: string; updatedAt: string;
+  data: Record<string, unknown>; translations: CmsTranslation[]; taxonomyTerms?: Array<{ contentId: string; termId: string; term: CmsTaxonomyTerm }>; createdAt: string; updatedAt: string;
 };
 export type CmsPage<T> = { data: T[]; pagination: { page: number; limit: number; total: number; pages: number } };
 
