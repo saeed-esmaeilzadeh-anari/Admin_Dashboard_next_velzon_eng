@@ -11,11 +11,12 @@ import { CmsMediaService } from "./cms-media.service";
 import { CmsPermissionsGuard } from "./cms-permissions.guard";
 import { CmsScheduler } from "./cms.scheduler";
 import { CmsService } from "./cms.service";
+import { CmsWebhookService, CmsWebhookWorker } from "./cms-webhook.service";
 import { PublicCmsController } from "./public-cms.controller";
 @Module({
   imports: [AuthModule, PrismaModule],
   controllers: [CmsController, PublicCmsController, CmsManagementController, CmsPublicManagementController, CmsMediaController],
-  providers: [CmsService, CmsScheduler, RolesGuard, CmsManagementService, CmsMediaService, CmsPermissionsGuard],
+  providers: [CmsService, CmsScheduler, RolesGuard, CmsManagementService, CmsMediaService, CmsPermissionsGuard, CmsWebhookService, CmsWebhookWorker],
   exports: [CmsService],
 })
 export class CmsModule {}
