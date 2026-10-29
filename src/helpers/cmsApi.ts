@@ -59,6 +59,7 @@ export type CmsPublicContent = {
   seoDescription?: string | null; fields: Record<string, unknown>;
   terms: Array<{ id: string; taxonomy: { key: string; name: string }; name: string; slug: string; description?: string | null }>;
   publishedAt?: string | null;
+  alternates?: Array<{ localeCode: string; slug: string | null }>;
 };
 export type CmsSitemapEntry = {
   typeKey: string; localeCode: string; slug: string; href: string; lastModified: string;
