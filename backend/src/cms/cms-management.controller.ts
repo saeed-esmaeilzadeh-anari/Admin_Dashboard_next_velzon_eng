@@ -94,6 +94,9 @@ export class CmsManagementController {
   updateWebhook(@Param("id", new ParseUUIDPipe()) id: string, @Body() dto: UpdateCmsWebhookDto) { return this.cms.updateWebhook(id, dto); }
   @Delete("webhooks/:id") @Roles(Role.ADMIN) @CmsPermissions("cms.webhooks.manage")
   deleteWebhook(@Param("id", new ParseUUIDPipe()) id: string) { return this.cms.deleteWebhook(id); }
+  @Post("webhooks/:id/deliveries/:deliveryId/retry") @Roles(Role.ADMIN) @CmsPermissions("cms.webhooks.manage")
+  retryWebhookDelivery(@Param("id", new ParseUUIDPipe()) id: string, @Param("deliveryId", new ParseUUIDPipe()) deliveryId: string) { return this.cms.retryWebhookDelivery(id, deliveryId); }
+
   @Get("webhooks/:id/deliveries") @Roles(Role.ADMIN) @CmsPermissions("cms.webhooks.manage")
   listWebhookDeliveries(@Param("id", new ParseUUIDPipe()) id: string, @Query("page") pageRaw?: string, @Query("limit") limitRaw?: string) {
     return this.cms.listWebhookDeliveries(id, Math.max(1, Number(pageRaw) || 1), Math.min(100, Math.max(1, Number(limitRaw) || 30)));
