@@ -42,7 +42,29 @@ export default function CmsImportExportPage() {
       const parsed=JSON.parse(await file.text()) as {schemaVersion?:unknown;records?:unknown};
       if(parsed.schemaVersion!==1||!Array.isArray(parsed.records))throw new Error(t("Invalid CMS export package. Choose a schemaVersion 1 JSON export."));
       if(parsed.records.length<1||parsed.records.length>100)throw new Error(t("Import packages must contain between 1 and 100 content records."));
-      const data=await cmsApi.importContents(parsed as Parameters<typeof cmsApi.importContents>[0]);
+      const normalized = {
+        schemaVersion: 1 as const,
+        records: parsed.records.map((rawRecord) => {
+          if (typeof rawRecord !== "object" || rawRecord === null || Array.isArray(rawRecord)) throw new Error(t("Each import record must be an object."));
+          const record = rawRecord as Record<string, unknown>;
+          if (typeof record.typeKey !== "string" || !Array.isArray(record.translations)) throw new Error(t("Each import record needs a type key and translations."));
+          const translations = record.translations.map((rawTranslation) => {
+            if (typeof rawTranslation !== "object" || rawTranslation === null || Array.isArray(rawTranslation)) throw new Error(t("Each translation must be an object."));
+            const translation = rawTranslation as Record<string, unknown>;
+            return {
+              localeCode: translation.localeCode,
+              title: translation.title,
+              slug: translation.slug,
+              excerpt: translation.excerpt,
+              seoTitle: translation.seoTitle,
+              seoDescription: translation.seoDescription,
+              fields: translation.fields,
+            };
+          });
+          return { typeKey: record.typeKey, sharedFields: record.sharedFields, translations };
+        }),
+      };
+      const data=await cmsApi.importContents(normalized);
       setResult(data);
       setNotice(t("Import completed: {{imported}} imported, {{partial}} partial, {{failed}} failed",data.summary));
       setFile(null);
