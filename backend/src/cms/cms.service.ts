@@ -202,6 +202,7 @@ export class CmsService {
       where: { id },
       include: {
         contentType: { include: { fields: { orderBy: { sortOrder: "asc" } } } },
+        taxonomyTerms: { include: { term: { include: { taxonomy: true, translations: { include: { locale: true } } } } } },
         createdBy: { select: { id: true, name: true, email: true } },
         translations: {
           include: {
