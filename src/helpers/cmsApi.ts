@@ -60,6 +60,22 @@ export type CmsTaxonomyTerm = {
 };
 export type CmsMenu = { id: string; key: string; name: string; localeId: string; isActive: boolean; locale?: CmsLocale; _count?: { items: number } };
 export type CmsMenuItem = { id: string; menuId: string; parentId?: string | null; contentId?: string | null; label: string; url?: string | null; targetBlank: boolean; sortOrder: number; isActive: boolean };
+export type CmsPublicMenuItem = {
+  id: string;
+  label: string;
+  href: string | null;
+  targetBlank: boolean;
+  sortOrder: number;
+  parentId: string | null;
+  children: CmsPublicMenuItem[];
+};
+export type CmsPublicMenu = {
+  id: string;
+  key: string;
+  name: string;
+  locale: CmsLocale;
+  items: CmsPublicMenuItem[];
+};
 export type CmsRedirect = { id: string; sourcePath: string; destinationPath: string; statusCode: number; isActive: boolean; hitCount: number; localeId?: string | null; locale?: CmsLocale | null };
 export type CmsFormDefinition = { id: string; key: string; name: string; description?: string | null; schema: { fields: Array<Record<string, unknown>>; [key: string]: unknown }; successMessage?: string | null; isActive: boolean; _count?: { submissions: number } };
 export type CmsAuditLog = {
@@ -276,6 +292,9 @@ export const cmsApi = {
   },
   async retryWebhookDelivery(id: string, deliveryId: string): Promise<CmsWebhookDelivery> {
     return (await backendApi.post<CmsWebhookDelivery>(`/cms/webhooks/${id}/deliveries/${deliveryId}/retry`)).data;
+  },
+  async publicMenu(key: string, localeCode: string): Promise<CmsPublicMenu> {
+    return (await backendApi.get<CmsPublicMenu>(`/public/cms/menus/${encodeURIComponent(key)}/${encodeURIComponent(localeCode)}`)).data;
   },
   async publicContent(typeKey: string, localeCode: string, slug: string): Promise<CmsPublicContent> {
     return (await backendApi.get<CmsPublicContent>(`/public/cms/${encodeURIComponent(typeKey)}/${encodeURIComponent(localeCode)}/${encodeURIComponent(slug)}`)).data;
