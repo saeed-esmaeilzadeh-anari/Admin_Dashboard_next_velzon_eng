@@ -284,5 +284,8 @@
   "Content preview": "معاينة المحتوى",
   "View published page": "عرض الصفحة المنشورة",
   "Languages": "اللغات",
-  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "حقول الوسائط ومنشئ الصفحات مدعومة. حقول العلاقات العامة والحقول المتكررة غير مدعومة بعد."
+  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "حقول الوسائط ومنشئ الصفحات مدعومة. حقول العلاقات العامة والحقول المتكررة غير مدعومة بعد.",
+  "Content entries": "عناصر المحتوى",
+  "Previous": "السابق",
+  "Next": "التالي"
 }
