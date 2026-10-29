@@ -153,7 +153,13 @@ export default function CmsContentEditorPage() {
       const localizedFields: Record<string, unknown> = {};
       for (const field of localizedDefinitions) {
         const value = localizedValues[field.key];
-        if (value === "" && !field.isRequired) continue;
+        if (value === "" && !field.isRequired) {
+          // New translations may omit optional empty fields. In an existing translation,
+          // send null so users can actually clear a previously stored value.
+          if (isNewTranslation) continue;
+          localizedFields[field.key] = null;
+          continue;
+        }
         if (field.isRequired && (value === "" || value === null || value === undefined || (Array.isArray(value) && value.length === 0))) {
           throw new Error(`${field.label}: ${t("Required field is missing")}`);
         }
@@ -168,7 +174,11 @@ export default function CmsContentEditorPage() {
         const sharedFields: Record<string, unknown> = {};
         for (const field of sharedDefinitions) {
           const value = sharedValues[field.key];
-          if (value === "" && !field.isRequired) continue;
+          if (value === "" && !field.isRequired) {
+            // An empty optional value represents clearing a field on an existing content record.
+            sharedFields[field.key] = null;
+            continue;
+          }
           if (field.isRequired && (value === "" || value === null || value === undefined || (Array.isArray(value) && value.length === 0))) {
             throw new Error(`${field.label}: ${t("Required field is missing")}`);
           }
