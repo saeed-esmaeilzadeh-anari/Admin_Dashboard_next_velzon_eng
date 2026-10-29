@@ -79,3 +79,11 @@ Then restart Next.js, sign in with the administrator created from `ADMIN_NAME`, 
 ## CMS boundaries
 
 This increment wires the CMS-specific screens to real API endpoints; it does not replace the legacy mock backend of every e-commerce/CRM/task/template screen. Fine-grained permissions, media storage, taxonomies, menus, page-builder blocks, redirects/sitemap/hreflang, rich-text sanitization and durable serverless scheduling remain required before a production launch.
+
+
+### Published website and SEO
+
+- The frontend renders published CMS entries at `/content/:typeKey/:localeCode/:slug` and reads only the public published snapshot API.
+- The API sitemap is `GET /api/v1/public/cms/sitemap.xml`; the frontend also exposes it at `/sitemap.xml`.
+- Set `PUBLIC_SITE_URL` to the canonical website URL (for example `https://www.example.com`) before deployment. The sitemap includes active published translations and language alternate links.
+- Public rich text is presented as text instead of injecting author-provided HTML. For rich formatting, replace that renderer with a maintained HTML sanitizer and a reviewed allowlist before allowing raw HTML.
