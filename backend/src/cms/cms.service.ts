@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException, Optional } from "@nestjs/common";
 import { CmsContentStatus, CmsFieldType, LocaleDirection, Prisma } from "@prisma/client";
 import { AuthenticatedUser } from "../common/decorators/current-user.decorator";
 import { PrismaService } from "../prisma/prisma.service";
+import { CmsWebhookService } from "./cms-webhook.service";
 import {
   CreateContentDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto, CreateTranslationDto,
   ListCmsContentsQuery, ListPublicContentQuery, RejectContentDto, ScheduleContentDto,
@@ -34,7 +35,7 @@ function asJson(value: unknown): Prisma.InputJsonValue {
 @Injectable()
 export class CmsService {
   private readonly logger = new Logger(CmsService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, @Optional() private readonly webhooks?: CmsWebhookService) {}
 
   async listLocales(includeInactive = false) {
     return this.prisma.locale.findMany({
@@ -248,6 +249,7 @@ export class CmsService {
       });
       return item;
     });
+    await this.notifyCmsEvent("content.created", { contentId: created.id, typeKey: type.key, localeCode: locale.code, title: dto.title });
     return this.getContent(created.id);
   }
 
@@ -286,6 +288,7 @@ export class CmsService {
       });
       return translation;
     });
+    await this.notifyCmsEvent("content.translation.created", { contentId, translationId: created.id, localeCode: locale.code, title: dto.title });
     return this.getContent(created.contentId);
   }
 
@@ -326,6 +329,7 @@ export class CmsService {
           metadata: asJson({ contentId, localeCode, version }) },
       });
     });
+    await this.notifyCmsEvent("content.updated", { contentId, localeCode, translationId: tr.id, version });
     return this.getContent(contentId);
   }
 
@@ -355,6 +359,7 @@ export class CmsService {
           metadata: asJson({ changedKeys: Object.keys(patch) }) },
       });
     });
+    await this.notifyCmsEvent("content.shared_fields.updated", { contentId, changedKeys: Object.keys(patch) });
     return this.getContent(contentId);
   }
 
@@ -464,7 +469,7 @@ export class CmsService {
     const now = new Date();
     const due = await this.prisma.contentTranslation.findMany({
       where: { status: CmsContentStatus.SCHEDULED, scheduledAt: { lte: now } },
-      take: 100, orderBy: { scheduledAt: "asc" }, include: { content: true },
+      take: 100, orderBy: { scheduledAt: "asc" }, include: { content: true, locale: { select: { code: true } } },
     });
     let count = 0;
     for (const item of due) {
@@ -487,7 +492,10 @@ export class CmsService {
           });
           return true;
         });
-        if (didPublish) count++;
+        if (didPublish) {
+          count++;
+          await this.notifyCmsEvent("content.published", { contentId: item.contentId, translationId: item.id, localeCode: item.locale.code, scheduledAt: item.scheduledAt?.toISOString() });
+        }
       } catch (error) {
         this.logger.error("Scheduled publishing failed for " + item.id, error instanceof Error ? error.stack : String(error));
       }
@@ -528,7 +536,19 @@ export class CmsService {
         metadata: asJson({ contentId, localeCode, from: tr.status, to: target, reason }),
       } });
     });
+    const eventKey = target === CmsContentStatus.PUBLISHED ? "content.published"
+      : target === CmsContentStatus.SCHEDULED ? "content.scheduled"
+      : clearPublication ? "content.unpublished"
+      : target === CmsContentStatus.ARCHIVED ? "content.archived"
+      : target === CmsContentStatus.IN_REVIEW ? "content.submitted_for_review"
+      : "content.updated";
+    await this.notifyCmsEvent(eventKey, { contentId, translationId: tr.id, localeCode, status: target, version });
     return this.getContent(contentId);
+  }
+
+  private async notifyCmsEvent(eventKey: string, payload: Record<string, unknown>) {
+    try { await this.webhooks?.queueEvent(eventKey, payload); }
+    catch (error) { this.logger.error("Could not enqueue CMS event " + eventKey, error instanceof Error ? error.stack : String(error)); }
   }
 
   private async findTranslation(contentId: string, localeCode: string): Promise<TranslationRecord> {
