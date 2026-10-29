@@ -33,7 +33,8 @@ function fieldValueValid(field: CmsField, value: unknown): boolean {
   if (field.type === "MULTISELECT") return Array.isArray(value);
   return true;
 }
-function renderInputType(field: CmsField): string {
+type CmsInputType = "number" | "date" | "datetime-local" | "email" | "url" | "text";
+function renderInputType(field: CmsField): CmsInputType {
   if (field.type === "INTEGER" || field.type === "DECIMAL") return "number";
   if (field.type === "DATE") return "date";
   if (field.type === "DATETIME") return "datetime-local";
@@ -151,7 +152,7 @@ export default function NewCmsContentPage() {
         </Label>
         {field.type === "BOOLEAN" ? <div className="form-check form-switch mt-2"><Input className="form-check-input" type="switch" id={`field-${field.key}`} checked={Boolean(value)} onChange={event => setFieldValue(field, event.target.checked)} /><Label className="form-check-label" for={`field-${field.key}`}>{t("Enabled")}</Label></div>
           : field.type === "SELECT" ? <Input id={`field-${field.key}`} type="select" value={String(value ?? "")} invalid={Boolean(fieldErrors[field.key])} onChange={event => setFieldValue(field, event.target.value)}><option value="">{t("Select an option")}</option>{choices.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Input>
-          : field.type === "MULTISELECT" ? <Input id={`field-${field.key}`} type="select" multiple value={Array.isArray(value) ? value.map(String) : []} invalid={Boolean(fieldErrors[field.key])} onChange={event => setFieldValue(field, Array.from(event.target.selectedOptions).map(option => option.value))}>{choices.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Input>
+          : field.type === "MULTISELECT" ? <Input id={`field-${field.key}`} type="select" multiple value={Array.isArray(value) ? value.map(String) : []} invalid={Boolean(fieldErrors[field.key])} onChange={event => setFieldValue(field, Array.from((event.currentTarget as unknown as HTMLSelectElement).selectedOptions).map(option => option.value))}>{choices.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Input>
           : field.type === "TEXTAREA" || field.type === "RICH_TEXT" || field.type === "MARKDOWN" || field.type === "JSON" ? <Input id={`field-${field.key}`} type="textarea" rows={field.type === "JSON" ? 5 : 4} value={typeof value === "string" ? value : value == null ? "" : JSON.stringify(value, null, 2)} invalid={Boolean(fieldErrors[field.key])} onChange={event => setFieldValue(field, event.target.value)} placeholder={field.type === "RICH_TEXT" ? t("Rich text or HTML content; sanitize before public rendering") : field.type === "MARKDOWN" ? "## Heading" : field.type === "JSON" ? '{"key":"value"}' : ""} />
           : <Input id={`field-${field.key}`} type={renderInputType(field)} value={value == null ? "" : String(value)} step={field.type === "DECIMAL" ? "any" : field.type === "INTEGER" ? "1" : undefined} invalid={Boolean(fieldErrors[field.key])} onChange={event => setFieldValue(field, event.target.value)} />}
         {fieldErrors[field.key] && <div className="invalid-feedback d-block">{fieldErrors[field.key]}</div>}
