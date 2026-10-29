@@ -21,6 +21,7 @@ Backend:
 - `JWT_SECRET` must be a randomly generated private secret of at least 32 characters. Set and rotate it using the hosting provider's secret manager.
 - `CORS_ORIGINS` must list only the exact deployed frontend origin(s).
 - `PUBLIC_SITE_URL` must equal the canonical public site origin.
+- `CMS_JOB_TOKEN` must be a private random secret of at least 32 characters if an external scheduler calls `/api/v1/internal/cms/jobs/publish-scheduled` or `/api/v1/internal/cms/jobs/dispatch-webhooks`. Send it only as `Authorization: Bearer <token>`; do not add it to frontend environment variables.
 - `ADMIN_NAME`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD` are needed only when running the seed command; the seed requires a password of at least 12 characters.
 - For S3-compatible media storage, set `CMS_MEDIA_STORAGE=s3`, `S3_BUCKET`, `S3_REGION`, `S3_PUBLIC_BASE_URL`, and the appropriate optional endpoint/path-style/credential values in `backend/.env.example`.
 
@@ -36,7 +37,7 @@ Never commit secrets or place private credentials in a `NEXT_PUBLIC_*` variable.
 
 ## 4. Runtime and security boundaries
 
-- Scheduled publication and webhook retries currently use in-process workers. Configure an external cron/durable queue for serverless or multi-instance production so jobs are not skipped or executed concurrently without coordination.
+- Scheduled publication and webhook retries have in-process workers and token-protected endpoints for external schedulers. On serverless or multi-instance production, configure a durable external cron/queue and set `CMS_JOB_TOKEN`; use a single-owner/lease strategy if jobs might overlap.
 - The public content renderer intentionally renders author-provided rich text/Markdown as text. Do not enable raw HTML rendering until a maintained sanitizer and a strict HTML allowlist are implemented and tested.
 - Role grants protect CMS routes, but per-content ownership/team-level authorization and comprehensive security integration tests remain production follow-up work.
 - Configure TLS, security headers, rate limits, log retention, error monitoring, alerting, and a documented incident response.
