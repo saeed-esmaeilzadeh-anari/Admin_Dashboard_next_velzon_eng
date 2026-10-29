@@ -148,9 +148,6 @@ export default function NewCmsContentPage() {
 
   const renderField = (field: CmsField) => {
     const value = values[field.key];
-    if (field.key === "blocks" && field.type === "JSON") {
-      return <Col md={12} key={field.key}><PageBuilderEditor value={value} onChange={next => setFieldValue(field, next)} label={field.label} /></Col>;
-    }
     const options = Array.isArray(field.config?.options) ? field.config?.options as Array<string | { value: string; label?: string }> : [];
     const choices = options.map(option => typeof option === "string" ? { value: option, label: option } : { value: option.value, label: option.label ?? option.value });
     return <Col md={field.type === "TEXTAREA" || field.type === "RICH_TEXT" || field.type === "MARKDOWN" || field.type === "JSON" ? 12 : 6} key={field.key}>
