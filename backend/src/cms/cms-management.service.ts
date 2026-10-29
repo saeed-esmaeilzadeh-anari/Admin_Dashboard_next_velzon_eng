@@ -202,7 +202,7 @@ export class CmsManagementService {
   async updateMenuItem(menuId: string, itemId: string, dto: UpdateMenuItemDto) {
     const item = await this.prisma.cmsMenuItem.findFirst({ where: { id: itemId, menuId } });
     if (!item) throw new NotFoundException("Menu item not found.");
-    await this.validateMenuItem(menuId, dto, itemId);
+    await this.validateMenuItem(menuId, dto, itemId, item);
     const data: Prisma.CmsMenuItemUpdateInput = {};
     if (dto.label !== undefined) data.label = dto.label;
     if (dto.url !== undefined) data.url = dto.url;
@@ -472,7 +472,7 @@ export class CmsManagementService {
     }
   }
 
-  private async validateMenuItem(menuId: string, dto: CreateMenuItemDto | UpdateMenuItemDto, currentId?: string) {
+  private async validateMenuItem(menuId: string, dto: CreateMenuItemDto | UpdateMenuItemDto, currentId?: string, existing?: { url: string | null; contentId: string | null }) {
     const url = dto.url;
     const contentId = dto.contentId;
     const parentId = dto.parentId;
@@ -482,7 +482,9 @@ export class CmsManagementService {
     if (contentId !== undefined && contentId !== null && !await this.prisma.content.findUnique({ where: { id: contentId } })) {
       throw new BadRequestException("Linked content was not found.");
     }
-    if (url === "" && !contentId) throw new BadRequestException("Menu item needs a URL or linked content.");
+    const effectiveUrl = url !== undefined ? url : existing?.url;
+    const effectiveContentId = contentId !== undefined ? contentId : existing?.contentId;
+    if ((!effectiveUrl || !effectiveUrl.trim()) && !effectiveContentId) throw new BadRequestException("Menu item needs a URL or linked content.");
     if (parentId !== undefined && parentId !== null) {
       if (parentId === currentId) throw new BadRequestException("A menu item cannot be its own parent.");
       const parent = await this.prisma.cmsMenuItem.findFirst({ where: { id: parentId, menuId } });
