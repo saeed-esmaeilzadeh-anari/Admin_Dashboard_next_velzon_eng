@@ -283,5 +283,6 @@
   "Save changes": "Сохранить изменения",
   "Content preview": "Предпросмотр контента",
   "View published page": "Открыть опубликованную страницу",
-  "Languages": "Языки"
+  "Languages": "Языки",
+  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "Поля медиа и конструктора страниц поддерживаются. Универсальные поля связей и повторяющихся элементов пока не поддерживаются."
 }
