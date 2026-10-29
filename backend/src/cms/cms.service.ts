@@ -354,7 +354,17 @@ export class CmsService {
       await tx.content.update({ where: { id: contentId }, data: { data: asJson(nextData) } });
       for (const translation of item.translations) {
         const version = translation.version + 1;
-        const updated = await tx.contentTranslation.update({ where: { id: translation.id }, data: { version } });
+        const updated = await tx.contentTranslation.update({
+          where: { id: translation.id },
+          data: {
+            version,
+            ...(translation.status === CmsContentStatus.PUBLISHED ||
+                translation.status === CmsContentStatus.IN_REVIEW ||
+                translation.status === CmsContentStatus.SCHEDULED
+              ? { status: CmsContentStatus.DRAFT, scheduledAt: null }
+              : {}),
+          },
+        });
         await tx.contentRevision.create({
           data: { translationId: translation.id, version, createdById: user.id,
             changeNote: "Shared fields updated", snapshot: this.snapshot(updated, nextData) },
