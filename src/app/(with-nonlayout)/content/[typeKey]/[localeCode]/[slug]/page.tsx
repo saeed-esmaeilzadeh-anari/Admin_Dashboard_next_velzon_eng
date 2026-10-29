@@ -43,13 +43,17 @@ function extractMedia(value: unknown, output: Map<string,CmsMediaAsset>) {
 export async function generateMetadata({params}:RouteProps):Promise<Metadata>{
   const {typeKey,localeCode,slug}=await params;
   const content=await loadPublishedContent(typeKey,localeCode,slug);
-  if(!content)return {title:"Not found"};
+  if(!content||content.type.key!==typeKey||content.locale.code!==localeCode||content.slug!==slug)return {title:"Not found"};
   const description=content.seoDescription??content.excerpt??undefined;
   const canonical=`/content/${encodeURIComponent(typeKey)}/${encodeURIComponent(localeCode)}/${encodeURIComponent(slug)}`;
+  const languages:Record<string,string>={};
+  for(const alternate of content.alternates??[]){
+    if(alternate.slug)languages[alternate.localeCode]=`/content/${encodeURIComponent(typeKey)}/${encodeURIComponent(alternate.localeCode)}/${encodeURIComponent(alternate.slug)}`;
+  }
   return {
     title:content.seoTitle??content.title,
     description,
-    alternates:{canonical},
+    alternates:{canonical,languages:Object.keys(languages).length?languages:undefined},
     openGraph:{title:content.seoTitle??content.title,description,type:"article",url:canonical,locale:content.locale.code},
     robots:{index:true,follow:true},
   };
@@ -79,7 +83,7 @@ export default async function PublishedCmsPage({params}:RouteProps){
     return next;
   });
   const assets=[...mediaMap.values()].map(asset=>({...asset,url:absoluteMediaUrl(asset.url)}));
-  return <main style={{minHeight:"100vh",padding:"clamp(16px,4vw,48px)",background:"var(--vz-body-bg, #f3f3f9)"}}>
+  return <main lang={content.locale.code} dir={content.locale.direction==="RTL"?"rtl":"ltr"} style={{minHeight:"100vh",padding:"clamp(16px,4vw,48px)",background:"var(--vz-body-bg, #f3f3f9)"}}>
     <PagePreview title={content.title} excerpt={content.excerpt} fields={fields} mediaAssets={assets} direction={content.locale.direction}/>
     {content.terms.length>0&&<div style={{maxWidth:960,margin:"20px auto 0",padding:"0 24px",display:"flex",gap:8,flexWrap:"wrap"}}>{content.terms.map(term=><span key={term.id} style={{fontSize:13,padding:"5px 10px",borderRadius:999,background:"#e9ecef"}}>{term.name}</span>)}</div>}
   </main>;
