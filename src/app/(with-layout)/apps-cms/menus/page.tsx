@@ -102,7 +102,7 @@ export default function CmsMenusPage() {
         <td><div style={{paddingInlineStart:depth*20}}><div className="fw-medium">{item.label}</div><small className="text-muted">{item.contentId?t("Linked content")+": "+item.contentId.slice(0,8):item.url}</small></div></td>
         <td>{item.parentId?items.find(parentItem=>parentItem.id===item.parentId)?.label:"—"}</td>
         <td>{item.sortOrder}</td>
-        <td><Badge color={item.isActive?"success":"secondary"}>{t(item.isActive?"Active":"Inactive")}</Badge>{item.targetBlank&&<Badge className="ms-1" color="light" text="dark">{t("New tab")}</Badge>}</td>
+        <td><Badge color={item.isActive?"success":"secondary"}>{t(item.isActive?"Active":"Inactive")}</Badge>{item.targetBlank&&<Badge className="ms-1 text-dark" color="light">{t("New tab")}</Badge>}</td>
         <td><div className="d-flex gap-1 flex-wrap"><Button size="sm" outline color={item.isActive?"warning":"success"} disabled={busyId===item.id} onClick={()=>void toggleItem(item)}>{t(item.isActive?"Disable":"Enable")}</Button><Button size="sm" outline color="danger" disabled={busyId===item.id} onClick={()=>void deleteItem(item)}>{t("Delete")}</Button></div></td>
       </tr>,
       ...rows(item.id,depth+1,nextSeen)
