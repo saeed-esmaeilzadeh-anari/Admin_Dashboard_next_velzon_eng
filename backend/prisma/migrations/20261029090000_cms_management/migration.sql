@@ -1,6 +1,6 @@
 CREATE TYPE "CmsMediaKind" AS ENUM ('IMAGE','VIDEO','AUDIO','DOCUMENT','OTHER');
 CREATE TYPE "CmsFormSubmissionStatus" AS ENUM ('NEW','REVIEWED','RESOLVED','SPAM');
-CREATE TYPE "CmsWebhookDeliveryStatus" AS ENUM ('PENDING','SUCCESS','FAILED');
+CREATE TYPE "CmsWebhookDeliveryStatus" AS ENUM ('PENDING','PROCESSING','SUCCESS','FAILED');
 
 CREATE TABLE "cms_media_assets" (
 "id" UUID NOT NULL, "storageKey" TEXT NOT NULL, "originalName" TEXT NOT NULL,
