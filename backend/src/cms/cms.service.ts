@@ -148,7 +148,64 @@ export class CmsService {
     });
   }
 
+  private validateFieldConfiguration(type: CmsFieldType, config: Record<string, unknown> | undefined) {
+    if (!config) return;
+    if (type === CmsFieldType.SELECT || type === CmsFieldType.MULTISELECT) {
+      if (config.options === undefined) return;
+      if (!Array.isArray(config.options) || config.options.length > 200) {
+        throw new BadRequestException("Select fields may define at most 200 options.");
+      }
+      const values = new Set<string>();
+      for (const option of config.options) {
+        const value = typeof option === "string" ? option : isRecord(option) ? option.value : undefined;
+        if (typeof value !== "string" || !value.trim() || value.length > 200 || values.has(value)) {
+          throw new BadRequestException("Select options must have unique, non-empty values of at most 200 characters.");
+        }
+        if (isRecord(option) && option.label !== undefined && (typeof option.label !== "string" || option.label.length > 200)) {
+          throw new BadRequestException("Select option labels must be strings of at most 200 characters.");
+        }
+        values.add(value);
+      }
+      return;
+    }
+    if (type === CmsFieldType.RELATION || type === CmsFieldType.RELATION_MULTIPLE) {
+      if (config.targetTypeKey !== undefined &&
+          (typeof config.targetTypeKey !== "string" || !/^[a-z][a-z0-9_-]{0,63}$/.test(config.targetTypeKey))) {
+        throw new BadRequestException("Relation targetTypeKey must be a valid content type key.");
+      }
+      return;
+    }
+    if (type === CmsFieldType.REPEATER) {
+      if (!Array.isArray(config.fields) || config.fields.length < 1 || config.fields.length > 50) {
+        throw new BadRequestException("Repeater config must contain between 1 and 50 nested field definitions.");
+      }
+      const seen = new Set<string>();
+      const allowed: CmsFieldType[] = [
+        CmsFieldType.TEXT, CmsFieldType.TEXTAREA, CmsFieldType.RICH_TEXT, CmsFieldType.MARKDOWN,
+        CmsFieldType.INTEGER, CmsFieldType.DECIMAL, CmsFieldType.BOOLEAN, CmsFieldType.DATE,
+        CmsFieldType.DATETIME, CmsFieldType.SELECT, CmsFieldType.MULTISELECT, CmsFieldType.EMAIL, CmsFieldType.URL,
+      ];
+      for (const child of config.fields) {
+        if (!isRecord(child) || typeof child.key !== "string" ||
+            !/^[a-z][a-z0-9_-]{0,63}$/.test(child.key) || seen.has(child.key) ||
+            typeof child.type !== "string" || !allowed.includes(child.type as CmsFieldType)) {
+          throw new BadRequestException("Repeater nested fields must have unique keys and supported scalar types.");
+        }
+        if (child.label !== undefined && (typeof child.label !== "string" || !child.label.trim() || child.label.length > 100)) {
+          throw new BadRequestException("Repeater nested field labels must be strings of at most 100 characters.");
+        }
+        if (child.isRequired !== undefined && typeof child.isRequired !== "boolean") {
+          throw new BadRequestException("Repeater nested field isRequired values must be booleans.");
+        }
+        const childConfig = isRecord(child.config) ? child.config : Array.isArray(child.options) ? { options: child.options } : undefined;
+        this.validateFieldConfiguration(child.type as CmsFieldType, childConfig);
+        seen.add(child.key);
+      }
+    }
+  }
+
   async createContentType(dto: CreateContentTypeDto) {
+    for (const field of dto.fields) this.validateFieldConfiguration(field.type, field.config);
     return this.prisma.contentType.create({
       data: {
         key: dto.key, name: dto.name, description: dto.description, isActive: dto.isActive ?? true,
@@ -176,6 +233,7 @@ export class CmsService {
 
   async addContentTypeField(contentTypeId: string, dto: CreateContentTypeFieldDto) {
     if (!await this.prisma.contentType.findUnique({ where: { id: contentTypeId } })) throw new NotFoundException("Content type not found.");
+    this.validateFieldConfiguration(dto.type, dto.config);
     return this.prisma.contentTypeField.create({
       data: {
         contentTypeId, key: dto.key, label: dto.label, type: dto.type,
@@ -193,7 +251,10 @@ export class CmsService {
     if (dto.isRequired !== undefined) data.isRequired = dto.isRequired;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
-    if (dto.config !== undefined) data.config = asJson(dto.config);
+    if (dto.config !== undefined) {
+      this.validateFieldConfiguration(field.type, dto.config);
+      data.config = asJson(dto.config);
+    }
     if (dto.isLocalized !== undefined && dto.isLocalized !== field.isLocalized) {
       const rows = await this.prisma.content.findMany({
         where: { contentTypeId },
