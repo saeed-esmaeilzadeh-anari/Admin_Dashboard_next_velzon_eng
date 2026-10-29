@@ -154,7 +154,7 @@ export default function CmsContentTypesPage() {
               <Button type="submit" color="primary" block disabled={saving}>{saving ? <Spinner size="sm" className="me-2" /> : null}{t("Create type")}</Button>
             </Form>
           </CardBody></Card>
-          <Alert color="warning">{t("The current field system supports typed JSON-backed fields. Media relations, repeaters and visual page-builder blocks are planned for later increments.")}</Alert>
+          <Alert color="warning">{t("Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.")}</Alert>
         </Col>
       </Row>
     </Container>
