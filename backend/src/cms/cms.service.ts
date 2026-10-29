@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable, Logger, NotFoundException, Optional } from "@nestjs/common";
-import { CmsContentStatus, CmsFieldType, LocaleDirection, Prisma } from "@prisma/client";
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, Optional } from "@nestjs/common";
+import { CmsContentStatus, CmsFieldType, CmsMediaKind, LocaleDirection, Prisma } from "@prisma/client";
 import { AuthenticatedUser } from "../common/decorators/current-user.decorator";
 import { PrismaService } from "../prisma/prisma.service";
 import { CmsWebhookService } from "./cms-webhook.service";
@@ -359,8 +359,8 @@ export class CmsService {
     };
     const version = tr.version + 1;
     await this.prisma.$transaction(async tx => {
-      const updated = await tx.contentTranslation.update({
-        where: { id: tr.id },
+      const claim = await tx.contentTranslation.updateMany({
+        where: { id: tr.id, version: tr.version, status: tr.status },
         data: {
           title: next.title, slug: next.slug, excerpt: next.excerpt,
           seoTitle: next.seoTitle, seoDescription: next.seoDescription,
@@ -369,6 +369,10 @@ export class CmsService {
             ? { status: CmsContentStatus.DRAFT, scheduledAt: null } : {}),
         },
       });
+      if (claim.count !== 1) {
+        throw new ConflictException("This translation was changed by another editor. Reload the latest version and retry.");
+      }
+      const updated = await tx.contentTranslation.findUniqueOrThrow({ where: { id: tr.id } });
       await tx.contentRevision.create({
         data: { translationId: tr.id, version, createdById: user.id, changeNote: "Content edited",
           snapshot: this.snapshot(updated, tr.content.data) },
@@ -395,11 +399,17 @@ export class CmsService {
     this.assertRequiredFields(nextData, defs);
     await this.assertMediaReferences(nextData, defs);
     await this.prisma.$transaction(async tx => {
-      await tx.content.update({ where: { id: contentId }, data: { data: asJson(nextData) } });
+      const contentClaim = await tx.content.updateMany({
+        where: { id: contentId, updatedAt: item.updatedAt },
+        data: { data: asJson(nextData) },
+      });
+      if (contentClaim.count !== 1) {
+        throw new ConflictException("Shared content was changed by another editor. Reload the latest version and retry.");
+      }
       for (const translation of item.translations) {
         const version = translation.version + 1;
-        const updated = await tx.contentTranslation.update({
-          where: { id: translation.id },
+        const translationClaim = await tx.contentTranslation.updateMany({
+          where: { id: translation.id, version: translation.version, status: translation.status },
           data: {
             version,
             ...(translation.status === CmsContentStatus.PUBLISHED ||
@@ -409,6 +419,10 @@ export class CmsService {
               : {}),
           },
         });
+        if (translationClaim.count !== 1) {
+          throw new ConflictException("A language version changed while shared fields were being saved. Reload and retry.");
+        }
+        const updated = await tx.contentTranslation.findUniqueOrThrow({ where: { id: translation.id } });
         await tx.contentRevision.create({
           data: { translationId: translation.id, version, createdById: user.id,
             changeNote: "Shared fields updated", snapshot: this.snapshot(updated, nextData) },
@@ -808,7 +822,14 @@ export class CmsService {
         if (target !== CmsContentStatus.DRAFT || clearPublication) update.publishedAt = null;
       }
       if (clearPublication) { update.publishedSlug = null; update.publishedSnapshot = Prisma.DbNull; }
-      const updated = await tx.contentTranslation.update({ where: { id: tr.id }, data: update });
+      const claim = await tx.contentTranslation.updateMany({
+        where: { id: tr.id, version: tr.version, status: tr.status },
+        data: update as Prisma.ContentTranslationUpdateManyMutationInput,
+      });
+      if (claim.count !== 1) {
+        throw new ConflictException("This translation changed while the workflow action was running. Reload and retry.");
+      }
+      const updated = await tx.contentTranslation.findUniqueOrThrow({ where: { id: tr.id } });
       await tx.contentRevision.create({ data: {
         translationId: tr.id, version, createdById: user.id, changeNote: note,
         snapshot: this.snapshot(updated, tr.content.data),
@@ -967,16 +988,56 @@ export class CmsService {
 
   private async assertMediaReferences(values: Record<string, unknown>, definitions: FieldDefinition[]) {
     const mediaIds = new Set<string>();
+    const imageBlockIds = new Set<string>();
     for (const field of definitions) {
       const value = values[field.key];
-      if (field.type === CmsFieldType.MEDIA && typeof value === "string") mediaIds.add(value);
+      if (field.type === CmsFieldType.MEDIA && typeof value === "string" && value) mediaIds.add(value);
       if (field.type === CmsFieldType.MEDIA_MULTIPLE && Array.isArray(value)) {
-        for (const id of value) if (typeof id === "string") mediaIds.add(id);
+        for (const id of value) if (typeof id === "string" && id) mediaIds.add(id);
       }
     }
+
+    const blocksField = definitions.find(field => field.key === "blocks" && field.type === CmsFieldType.JSON);
+    if (blocksField && values.blocks !== undefined) {
+      const blocks = values.blocks;
+      if (!Array.isArray(blocks) || blocks.length > 100) {
+        throw new BadRequestException("Page builder blocks must be an array containing at most 100 blocks.");
+      }
+      for (const [index, entry] of blocks.entries()) {
+        if (!isRecord(entry)) throw new BadRequestException("Page builder block " + (index + 1) + " must be an object.");
+        if (entry.type === "image") {
+          if (typeof entry.mediaId === "string" && entry.mediaId) {
+            if (!this.isUuid(entry.mediaId)) throw new BadRequestException("Image blocks must reference a valid media asset ID.");
+            mediaIds.add(entry.mediaId); imageBlockIds.add(entry.mediaId);
+          }
+        } else if (entry.type === "gallery") {
+          if (entry.mediaIds !== undefined && (!Array.isArray(entry.mediaIds) || entry.mediaIds.length > 100)) {
+            throw new BadRequestException("Gallery blocks can contain at most 100 media assets.");
+          }
+          if (Array.isArray(entry.mediaIds)) {
+            for (const id of entry.mediaIds) {
+              if (typeof id !== "string" || !this.isUuid(id)) throw new BadRequestException("Gallery blocks must reference valid media asset IDs.");
+              mediaIds.add(id); imageBlockIds.add(id);
+            }
+          }
+        }
+      }
+    }
+
     if (!mediaIds.size) return;
-    const existing = await this.prisma.mediaAsset.findMany({ where: { id: { in: [...mediaIds] } }, select: { id: true } });
-    if (existing.length !== mediaIds.size) throw new BadRequestException("One or more selected media assets no longer exist.");
+    const existing = await this.prisma.mediaAsset.findMany({
+      where: { id: { in: [...mediaIds] } },
+      select: { id: true, kind: true },
+    });
+    const existingIds = new Set(existing.map(asset => asset.id));
+    if (existingIds.size !== mediaIds.size) throw new BadRequestException("One or more selected media assets no longer exist.");
+    if (existing.some(asset => imageBlockIds.has(asset.id) && asset.kind !== CmsMediaKind.IMAGE)) {
+      throw new BadRequestException("Image and gallery blocks may reference image assets only.");
+    }
+  }
+
+  private isUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   }
 
   private validateFieldValue(field: FieldDefinition, value: unknown) {
@@ -1019,7 +1080,38 @@ export class CmsService {
       if (!Array.isArray(value) || value.length > 100 || !value.every(item => typeof item === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item))) return wrong();
       return;
     }
-    if (field.type === CmsFieldType.JSON) { if (isRecord(value) || Array.isArray(value)) return; return wrong(); }
+    if (field.type === CmsFieldType.JSON) {
+      if (field.key === "blocks") {
+        if (!Array.isArray(value) || value.length > 100) return wrong();
+        const supported = new Set(["hero", "richText", "image", "gallery", "cta", "faq", "cardGrid"]);
+        for (const block of value) {
+          if (!isRecord(block) || typeof block.type !== "string" || !supported.has(block.type)) return wrong();
+          const textKeys = ["eyebrow", "title", "heading", "body", "bodyMarkdown", "buttonLabel", "buttonUrl", "altText", "caption", "url"];
+          for (const key of textKeys) {
+            if (block[key] !== undefined && (typeof block[key] !== "string" || block[key].length > 10000)) return wrong();
+          }
+          for (const key of ["buttonUrl", "url"]) {
+            const href = block[key];
+            if (typeof href !== "string" || !href) continue;
+            const safePath = href.startsWith("/") && !href.startsWith("//") && !/[\\r\\n\\\\]/.test(href);
+            let safeExternal = false;
+            try { safeExternal = new URL(href).protocol === "https:"; } catch { /* local paths are handled above */ }
+            if (!safePath && !safeExternal) return wrong();
+          }
+          if ((block.type === "faq" || block.type === "cardGrid")) {
+            const collection = block.type === "faq" ? block.items : block.cards;
+            if (collection !== undefined && (!Array.isArray(collection) || collection.length > 100 ||
+              collection.some(item => !isRecord(item) || Object.values(item).some(entry => typeof entry !== "string" || entry.length > 10000)))) return wrong();
+          }
+          if (block.type === "image" && block.mediaId !== undefined && block.mediaId !== "" && (typeof block.mediaId !== "string" || !this.isUuid(block.mediaId))) return wrong();
+          if (block.type === "gallery" && block.mediaIds !== undefined &&
+            (!Array.isArray(block.mediaIds) || block.mediaIds.length > 100 || block.mediaIds.some(id => typeof id !== "string" || !this.isUuid(id)))) return wrong();
+        }
+        return;
+      }
+      if (isRecord(value) || Array.isArray(value)) return;
+      return wrong();
+    }
     return wrong();
   }
 }
