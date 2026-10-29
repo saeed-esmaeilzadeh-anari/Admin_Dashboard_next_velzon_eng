@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards, UseInterceptors } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Role } from "@prisma/client";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -7,6 +7,7 @@ import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { CmsPermissionsGuard } from "./cms-permissions.guard";
 import { CmsPermissions } from "./cms-permissions.decorator";
+import { CmsAuditInterceptor } from "./cms-audit.interceptor";
 import { CmsService } from "./cms.service";
 import {
   CreateContentDto, CreateTranslationDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto,
@@ -17,6 +18,7 @@ import {
 @ApiTags("cms-admin")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard, CmsPermissionsGuard)
+@UseInterceptors(CmsAuditInterceptor)
 @Controller("cms")
 export class CmsController {
   constructor(private readonly cms: CmsService) {}
