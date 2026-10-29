@@ -284,5 +284,8 @@
   "Content preview": "内容预览",
   "View published page": "查看已发布页面",
   "Languages": "语言",
-  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "已支持媒体和页面构建器字段；通用关联字段和重复字段暂不支持。"
+  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "已支持媒体和页面构建器字段；通用关联字段和重复字段暂不支持。",
+  "Content entries": "内容条目",
+  "Previous": "上一页",
+  "Next": "下一页"
 }
