@@ -1,78 +1,33 @@
-# Full-stack implementation progress
+# Full-Stack Implementation Progress
 
-## Added to branch feat/full-stack-foundation
+Branch: feat/full-stack-foundation
 
-- [x] Inspected repository metadata, branch head, package manifest, API helper, auth configuration and environment example.
-- [x] Confirmed the legacy helper imports mock behavior unconditionally.
-- [x] Added a NestJS REST API project under backend.
-- [x] Added Prisma/PostgreSQL models and an initial migration for users, categories, products, customers, orders/order items, CRM leads, projects/tasks, tickets and audit logs.
-- [x] Added administrator seed using environment values; no default password is committed.
-- [x] Added JWT authentication, public registration restricted to USER, current-user endpoint and admin user management.
-- [x] Added DTO validation, CORS allow-list, Helmet and Swagger.
-- [x] Added dashboard summary and endpoints for products/categories, customers, leads, projects, tasks, tickets and orders.
-- [x] Added transactional order creation, server-side price calculation and atomic stock decrements.
-- [x] Added initial implementation audit, data dictionary and relationship documentation.
-- [ ] Frontend page-by-page integration with the new endpoints.
-- [x] Backend CI: Prisma validation/generation, TypeScript check, unit tests and build have passed for the CMS core.
-- [ ] Frontend production type-check/build is still pending on the latest branch tip.
-- [ ] Password reset/email verification, refresh-token rotation, rate limiting, detailed audit writes and file storage.
-- [ ] Add jobs, invoices, messaging, file manager, settings and other workflows after analyzing their source forms.
-- [ ] Deployment and production database provisioning.
+## CMS areas implemented on this branch
 
-## Verification status
+- PostgreSQL/Prisma models and migrations for locale metadata, dynamic content types and fields, stable content identities, per-locale translations, publication snapshots/revisions, media assets, taxonomies and term translations, navigation menus, redirects, forms/submissions, webhook configuration/delivery, role permissions, and audit records.
+- NestJS APIs for CMS content CRUD, language versions, workflow transitions, content type/field administration, media upload and metadata, taxonomies, menus, redirects, forms, webhook delivery/retry, role permission grants, audit log, import/export, and published-only content delivery.
+- Seeded Persian (fa-IR, RTL) and English (en-US, LTR) locales, starter Page/Article content types, dynamic fields for media/gallery/page blocks, a permission catalog, and default ADMIN/MANAGER grants.
+- Dashboard UI for content listing, creation, translation/editing, workflow and revision restore, content type/field management, languages, page builder and preview, media, taxonomies, menus, redirects, forms, webhooks, permissions, audit logs and import/export.
+- Public Next.js content route at /content/:typeKey/:localeCode/:slug with locale direction, basic SEO metadata and language alternates. Public rich text is rendered as text rather than executing arbitrary author HTML.
+- Next.js sitemap metadata route and backend JSON/XML sitemap endpoints for active, published language versions.
+- HMAC-signed webhook delivery with public HTTPS/DNS checks and retry records; configurable local/S3 media storage adapter.
+- Backend and frontend CI workflows are configured for Prisma validation/generation, TypeScript checks, unit tests, Nest build, frontend TypeScript check, and production Next.js build.
 
-The repository was changed through GitHub's API because a local clone was not possible in this environment. Do not treat the source edits alone as proof of a successful build. Backend CI has subsequently passed (see the dated CMS increment below); the latest frontend CI needs its final type-check/build result before the PR is considered verified.
+## Current verification
 
+- Backend CI on code commit f6c163b26c2c0fd94b5b95f8eaeef9275ecf09c6 passed Prisma schema validation, Prisma Client generation and TypeScript checking; unit tests were running when this note was last updated. See https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40826504593.
+- Frontend CI for the current frontend source snapshot (commit 8190cfe2104339cd07167d618da71534155da1fd) was still installing dependencies at last check. The latest branch includes further backend-only and documentation commits, so the frontend source is unchanged since that snapshot, but a successful type-check/build result is still required. See https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40826416336.
+- The repository was edited through GitHub's API because a local clone could not be used in this environment. CI evidence, not the act of committing, determines whether code is verified.
 
-## Multilingual CMS core and management UI — 2026-10-28
+## Remaining work before a production launch
 
-### Implemented on this feature branch
+- Existing e-commerce, CRM, project/task, ticket and template/demo screens are not all migrated from Fake Backend to database-backed APIs. This branch implements a CMS, not a finished replacement of every page in the original Velzon template.
+- Fine-grained role-to-action grants exist, but ownership/team scoping and security integration tests for cross-user access remain.
+- The page builder is a first usable block editor (hero, text, image/gallery, CTA, FAQ and card grid), not a complete visual drag-and-drop site builder with arbitrary nested layouts and reusable design templates.
+- Media binaries are not embedded in import/export packages. Import operates per record, produces partial/failure results and creates drafts; ensure referenced media exists in the destination before importing.
+- Rich text/Markdown remains safe plain text in the provided public renderer. Do not render raw HTML without a maintained sanitizer and allowlist.
+- Local filesystem uploads need persistent storage; S3 requires bucket, endpoint/public URL and credential configuration. Secret provisioning and a deployed storage smoke test have not been performed.
+- Scheduled publishing and webhook delivery workers run in-process every minute. Serverless deployment needs an external durable scheduler/queue/worker.
+- No production database, public frontend/backend deployment, real login smoke test, E2E browser suite, accessibility audit, load test or backup/restore rehearsal has been executed here.
 
-- [x] Added versioned migration and Prisma models for locales, content types, dynamic fields, stable content identities, per-locale translations, publication snapshots and revision history.
-- [x] Seeded `fa-IR` as default RTL locale and `en-US` as LTR, plus starter `page` and `article` content types.
-- [x] Added CMS REST APIs for locale administration, content-type/field management, content creation/list/detail, translation create/update, shared-field updates, draft-review-publish-schedule-reject/archive/unpublish/restore and revisions.
-- [x] Added public read APIs that return published snapshots only.
-- [x] Added unit tests for dynamic field validation and CI checks for Prisma validation, client generation, type-check, tests and backend build.
-- [x] Added dashboard CMS navigation and management pages for content list, content create/edit/translation workflow, content types/fields and languages.
-- [x] Added a typed frontend API client and opt-in real backend login via `NEXT_PUBLIC_DEFAULT_AUTH=backend`; template fake auth remains the default.
-- [x] Added Persian and English UI dictionary entries for the new CMS interface and sync document language/direction on language switch.
-
-### CI verification
-
-- Backend CI run https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40660666166 completed successfully at commit `9801924b839d53494219bb7a3efc086b125935d8` (Prisma validate/generate, TypeScript type-check, unit tests and backend build).
-- Frontend CI was introduced and initially exposed a pre-existing peer-dependency conflict (`react-dual-listbox@6` declares React 16–18 peers while this repo has React 19); the workflow now uses `npm install --legacy-peer-deps` to match the repo's existing npm compatibility configuration. Its type-check/build result must be read from the latest run before claiming it is green.
-
-### Explicitly not complete yet
-
-- The CMS has a real backend and several real frontend admin pages, but the full legacy dashboard is **not** converted. Existing e-commerce, CRM, projects, tasks and other template pages still need their own page-by-page integration and regression testing.
-- Media library and local/S3 storage, taxonomies, menus, redirects/sitemap/hreflang, visual page-builder blocks/repeaters, import/export, forms, webhooks/notifications, and detailed permission editor remain unimplemented.
-- The current role enforcement is coarse (ADMIN/MANAGER on CMS write endpoints). Fine-grained per-action and per-content permission policies are required before a production CMS rollout.
-- Rich text is not sanitized by the backend; public rendering must sanitize untrusted rich-text/HTML before injection.
-- In-process minute scheduler is not durable on serverless runtimes; use an external cron or durable worker there.
-- No production database or frontend/backend deployment has been provisioned or smoke-tested by this increment.
-
-Do not describe the complete enterprise scope as finished until these limitations are addressed and tests cover the real workflows.
-
-
-## Final CMS surface added (2026-10-29)
-
-- [x] Added a public frontend route for published content at `/content/:typeKey/:localeCode/:slug`; the route resolves content through the public-only backend API and uses a safe plain-text/structured-block renderer.
-- [x] Added sitemap and robots metadata routes. `/sitemap.xml` reads published localized records and emits hreflang alternates when `NEXT_PUBLIC_SITE_URL` is configured.
-- [x] Added public menu URL generation pointing to the CMS public content route.
-- [x] Added public sitemap JSON endpoint plus backend XML sitemap endpoint.
-- [x] Added JSON content import/export with schema versioning, per-record results, and import-as-draft behavior. Media binaries are not embedded into transfer files; references remain IDs and must exist in the destination database.
-- [x] Added a visual block editor and preview route for hero, text/Markdown, image, gallery, CTA, FAQ and card grid blocks.
-- [x] Added media, taxonomy, menu, redirect, form submission, webhook delivery/retry, permission and audit-log management surfaces.
-
-### Final verification condition
-
-The latest feature branch has active CI checks for both the backend and frontend. Do not merge the draft PR until both current-tip workflows complete successfully. A successful backend workflow on an earlier commit is not a substitute for a green check on the exact PR head.
-
-### Remaining deployment / production boundaries
-
-- Local media storage is implemented. On ephemeral/serverless hosting, uploads need persistent mounted storage or a durable external storage provider; filesystem persistence is not guaranteed by the CMS code.
-- The in-process minute scheduler and webhook worker are suitable for continuously running Node processes. Serverless deployments require a durable external scheduler/worker.
-- UI/API scope is focused on CMS. Existing legacy e-commerce/CRM/projects/tasks/demo pages are not all migrated from the template's fake API.
-- Rich-text/Markdown preview renders text safely rather than executing user-provided HTML. A production frontend that intentionally renders rich HTML must sanitize it with a well-tested allowlist renderer.
-- The import report marks partial imports, but import operations are per record, not one global all-or-nothing transaction. Review partial results before retrying.
-- Final production database setup, secret provisioning, a deployed smoke test, accessibility/manual QA and end-to-end browser tests remain deployment tasks.
+Do not treat the project as production-final until current-tip backend and frontend CI are green and those deployment/security checks have been completed.
