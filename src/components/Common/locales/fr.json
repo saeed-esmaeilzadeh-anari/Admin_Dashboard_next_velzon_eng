@@ -283,5 +283,6 @@
   "Save changes": "Enregistrer les modifications",
   "Content preview": "Aperçu du contenu",
   "View published page": "Voir la page publiée",
-  "Languages": "Langues"
+  "Languages": "Langues",
+  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "Les champs média et constructeur de pages sont pris en charge. Les champs génériques de relation et de répétition ne le sont pas encore."
 }
