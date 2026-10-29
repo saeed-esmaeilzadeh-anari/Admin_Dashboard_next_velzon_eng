@@ -7,6 +7,8 @@ import { Alert, Button, Card, CardBody, CardHeader, Col, Container, Form, Input,
 import { useTranslation } from "react-i18next";
 import { cmsApi, CmsContentType, CmsField, CmsLocale, CmsMediaAsset } from "@/helpers/cmsApi";
 import PageBuilderField from "@/components/Cms/PageBuilderField";
+import RelationField from "@/components/Cms/RelationField";
+import RepeaterField from "@/components/Cms/RepeaterField";
 
 function getErrorMessage(error: unknown): string {
   const value = error as { response?: { data?: { message?: string | string[] } }; message?: string };
@@ -17,7 +19,7 @@ function createSlug(value: string) {
   return value.normalize("NFKC").toLowerCase().trim().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "");
 }
 function fieldInitialValue(field: CmsField): unknown {
-  if (field.key === "blocks" || field.type === "MULTISELECT" || field.type === "MEDIA_MULTIPLE") return [];
+  if (field.key === "blocks" || field.type === "MULTISELECT" || field.type === "MEDIA_MULTIPLE" || field.type === "RELATION_MULTIPLE" || field.type === "REPEATER") return [];
   if (field.type === "BOOLEAN") return false;
   return "";
 }
@@ -31,7 +33,9 @@ function fieldValueValid(field: CmsField, value: unknown): boolean {
     if (typeof value !== "string") return true;
     try { JSON.parse(value); return true; } catch { return false; }
   }
-  if (field.type === "MULTISELECT" || field.type === "MEDIA_MULTIPLE") return Array.isArray(value);
+  if (field.type === "MULTISELECT" || field.type === "MEDIA_MULTIPLE" || field.type === "RELATION_MULTIPLE") return Array.isArray(value) && value.every(item => typeof item === "string");
+  if (field.type === "RELATION") return value === "" || typeof value === "string";
+  if (field.type === "REPEATER") return Array.isArray(value) && value.every(item => typeof item === "object" && item !== null && !Array.isArray(item));
   if (field.type === "MEDIA") return value === "" || typeof value === "string";
   return true;
 }
@@ -148,6 +152,12 @@ export default function NewCmsContentPage() {
 
   const renderField = (field: CmsField) => {
     const value = values[field.key];
+    if (field.type === "RELATION" || field.type === "RELATION_MULTIPLE") {
+      return <Col md={12} key={field.key}><div className="mb-3"><small className="text-muted d-block mb-1">{field.isLocalized ? t("Translated field") : t("Shared field")}</small><RelationField field={field} value={value} localeCode={localeCode} onChange={next => setFieldValue(field, next)} /></div></Col>;
+    }
+    if (field.type === "REPEATER") {
+      return <Col md={12} key={field.key}><div className="mb-3"><RepeaterField field={field} value={value} onChange={next => setFieldValue(field, next)} /></div></Col>;
+    }
     const options = Array.isArray(field.config?.options) ? field.config?.options as Array<string | { value: string; label?: string }> : [];
     const choices = options.map(option => typeof option === "string" ? { value: option, label: option } : { value: option.value, label: option.label ?? option.value });
     return <Col md={field.type === "TEXTAREA" || field.type === "RICH_TEXT" || field.type === "MARKDOWN" || field.type === "JSON" ? 12 : 6} key={field.key}>
