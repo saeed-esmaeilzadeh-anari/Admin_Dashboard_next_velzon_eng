@@ -694,5 +694,6 @@
   "Translation count": "Translation count",
   "Page builder blocks": "Page builder blocks",
   "Languages": "Languages",
-  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet."
+  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.",
+  "Content entries": "Content entries"
 }
