@@ -59,6 +59,8 @@ jobs:
         run: npx prisma migrate status
       - name: Seed locales, content types, permissions and test administrator
         run: npm run prisma:seed
+      - name: Smoke-test migrated database and seed invariants
+        run: npm run test:db-smoke
       - name: Type-check
         run: npm run type-check
       - name: Unit tests
