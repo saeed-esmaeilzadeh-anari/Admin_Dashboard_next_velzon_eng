@@ -325,3 +325,44 @@ describe("CmsService revision restoration", () => {
     }));
   });
 });
+
+
+describe("CmsService content list filters", () => {
+  const findMany = jest.fn();
+  const count = jest.fn();
+  const service = new CmsService({
+    content: { findMany, count },
+  } as unknown as PrismaService);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    findMany.mockResolvedValue([]);
+    count.mockResolvedValue(0);
+  });
+
+  it("applies status, locale and search filters to both parent selection and included translations", async () => {
+    await service.listContents({
+      page: 2,
+      limit: 20,
+      typeKey: "article",
+      localeCode: "fa-IR",
+      status: CmsContentStatus.DRAFT,
+      search: "hello",
+    } as never);
+
+    const query = findMany.mock.calls[0][0];
+    const translationFilter = {
+      locale: { is: { code: "fa-IR" } },
+      status: CmsContentStatus.DRAFT,
+      OR: [
+        { title: { contains: "hello", mode: "insensitive" } },
+        { slug: { contains: "hello", mode: "insensitive" } },
+      ],
+    };
+    expect(query.where.contentType).toEqual({ is: { key: "article" } });
+    expect(query.where.translations).toEqual({ some: translationFilter });
+    expect(query.include.translations.where).toEqual(translationFilter);
+    expect(query.skip).toBe(20);
+    expect(query.take).toBe(20);
+  });
+});
