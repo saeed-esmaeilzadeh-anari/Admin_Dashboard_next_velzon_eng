@@ -283,5 +283,6 @@
   "Save changes": "Änderungen speichern",
   "Content preview": "Inhaltsvorschau",
   "View published page": "Veröffentlichte Seite ansehen",
-  "Languages": "Sprachen"
+  "Languages": "Sprachen",
+  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "Medien- und Seitenbaustein-Felder werden unterstützt. Allgemeine Beziehungs- und Wiederholungsfelder werden noch nicht unterstützt."
 }
