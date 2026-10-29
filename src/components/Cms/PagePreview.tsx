@@ -15,6 +15,15 @@ function asMedia(value: unknown): PreviewMedia | null {
   ...(typeof record.sizeBytes==="number"?{sizeBytes:record.sizeBytes}:{})};
 }
 function text(value:unknown):string{return typeof value==="string"?value:value===null||value===undefined?"":String(value);}
+type PublicRelation = { id: string; type?: { key?: string; name?: string }; locale?: { code?: string }; title?: string | null; slug?: string | null; excerpt?: string | null };
+function asPublicRelation(value: unknown): PublicRelation | null {
+ if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+ const item=value as Record<string,unknown>;
+ if(typeof item.id!=="string" || typeof item.title!=="string" || typeof item.slug!=="string" ||
+    typeof item.type!=="object" || item.type===null || typeof (item.type as Record<string,unknown>).key!=="string" ||
+    typeof item.locale!=="object" || item.locale===null || typeof (item.locale as Record<string,unknown>).code!=="string") return null;
+ return item as unknown as PublicRelation;
+}
 function safeHref(value:unknown):string|null{
  if(typeof value!=="string"||!value.trim())return null;
  const path=value.trim();
@@ -196,6 +205,14 @@ export default function CmsPagePreview({title,excerpt,fields,mediaAssets=[],dire
    return <section key={text(block.id)||index} className="border rounded p-3"><div style={{whiteSpace:"pre-wrap"}}>{JSON.stringify(block,null,2)}</div></section>;
   })}</div>:<div className="d-grid gap-4">{Object.entries(fields).filter(([key,value])=>key!=="blocks"&&value!==null&&value!==undefined&&value!=="").map(([key,value])=>{
       const label=key.replace(/([A-Z])/g," $1");
+      const relation=asPublicRelation(value);
+      if(relation) {
+        const href=`/content/${encodeURIComponent(relation.type!.key!)}/${encodeURIComponent(relation.locale!.code!)}/${encodeURIComponent(relation.slug!)}`;
+        return <section key={key}><h2 className="h5 fw-bold text-capitalize">{label}</h2><a href={href} className="d-inline-flex flex-column border rounded-3 p-3 text-decoration-none"><strong>{relation.title}</strong>{relation.excerpt&&<span className="small text-muted mt-1">{relation.excerpt}</span>}</a></section>;
+      }
+      if(Array.isArray(value) && value.length>0 && value.every(item=>asPublicRelation(item)!==null)) {
+        return <section key={key}><h2 className="h5 fw-bold text-capitalize">{label}</h2><div className="d-grid gap-2">{value.map(item=>asPublicRelation(item)!).map(item=><a key={item.id} href={`/content/${encodeURIComponent(item.type!.key!)}/${encodeURIComponent(item.locale!.code!)}/${encodeURIComponent(item.slug!)}`} className="border rounded-3 p-3 text-decoration-none"><strong>{item.title}</strong>{item.excerpt&&<span className="small text-muted d-block mt-1">{item.excerpt}</span>}</a>)}</div></section>;
+      }
       const embedded=asMedia(value);
       if(embedded){const asset=embedded;return <section key={key}><h2 className="h5 fw-bold text-capitalize">{label}</h2>{renderMedia(asset,asset.altText??"",asset.caption??"")}</section>;}
       if(typeof value==="string"&&mediaById.has(value)){const asset=mediaById.get(value)!;return <section key={key}><h2 className="h5 fw-bold text-capitalize">{label}</h2>{renderMedia(asset,asset.altText??"",asset.caption??"")}</section>;}
