@@ -1,7 +1,7 @@
 import {
-  BadRequestException, Injectable, Logger, NotFoundException,
+  BadRequestException, ConflictException, Injectable, Logger, NotFoundException,
 } from "@nestjs/common";
-import { CmsMediaKind, Prisma } from "@prisma/client";
+import { CmsFieldType, CmsMediaKind, Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { basename } from "node:path";
 import { CmsMediaStorageService } from "./cms-media-storage.service";
@@ -112,11 +112,43 @@ export class CmsMediaService {
   async delete(id: string) {
     const asset = await this.prisma.mediaAsset.findUnique({ where: { id } });
     if (!asset) throw new NotFoundException("Media asset not found.");
+    await this.assertAssetIsNotReferenced(id);
+    // Remove the object first. If storage deletion fails, keep its metadata so an administrator can retry.
+    await this.storage.delete(asset.storageKey);
     await this.prisma.mediaAsset.delete({ where: { id } });
-    try { await this.storage.delete(asset.storageKey); return { id, deleted: true, fileRemoved: true }; }
-    catch (error) {
-      this.logger.error("Media metadata was deleted but the stored object could not be removed: " + String(error));
-      return { id, deleted: true, fileRemoved: false };
+    return { id, deleted: true, fileRemoved: true };
+  }
+
+  private async assertAssetIsNotReferenced(mediaId: string) {
+    const definitions = await this.prisma.contentTypeField.findMany({
+      where: { isActive: true, type: { in: [CmsFieldType.MEDIA, CmsFieldType.MEDIA_MULTIPLE] } },
+      select: { key: true, type: true, isLocalized: true },
+    });
+    const contentConditions: Prisma.ContentWhereInput[] = [
+      // The built-in page builder stores media IDs in blocks JSON rather than individual dynamic fields.
+      { data: { path: ["blocks"], array_contains: [{ mediaId }] } },
+      { data: { path: ["blocks"], array_contains: [{ mediaIds: [mediaId] }] } },
+      ...definitions.filter(field => !field.isLocalized).map(field =>
+        field.type === CmsFieldType.MEDIA
+          ? { data: { path: [field.key], equals: mediaId } } as Prisma.ContentWhereInput
+          : { data: { path: [field.key], array_contains: [mediaId] } } as Prisma.ContentWhereInput,
+      ),
+    ];
+    const translationConditions: Prisma.ContentTranslationWhereInput[] = [
+      { data: { path: ["blocks"], array_contains: [{ mediaId }] } },
+      { data: { path: ["blocks"], array_contains: [{ mediaIds: [mediaId] }] } },
+      ...definitions.filter(field => field.isLocalized).map(field =>
+        field.type === CmsFieldType.MEDIA
+          ? { data: { path: [field.key], equals: mediaId } } as Prisma.ContentTranslationWhereInput
+          : { data: { path: [field.key], array_contains: [mediaId] } } as Prisma.ContentTranslationWhereInput,
+      ),
+    ];
+    const [contentReference, translationReference] = await Promise.all([
+      this.prisma.content.findFirst({ where: { OR: contentConditions }, select: { id: true } }),
+      this.prisma.contentTranslation.findFirst({ where: { OR: translationConditions }, select: { id: true } }),
+    ]);
+    if (contentReference || translationReference) {
+      throw new ConflictException("This media asset is used by CMS content. Remove its references before deleting it.");
     }
   }
 }
