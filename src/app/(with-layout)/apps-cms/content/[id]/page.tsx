@@ -225,7 +225,7 @@ export default function CmsContentEditorPage() {
   const workflowActions: Array<{ action: "submit" | "publish" | "reject" | "schedule" | "unpublish" | "archive" | "restore-to-draft"; label: string; color: string }> = selectedTranslation ? (
     selectedTranslation.status === "DRAFT" ? [{ action: "submit", label: "Submit for review", color: "info" }, ...(selectedTranslation.publishedSlug ? [{ action: "unpublish" as const, label: "Unpublish live copy", color: "warning" }] : []), { action: "archive", label: "Archive", color: "danger" }] :
     selectedTranslation.status === "IN_REVIEW" ? [{ action: "publish", label: "Publish", color: "success" }, { action: "schedule", label: "Schedule publication", color: "primary" }, { action: "reject", label: "Reject", color: "warning" }, { action: "archive", label: "Archive", color: "danger" }] :
-    selectedTranslation.status === "SCHEDULED" ? [{ action: "unpublish", label: "Cancel scheduled/live publication", color: "warning" }] :
+    selectedTranslation.status === "SCHEDULED" ? [{ action: "publish", label: "Publish now", color: "success" }, { action: "unpublish", label: "Cancel schedule", color: "warning" }] :
     selectedTranslation.status === "PUBLISHED" ? [{ action: "unpublish", label: "Unpublish", color: "warning" }, { action: "archive", label: "Archive", color: "danger" }] :
     [{ action: "restore-to-draft", label: "Restore to draft", color: "secondary" }]
   ) : [];
