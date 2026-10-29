@@ -626,6 +626,12 @@ export class CmsService {
   }
 
   async listPublicContent(typeKey: string, localeCode: string, query: ListPublicContentQuery) {
+    const [contentType, locale] = await Promise.all([
+      this.prisma.contentType.findUnique({ where: { key: typeKey }, select: { id: true, isActive: true } }),
+      this.prisma.locale.findUnique({ where: { code: localeCode }, select: { id: true, isActive: true } }),
+    ]);
+    if (!contentType || !contentType.isActive) throw new NotFoundException("Published content type was not found.");
+    if (!locale || !locale.isActive) throw new NotFoundException("Active locale was not found.");
     const page = Number(query.page) || 1;
     const limit = Math.min(100, Number(query.limit) || 20);
     const where: Prisma.ContentTranslationWhereInput = {

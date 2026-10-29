@@ -6,10 +6,6 @@ import { ListPublicContentQuery } from "./dto/cms.dto";
 @Controller("public/cms")
 export class PublicCmsController {
   constructor(private readonly cms: CmsService) {}
-  @Get("sitemap")
-  @ApiOperation({ summary: "List published CMS sitemap entries and translation alternates" })
-  sitemapEntries() { return this.cms.publicSitemap(); }
-
   @Get("sitemap.xml")
   @Header("Content-Type", "application/xml; charset=utf-8")
   @ApiOperation({ summary: "Generate an XML sitemap for published CMS translations, including language alternates" })

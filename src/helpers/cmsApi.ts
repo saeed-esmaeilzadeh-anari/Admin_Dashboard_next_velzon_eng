@@ -296,6 +296,9 @@ export const cmsApi = {
   async publicMenu(key: string, localeCode: string): Promise<CmsPublicMenu> {
     return (await backendApi.get<CmsPublicMenu>(`/public/cms/menus/${encodeURIComponent(key)}/${encodeURIComponent(localeCode)}`)).data;
   },
+  async publicContents(typeKey: string, localeCode: string, params: { page?: number; limit?: number } = {}): Promise<CmsPage<CmsPublicContent>> {
+    return (await backendApi.get<CmsPage<CmsPublicContent>>(`/public/cms/${encodeURIComponent(typeKey)}/${encodeURIComponent(localeCode)}`, { params })).data;
+  },
   async publicContent(typeKey: string, localeCode: string, slug: string): Promise<CmsPublicContent> {
     return (await backendApi.get<CmsPublicContent>(`/public/cms/${encodeURIComponent(typeKey)}/${encodeURIComponent(localeCode)}/${encodeURIComponent(slug)}`)).data;
   },
