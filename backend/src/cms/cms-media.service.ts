@@ -3,6 +3,7 @@ import {
 } from "@nestjs/common";
 import { CmsMediaKind, Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
+import { basename } from "node:path";
 import { CmsMediaStorageService } from "./cms-media-storage.service";
 import { Express } from "express";
 import { PrismaService } from "../prisma/prisma.service";
