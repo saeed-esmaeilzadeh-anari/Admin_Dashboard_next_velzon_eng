@@ -658,5 +658,12 @@
   "Use Ctrl or Command to choose multiple images.": "Use Ctrl or Command to choose multiple images.",
   "View published page": "View published page",
   "Webhook events are signed with HMAC-SHA256. Delivery requests are restricted to public HTTPS hostnames and retried with backoff.": "Webhook events are signed with HMAC-SHA256. Delivery requests are restricted to public HTTPS hostnames and retried with backoff.",
-  "blocks": "blocks"
+  "blocks": "blocks",
+  "Each import record must be an object.": "Each import record must be an object.",
+  "Each import record needs a type key and translations.": "Each import record needs a type key and translations.",
+  "Each record must contain between 1 and 20 translations.": "Each record must contain between 1 and 20 translations.",
+  "Each translation must be an object.": "Each translation must be an object.",
+  "Each translation needs a locale code, title and slug.": "Each translation needs a locale code, title and slug.",
+  "Shared fields must be a JSON object.": "Shared fields must be a JSON object.",
+  "Translation fields must be a JSON object.": "Translation fields must be a JSON object."
 }
