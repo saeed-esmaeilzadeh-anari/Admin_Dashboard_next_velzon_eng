@@ -666,7 +666,7 @@
   "Each translation needs a locale code, title and slug.": "Each translation needs a locale code, title and slug.",
   "Shared fields must be a JSON object.": "Shared fields must be a JSON object.",
   "Translation fields must be a JSON object.": "Translation fields must be a JSON object.",
-  "CMS Overview": "CMS Overview",
+  "CMS Overview": "CMS overview",
   "Overview of your content, translations and publishing workflow": "Overview of your content, translations and publishing workflow",
   "Total content": "Total content",
   "Content records": "Content records",
@@ -690,5 +690,8 @@
   "Move structured content as JSON": "Move structured content as JSON",
   "Configure role-level access": "Configure role-level access",
   "CMS overview is unavailable.": "CMS overview is unavailable.",
-  "Markdown or plain text; HTML tags are displayed as text for safety": "Markdown or plain text; HTML tags are displayed as text for safety"
+  "Markdown or plain text; HTML tags are displayed as text for safety": "Markdown or plain text; HTML tags are displayed as text for safety",
+  "Translation count": "Translation count",
+  "Page builder blocks": "Page builder blocks",
+  "Languages": "Languages"
 }
