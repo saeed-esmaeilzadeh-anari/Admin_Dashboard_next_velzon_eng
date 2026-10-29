@@ -1,7 +1,7 @@
 import backendApi from "@/helpers/backendApi";
 
 export type CmsStatus = "DRAFT" | "IN_REVIEW" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
-export type CmsFieldType = "TEXT" | "TEXTAREA" | "RICH_TEXT" | "MARKDOWN" | "INTEGER" | "DECIMAL" | "BOOLEAN" | "DATE" | "DATETIME" | "SELECT" | "MULTISELECT" | "EMAIL" | "URL" | "JSON";
+export type CmsFieldType = "TEXT" | "TEXTAREA" | "RICH_TEXT" | "MARKDOWN" | "INTEGER" | "DECIMAL" | "BOOLEAN" | "DATE" | "DATETIME" | "SELECT" | "MULTISELECT" | "EMAIL" | "URL" | "JSON" | "MEDIA" | "MEDIA_MULTIPLE";
 export type CmsLocale = {
   id: string; code: string; name: string; nativeName: string; direction: "LTR" | "RTL";
   isDefault: boolean; isActive: boolean; fallbackLocaleId?: string | null;
