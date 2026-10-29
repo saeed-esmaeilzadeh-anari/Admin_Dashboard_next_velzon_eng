@@ -8,7 +8,7 @@ import { CmsPermissions } from "./cms-permissions.decorator";
 import { CmsAuditInterceptor } from "./cms-audit.interceptor";
 import { CmsService } from "./cms.service";
 import {
-  CreateContentDto, CreateTranslationDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto,
+  CmsImportPackageDto, CreateContentDto, CreateTranslationDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto,
   ListCmsContentsQuery, RejectContentDto, ScheduleContentDto, UpdateContentTranslationDto,
   UpdateContentTypeDto, UpdateContentTypeFieldDto, UpdateLocaleDto, UpdateSharedFieldsDto,
 } from "./dto/cms.dto";
@@ -29,6 +29,16 @@ export class CmsController {
   @Patch("content-types/:id") @CmsPermissions("cms.content-types.manage") updateType(@Param("id", new ParseUUIDPipe()) id: string, @Body() dto: UpdateContentTypeDto) { return this.cms.updateContentType(id, dto); }
   @Post("content-types/:id/fields") @CmsPermissions("cms.content-types.manage") addField(@Param("id", new ParseUUIDPipe()) id: string, @Body() dto: CreateContentTypeFieldDto) { return this.cms.addContentTypeField(id, dto); }
   @Patch("content-types/:id/fields/:fieldId") @CmsPermissions("cms.content-types.manage") updateField(@Param("id", new ParseUUIDPipe()) id: string, @Param("fieldId", new ParseUUIDPipe()) fieldId: string, @Body() dto: UpdateContentTypeFieldDto) { return this.cms.updateContentTypeField(id, fieldId, dto); }
+
+  @Get("import-export/export") @CmsPermissions("cms.content.read")
+  exportContents(@Query("limit") limitRaw?: string) {
+    return this.cms.exportContents(Math.min(5000, Math.max(1, Number(limitRaw) || 5000)));
+  }
+
+  @Post("import-export/import") @CmsPermissions("cms.content.create")
+  importContents(@Body() dto: CmsImportPackageDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.cms.importContents(dto, user);
+  }
 
   @Get("contents") @CmsPermissions("cms.content.read") list(@Query() q: ListCmsContentsQuery) { return this.cms.listContents(q); }
   @Get("contents/:id") @CmsPermissions("cms.content.read") get(@Param("id", new ParseUUIDPipe()) id: string) { return this.cms.getContent(id); }
