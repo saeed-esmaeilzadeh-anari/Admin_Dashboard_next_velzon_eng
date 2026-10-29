@@ -19,7 +19,7 @@ This is a status ledger for the current feature branch. Items described as imple
 | Import/export | Implemented | Versioned JSON package, bounded record count, per-record results and imports as drafts; binary files are not bundled and must already exist at the destination |
 | Per-role CMS permissions | Implemented first version | Seeded permission catalog and role grants with server-side guard; object/content ownership policies and security integration tests remain |
 | Audit log | Implemented first version | Middleware/interceptor audit recording and filtered log UI; verify coverage of every sensitive action |
-| Public content renderer | Implemented | Published-only API and Next.js route with locale direction, SEO metadata and alternates; authored rich text remains plain text in the safe renderer |
+| Public content renderer | Implemented | Published-only API and Next.js route with locale direction, SEO metadata, alternate-language links, localized main menu and safe Markdown subset; raw HTML is never executed |
 | Sitemap and language alternates | Implemented | Next.js /sitemap.xml, backend JSON/XML sitemap APIs; set canonical site URL before production and verify deployed response |
 | Existing non-CMS template screens | Not fully migrated | Legacy e-commerce/CRM/projects/tasks and other demo screens may still use Fake Backend; each needs source-driven API wiring and regression tests |
 | Production operations | Not complete | No provisioned production DB, frontend/backend deployment, persistent upload store, external scheduler, or deployed smoke/E2E/accessibility test in this task |

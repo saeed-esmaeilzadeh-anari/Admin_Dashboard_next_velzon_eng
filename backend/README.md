@@ -124,3 +124,14 @@ See docs/implementation-progress.md and docs/cms-audit.md for the current implem
 ## Security and production launch
 
 See [docs/security-and-deployment.md](../docs/security-and-deployment.md) for the pre-production environment, dependency, migration, storage, security and smoke-test checklist. This branch has not itself provisioned or exercised a production environment.
+
+
+## Production release checks
+
+Before deploying, provision PostgreSQL with backups and TLS, configure a persistent S3-compatible media store for serverless hosting, and set production secrets through the hosting provider rather than committing them. Set CORS_ORIGINS to the exact public frontend origin, PUBLIC_SITE_URL and NEXT_PUBLIC_SITE_URL to the canonical public origin, NEXT_PUBLIC_SITE_NAME for the site brand, and NEXT_PUBLIC_DEFAULT_AUTH=backend.
+
+Apply migrations with npm run prisma:deploy only after a database backup. Run npm run prisma:seed with a dedicated administrator email; the seed refuses to promote an existing non-admin user and does not rotate an existing administrator password. Configure a strong CMS_JOB_TOKEN if scheduled publishing or webhook dispatch uses serverless hosting.
+
+For serverless deployments, configure an external scheduler to POST /api/v1/internal/cms/jobs/publish-scheduled and /api/v1/internal/cms/jobs/dispatch-webhooks every minute, using Authorization: Bearer <CMS_JOB_TOKEN> stored only in the scheduler's secrets.
+
+The CMS-specific pages are wired to the real API. The legacy e-commerce, CRM, project/task and demo screens are not all migrated from Fake Backend. Before calling the product production-ready, run the release smoke tests in docs/production-readiness.md and verify role permissions, public publishing, storage persistence, redirects, form throttling, webhook signatures, accessibility, and backup/restore.

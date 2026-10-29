@@ -8,8 +8,18 @@ async function main() {
   const password = process.env.ADMIN_PASSWORD;
   if (!name || !email || !password) throw new Error("Set ADMIN_NAME, ADMIN_EMAIL and ADMIN_PASSWORD before running the seed command.");
   if (password.length < 12) throw new Error("ADMIN_PASSWORD must contain at least 12 characters.");
-  const passwordHash = await bcrypt.hash(password, 12);
-  await prisma.user.upsert({ where: { email }, update: { name, role: Role.ADMIN, isActive: true }, create: { name, email, passwordHash, role: Role.ADMIN, isActive: true } });
+  const existingAdmin = await prisma.user.findUnique({ where: { email } });
+  if (existingAdmin) {
+    if (existingAdmin.role !== Role.ADMIN) {
+      throw new Error("ADMIN_EMAIL already belongs to a non-admin account. The seed will not promote an existing user; choose a dedicated administrator email.");
+    }
+    // Re-seeding may update the configured administrator display name, but it must
+    // not silently rotate credentials, reactivate a disabled account or change roles.
+    await prisma.user.update({ where: { email }, data: { name } });
+  } else {
+    const passwordHash = await bcrypt.hash(password, 12);
+    await prisma.user.create({ data: { name, email, passwordHash, role: Role.ADMIN, isActive: true } });
+  }
   await prisma.locale.upsert({ where: { code: "fa-IR" },
     update: { name: "Persian", nativeName: "فارسی", direction: LocaleDirection.RTL, isDefault: true, isActive: true },
     create: { code: "fa-IR", name: "Persian", nativeName: "فارسی", direction: LocaleDirection.RTL, isDefault: true } });
