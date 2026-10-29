@@ -4,7 +4,7 @@ import { AuthenticatedUser } from "../common/decorators/current-user.decorator";
 import { PrismaService } from "../prisma/prisma.service";
 import { CmsWebhookService } from "./cms-webhook.service";
 import {
-  CreateContentDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto, CreateTranslationDto,
+  CmsImportPackageDto, CreateContentDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto, CreateTranslationDto,
   ListCmsContentsQuery, ListPublicContentQuery, RejectContentDto, ScheduleContentDto,
   UpdateContentTranslationDto, UpdateContentTypeDto, UpdateContentTypeFieldDto,
   UpdateLocaleDto, UpdateSharedFieldsDto,
@@ -437,6 +437,98 @@ export class CmsService {
       });
     });
     return this.getContent(contentId);
+  }
+
+  async exportContents(requestedLimit = 5000) {
+    const limit = Math.min(5000, Math.max(1, Number(requestedLimit) || 5000));
+    const [items, total] = await Promise.all([
+      this.prisma.content.findMany({
+        take: limit,
+        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+        include: {
+          contentType: { select: { key: true, name: true } },
+          translations: { include: { locale: { select: { code: true, name: true } } }, orderBy: { updatedAt: "desc" } },
+        },
+      }),
+      this.prisma.content.count(),
+    ]);
+    return {
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      totalRecords: total,
+      exportedRecords: items.length,
+      truncated: total > items.length,
+      records: items.map(item => ({
+        typeKey: item.contentType.key,
+        sharedFields: asRecord(item.data),
+        translations: item.translations.map(translation => ({
+          localeCode: translation.locale.code,
+          title: translation.title,
+          slug: translation.slug,
+          excerpt: translation.excerpt,
+          seoTitle: translation.seoTitle,
+          seoDescription: translation.seoDescription,
+          fields: asRecord(translation.data),
+          sourceStatus: translation.status,
+          sourceVersion: translation.version,
+          sourcePublishedAt: translation.publishedAt?.toISOString() ?? null,
+        })),
+      })),
+    };
+  }
+
+  async importContents(dto: CmsImportPackageDto, user: AuthenticatedUser) {
+    const results: Array<{ index: number; typeKey: string; contentId: string | null; status: "IMPORTED" | "PARTIAL" | "FAILED"; translationsImported: number; error?: string }> = [];
+    for (const [index, item] of dto.records.entries()) {
+      let contentId: string | null = null;
+      let translationsImported = 0;
+      try {
+        const [first, ...remaining] = item.translations;
+        if (!first) throw new BadRequestException("Each imported record must include at least one translation.");
+        const content = await this.createContent({
+          typeKey: item.typeKey,
+          localeCode: first.localeCode,
+          title: first.title,
+          slug: first.slug,
+          excerpt: first.excerpt,
+          seoTitle: first.seoTitle,
+          seoDescription: first.seoDescription,
+          fields: { ...asRecord(item.sharedFields), ...asRecord(first.fields) },
+        }, user);
+        contentId = content.id;
+        translationsImported = 1;
+        for (const translation of remaining) {
+          await this.createTranslation(content.id, {
+            localeCode: translation.localeCode,
+            title: translation.title,
+            slug: translation.slug,
+            excerpt: translation.excerpt,
+            seoTitle: translation.seoTitle,
+            seoDescription: translation.seoDescription,
+            fields: translation.fields ?? {},
+          }, user);
+          translationsImported += 1;
+        }
+        results.push({ index, typeKey: item.typeKey, contentId, status: "IMPORTED", translationsImported });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        results.push({
+          index, typeKey: item.typeKey, contentId,
+          status: contentId ? "PARTIAL" : "FAILED",
+          translationsImported,
+          error: message.slice(0, 1000),
+        });
+      }
+    }
+    return {
+      summary: {
+        requested: results.length,
+        imported: results.filter(result => result.status === "IMPORTED").length,
+        partial: results.filter(result => result.status === "PARTIAL").length,
+        failed: results.filter(result => result.status === "FAILED").length,
+      },
+      results,
+    };
   }
 
   async listPublicContent(typeKey: string, localeCode: string, query: ListPublicContentQuery) {
