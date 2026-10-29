@@ -445,6 +445,7 @@ enum CmsFormSubmissionStatus {
 
 enum CmsWebhookDeliveryStatus {
   PENDING
+  PROCESSING
   SUCCESS
   FAILED
 }
