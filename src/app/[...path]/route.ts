@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const currentUrl = new URL(request.url);
   const sourcePath = currentUrl.pathname;
   const explicitLocale = currentUrl.searchParams.get("localeCode")?.trim();
-  const acceptLanguage = request.headers.get("accept-language")?.split(",")[0]?.trim();
+  const acceptLanguage = request.headers.get("accept-language")?.split(",")[0]?.split(";")[0]?.trim();
   const localeCode = explicitLocale || acceptLanguage || undefined;
 
   try {
