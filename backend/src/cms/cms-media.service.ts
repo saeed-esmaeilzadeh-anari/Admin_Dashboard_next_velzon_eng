@@ -17,6 +17,26 @@ const MIME_EXTENSIONS: Record<string, string> = {
   "audio/mpeg": ".mp3", "audio/wav": ".wav", "audio/ogg": ".ogg", "audio/mp4": ".m4a",
   "video/mp4": ".mp4", "video/webm": ".webm",
 };
+function hasSignature(mime: string, data: Buffer): boolean {
+  const ascii = (start: number, end: number) => data.toString("ascii", start, end);
+  if (mime === "image/jpeg") return data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
+  if (mime === "image/png") return data.length >= 8 && data.subarray(0, 8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]));
+  if (mime === "image/webp") return data.length >= 12 && ascii(0,4) === "RIFF" && ascii(8,12) === "WEBP";
+  if (mime === "image/gif") return data.length >= 6 && (ascii(0,6) === "GIF87a" || ascii(0,6) === "GIF89a");
+  if (mime === "image/avif") return data.length >= 12 && ascii(4,8) === "ftyp" && /^(avif|avis)$/.test(ascii(8,12));
+  if (mime === "application/pdf") return ascii(0,5) === "%PDF-";
+  if (mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+    return data.length >= 4 && data[0] === 0x50 && data[1] === 0x4b && data[2] === 0x03 && data[3] === 0x04;
+  }
+  if (mime === "audio/mpeg") return ascii(0,3) === "ID3" || (data.length >= 2 && data[0] === 0xff && (data[1] & 0xe0) === 0xe0);
+  if (mime === "audio/wav") return data.length >= 12 && ascii(0,4) === "RIFF" && ascii(8,12) === "WAVE";
+  if (mime === "audio/ogg") return ascii(0,4) === "OggS";
+  if (mime === "audio/mp4" || mime === "video/mp4") return data.length >= 12 && ascii(4,8) === "ftyp";
+  if (mime === "video/webm") return data.length >= 4 && data.subarray(0,4).equals(Buffer.from([0x1a,0x45,0xdf,0xa3]));
+  if (mime === "text/plain" || mime === "text/csv") return !data.subarray(0, Math.min(data.length, 8192)).includes(0);
+  return false;
+}
 function mediaKind(mime: string): CmsMediaKind {
   if (mime.startsWith("image/")) return CmsMediaKind.IMAGE;
   if (mime.startsWith("video/")) return CmsMediaKind.VIDEO;
@@ -55,6 +75,7 @@ export class CmsMediaService {
   async upload(file: Express.Multer.File, userId: string, altText?: string, caption?: string) {
     if (!file || !Buffer.isBuffer(file.buffer) || file.buffer.length === 0) throw new BadRequestException("A non-empty file is required.");
     if (!MIME_EXTENSIONS[file.mimetype]) throw new BadRequestException("This file type is not allowed.");
+    if (!hasSignature(file.mimetype, file.buffer)) throw new BadRequestException("File content does not match its declared media type.");
     const maxBytes = Number(process.env.CMS_MAX_UPLOAD_BYTES ?? 25 * 1024 * 1024);
     if (!Number.isSafeInteger(maxBytes) || maxBytes < 1024) throw new BadRequestException("CMS_MAX_UPLOAD_BYTES configuration is invalid.");
     if (file.size > maxBytes || file.buffer.length > maxBytes) throw new BadRequestException("File exceeds the configured upload limit.");
