@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Alert, Button, Card, CardBody, CardHeader, Col, Container, Form, Input, Label, Row, Spinner } from "reactstrap";
 import { useTranslation } from "react-i18next";
-import { cmsApi, CmsContentType, CmsField, CmsLocale } from "@/helpers/cmsApi";
+import { cmsApi, CmsContentType, CmsField, CmsLocale, CmsMediaAsset } from "@/helpers/cmsApi";
 
 function getErrorMessage(error: unknown): string {
   const value = error as { response?: { data?: { message?: string | string[] } }; message?: string };
@@ -30,7 +30,8 @@ function fieldValueValid(field: CmsField, value: unknown): boolean {
     if (typeof value !== "string") return true;
     try { JSON.parse(value); return true; } catch { return false; }
   }
-  if (field.type === "MULTISELECT") return Array.isArray(value);
+  if (field.type === "MULTISELECT" || field.type === "MEDIA_MULTIPLE") return Array.isArray(value);
+  if (field.type === "MEDIA") return value === "" || typeof value === "string";
   return true;
 }
 type CmsInputType = "number" | "date" | "datetime-local" | "email" | "url" | "text";
@@ -57,6 +58,7 @@ export default function NewCmsContentPage() {
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [values, setValues] = useState<Record<string, unknown>>({});
+  const [mediaAssets, setMediaAssets] = useState<CmsMediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -64,11 +66,12 @@ export default function NewCmsContentPage() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([cmsApi.contentTypes(false), cmsApi.locales(true)])
-      .then(([nextTypes, nextLocales]) => {
+    Promise.all([cmsApi.contentTypes(false), cmsApi.locales(true), cmsApi.media({page:1,limit:100})])
+      .then(([nextTypes, nextLocales, mediaPage]) => {
         if (!active) return;
         setTypes(nextTypes.filter(item => item.isActive));
         setLocales(nextLocales.filter(locale => locale.isActive));
+        setMediaAssets(mediaPage.data);
         const firstType = nextTypes.find(item => item.isActive);
         const defaultLocale = nextLocales.find(locale => locale.isDefault && locale.isActive) ?? nextLocales.find(locale => locale.isActive);
         setTypeKey(firstType?.key ?? "");
@@ -117,6 +120,7 @@ export default function NewCmsContentPage() {
       let value = values[field.key];
       if (value === "" && !field.isRequired) continue;
       if ((field.type === "INTEGER" || field.type === "DECIMAL") && value !== "") value = Number(value);
+      if (field.type === "MEDIA" && value === "") continue;
       if (field.type === "JSON" && typeof value === "string" && value.trim()) {
         try { value = JSON.parse(value); } catch { errors[field.key] = t("Invalid JSON"); }
       }
@@ -153,6 +157,8 @@ export default function NewCmsContentPage() {
         {field.type === "BOOLEAN" ? <div className="form-check form-switch mt-2"><Input className="form-check-input" type="switch" id={`field-${field.key}`} checked={Boolean(value)} onChange={event => setFieldValue(field, event.target.checked)} /><Label className="form-check-label" for={`field-${field.key}`}>{t("Enabled")}</Label></div>
           : field.type === "SELECT" ? <Input id={`field-${field.key}`} type="select" value={String(value ?? "")} invalid={Boolean(fieldErrors[field.key])} onChange={event => setFieldValue(field, event.target.value)}><option value="">{t("Select an option")}</option>{choices.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Input>
           : field.type === "MULTISELECT" ? <Input id={`field-${field.key}`} type="select" multiple value={Array.isArray(value) ? value.map(String) : []} invalid={Boolean(fieldErrors[field.key])} onChange={event => setFieldValue(field, Array.from((event.currentTarget as unknown as HTMLSelectElement).selectedOptions).map(option => option.value))}>{choices.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Input>
+          : field.type === "MEDIA" ? <Input id={`field-${field.key}`} type="select" value={String(value ?? "")} invalid={Boolean(fieldErrors[field.key])} onChange={event => setFieldValue(field, event.target.value)}><option value="">{t("Choose media")}</option>{mediaAssets.map(asset => <option key={asset.id} value={asset.id}>{asset.originalName} · {asset.kind}</option>)}</Input>
+          : field.type === "MEDIA_MULTIPLE" ? <Input id={`field-${field.key}`} type="select" multiple value={Array.isArray(value) ? value.map(String) : []} invalid={Boolean(fieldErrors[field.key])} onChange={event => setFieldValue(field, Array.from((event.currentTarget as unknown as HTMLSelectElement).selectedOptions).map(option => option.value))}>{mediaAssets.map(asset => <option key={asset.id} value={asset.id}>{asset.originalName} · {asset.kind}</option>)}</Input>
           : field.type === "TEXTAREA" || field.type === "RICH_TEXT" || field.type === "MARKDOWN" || field.type === "JSON" ? <Input id={`field-${field.key}`} type="textarea" rows={field.type === "JSON" ? 5 : 4} value={typeof value === "string" ? value : value == null ? "" : JSON.stringify(value, null, 2)} invalid={Boolean(fieldErrors[field.key])} onChange={event => setFieldValue(field, event.target.value)} placeholder={field.type === "RICH_TEXT" ? t("Rich text or HTML content; sanitize before public rendering") : field.type === "MARKDOWN" ? "## Heading" : field.type === "JSON" ? '{"key":"value"}' : ""} />
           : <Input id={`field-${field.key}`} type={renderInputType(field)} value={value == null ? "" : String(value)} step={field.type === "DECIMAL" ? "any" : field.type === "INTEGER" ? "1" : undefined} invalid={Boolean(fieldErrors[field.key])} onChange={event => setFieldValue(field, event.target.value)} />}
         {fieldErrors[field.key] && <div className="invalid-feedback d-block">{fieldErrors[field.key]}</div>}
