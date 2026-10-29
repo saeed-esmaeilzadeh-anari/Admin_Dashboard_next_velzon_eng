@@ -52,7 +52,7 @@ function validDestination(path: string): boolean {
 }
 
 @Injectable()
-export class CmsManagementService {
+export class CmsManagementService implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
 
   async listTaxonomies(includeInactive = false) {
@@ -460,6 +460,10 @@ export class CmsManagementService {
       if (valid.length) await tx.cmsRolePermission.createMany({ data: valid.map(permission => ({ role: dto.role, permissionId: permission.id })) });
     });
     return { role: dto.role, permissionCodes: valid.map(permission => permission.code) };
+  }
+
+  onModuleInit(): Promise<void> {
+    return this.ensureDefaultPermissions();
   }
 
   async ensureDefaultPermissions() {
