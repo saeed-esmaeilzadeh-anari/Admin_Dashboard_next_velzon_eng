@@ -41,6 +41,7 @@ export const config = {
     "/dashboard-job/:path*",
     "/dashboard-nft/:path*",
     "/dashboard-projects/:path*",
+    "/apps-cms/:path*",
     "/profile/:path*",
     "/profile-settings/:path*",
     "/starter/:path*",
