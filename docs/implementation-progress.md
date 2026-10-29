@@ -15,7 +15,7 @@ Branch: feat/full-stack-foundation
 
 ## Current verification
 
-- Backend CI on code commit f6c163b26c2c0fd94b5b95f8eaeef9275ecf09c6 passed Prisma schema validation, Prisma Client generation and TypeScript checking; unit tests were running when this note was last updated. See https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40826504593.
+- Backend CI on code commit f6c163b26c2c0fd94b5b95f8eaeef9275ecf09c6 passed Prisma schema validation, Prisma Client generation, TypeScript checking, unit tests and the Nest build. See https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40826504593.
 - Frontend CI for the current frontend source snapshot (commit 8190cfe2104339cd07167d618da71534155da1fd) was still installing dependencies at last check. The latest branch includes further backend-only and documentation commits, so the frontend source is unchanged since that snapshot, but a successful type-check/build result is still required. See https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40826416336.
 - The repository was edited through GitHub's API because a local clone could not be used in this environment. CI evidence, not the act of committing, determines whether code is verified.
 
