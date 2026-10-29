@@ -593,9 +593,10 @@ export class CmsManagementService {
       if (field.type === "checkbox" && typeof value !== "boolean") throw new BadRequestException("Invalid checkbox value: " + key);
       if (field.type === "number" && (typeof value !== "number" || !Number.isFinite(value))) throw new BadRequestException("Invalid numeric value: " + key);
       if (field.type === "multiselect" && (!Array.isArray(value) || !value.every(item => typeof item === "string"))) throw new BadRequestException("Invalid multi-select value: " + key);
-      if ((field.type === "select" || field.type === "multiselect") && Array.isArray(field.options)) {
+      const optionList = Array.isArray(field.options) ? field.options : undefined;
+      if ((field.type === "select" || field.type === "multiselect") && optionList) {
         const values = field.type === "select" ? [value] : value as unknown[];
-        if (values.some(item => !field.options.includes(item))) throw new BadRequestException("Invalid option for field: " + key);
+        if (values.some(item => !optionList.includes(item))) throw new BadRequestException("Invalid option for field: " + key);
       }
       if (field.type === "email" && (typeof value !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))) throw new BadRequestException("Invalid email value: " + key);
       if (field.type === "url") {
