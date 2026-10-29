@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import { CmsManagementService } from "./cms-management.service";
 import { SubmitCmsFormDto } from "./cms-management.dto";
 @ApiTags("cms-public-management")
@@ -13,6 +14,8 @@ export class CmsPublicManagementController {
   @ApiOperation({ summary: "Get the public schema for an active form" })
   getForm(@Param("key") key: string) { return this.cms.publicForm(key); }
   @Post("forms/:key/submissions")
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: "Validate and store a public form submission" })
   submitForm(@Param("key") key: string, @Body() dto: SubmitCmsFormDto) { return this.cms.submitForm(key, dto); }
   @Get("redirects/resolve")
