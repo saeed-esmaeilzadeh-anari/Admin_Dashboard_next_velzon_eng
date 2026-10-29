@@ -48,7 +48,13 @@ export default function CmsPagePreview({title,excerpt,fields,mediaAssets=[],dire
     return <section key={text(block.id)||index}><h2 className="h3 fw-bold mb-3">{text(block.heading)}</h2><div className="row g-3">{cards.map((card,i)=>{const href=safeHref(card.url);return <div className="col-md-6" key={i}><div className="border rounded-4 p-3 h-100"><h3 className="h5 fw-bold">{text(card.title)}</h3><p style={{whiteSpace:"pre-wrap"}}>{text(card.description)}</p>{href&&<a href={href}>{href}</a>}</div></div>})}</div></section>;
    }
    return <section key={text(block.id)||index} className="border rounded p-3"><div style={{whiteSpace:"pre-wrap"}}>{JSON.stringify(block,null,2)}</div></section>;
-  })}</div>:<div className="d-grid gap-4">{Object.entries(fields).filter(([key,value])=>key!=="blocks"&&typeof value==="string"&&value.trim()).map(([key,value])=><section key={key}><h2 className="h5 fw-bold text-capitalize">{key.replace(/([A-Z])/g," $1")}</h2><div style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{value as string}</div></section>)}</div>}
+  })}</div>:<div className="d-grid gap-4">{Object.entries(fields).filter(([key,value])=>key!=="blocks"&&value!==null&&value!==undefined&&value!=="").map(([key,value])=>{
+      const label=key.replace(/([A-Z])/g," $1");
+      if(typeof value==="string"&&mediaById.has(value)){const asset=mediaById.get(value)!;return <section key={key}><h2 className="h5 fw-bold text-capitalize">{label}</h2>{renderMedia(asset,asset.altText??"",asset.caption??"")}</section>;}
+      if(Array.isArray(value)&&value.length>0&&value.every(item=>typeof item==="string"&&mediaById.has(item))){return <section key={key}><h2 className="h5 fw-bold text-capitalize">{label}</h2><div className="row g-3">{value.map(item=>mediaById.get(String(item))).filter((asset):asset is CmsMediaAsset=>Boolean(asset)).map(asset=><div className="col-6 col-md-4" key={asset.id}>{renderMedia(asset)}</div>)}</div></section>;}
+      if(typeof value==="string")return <section key={key}><h2 className="h5 fw-bold text-capitalize">{label}</h2><div style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{value}</div></section>;
+      return null;
+    })}</div>}
   <footer className="border-top mt-5 pt-3 text-muted small">CMS preview · Rich text is rendered as plain text in this preview so author-provided HTML is not executed.</footer>
  </article>;
 }
