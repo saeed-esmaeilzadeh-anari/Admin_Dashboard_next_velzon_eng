@@ -7,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { cmsApi, CmsPermissionState } from "@/helpers/cmsApi";
 
 function getError(error:unknown):string{const value=error as {response?:{data?:{message?:string|string[]}};message?:string};const message=value?.response?.data?.message??value?.message;return Array.isArray(message)?message.join(", "):message??"Request failed."}
-type RoleName="ADMIN"|"MANAGER"|"USER";
 export default function CmsPermissionsPage(){
  const {t,i18n}=useTranslation();
  const [catalog,setCatalog]=useState<CmsPermissionState[]>([]);
