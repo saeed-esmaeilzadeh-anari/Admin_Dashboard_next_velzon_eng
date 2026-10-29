@@ -284,5 +284,8 @@
   "Content preview": "Inhaltsvorschau",
   "View published page": "Veröffentlichte Seite ansehen",
   "Languages": "Sprachen",
-  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "Medien- und Seitenbaustein-Felder werden unterstützt. Allgemeine Beziehungs- und Wiederholungsfelder werden noch nicht unterstützt."
+  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "Medien- und Seitenbaustein-Felder werden unterstützt. Allgemeine Beziehungs- und Wiederholungsfelder werden noch nicht unterstützt.",
+  "Content entries": "Inhaltseinträge",
+  "Previous": "Zurück",
+  "Next": "Weiter"
 }
