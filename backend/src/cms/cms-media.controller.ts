@@ -12,11 +12,13 @@ import { RolesGuard } from "../common/guards/roles.guard";
 import { CmsPermissions } from "./cms-permissions.decorator";
 import { CmsPermissionsGuard } from "./cms-permissions.guard";
 import { CmsMediaService } from "./cms-media.service";
+import { CmsAuditInterceptor } from "./cms-audit.interceptor";
 import { ListMediaQueryDto, UpdateMediaAssetDto } from "./cms-management.dto";
 
 @ApiTags("cms-media")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard, CmsPermissionsGuard)
+@UseInterceptors(CmsAuditInterceptor)
 @Controller("cms/media")
 export class CmsMediaController {
   constructor(private readonly media: CmsMediaService) {}
