@@ -1,5 +1,5 @@
-import { BadRequestException } from "@nestjs/common";
-import { CmsContentStatus, CmsFieldType } from "@prisma/client";
+import { BadRequestException, ConflictException } from "@nestjs/common";
+import { CmsContentStatus, CmsFieldType, CmsMediaKind } from "@prisma/client";
 import { CmsService } from "./cms.service";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -116,5 +116,105 @@ describe("CmsService dashboard summary", () => {
       id: "translation-1", contentId: "content-1", title: "Hello", status: CmsContentStatus.PUBLISHED,
       contentType: { key: "article", name: "Article" }, locale: { code: "en-US", nativeName: "English" },
     });
+  });
+});
+
+
+describe("CmsService page builder validation", () => {
+  const service = new CmsService({} as PrismaService);
+  const validateFieldValue = (service as unknown as {
+    validateFieldValue: (field: Record<string, unknown>, value: unknown) => void;
+  }).validateFieldValue.bind(service);
+  const blocksField = {
+    key: "blocks", type: CmsFieldType.JSON, isRequired: false,
+    isLocalized: true, isActive: true, config: null,
+  };
+
+  it("accepts supported block types and safe internal/HTTPS links", () => {
+    expect(() => validateFieldValue(blocksField, [
+      { id: "a", type: "hero", title: "Welcome", buttonUrl: "/about" },
+      { id: "b", type: "cardGrid", cards: [{ title: "Docs", url: "https://example.test/docs" }] },
+    ])).not.toThrow();
+  });
+
+  it("rejects unsupported blocks and script URL schemes", () => {
+    expect(() => validateFieldValue(blocksField, [{ type: "customHtml", html: "<script>alert(1)</script>" }]))
+      .toThrow(BadRequestException);
+    expect(() => validateFieldValue(blocksField, [{ type: "hero", buttonUrl: "javascript:alert(1)" }]))
+      .toThrow(BadRequestException);
+    expect(() => validateFieldValue(blocksField, [{ type: "hero", buttonUrl: "//evil.example/path" }]))
+      .toThrow(BadRequestException);
+  });
+
+  it("limits the number of blocks and gallery assets", () => {
+    expect(() => validateFieldValue(blocksField, Array.from({ length: 101 }, () => ({ type: "hero" }))))
+      .toThrow(BadRequestException);
+    const ids = Array.from({ length: 101 }, (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12,"0")}`);
+    expect(() => validateFieldValue(blocksField, [{ type: "gallery", mediaIds: ids }]))
+      .toThrow(BadRequestException);
+  });
+});
+
+describe("CmsService page builder media references", () => {
+  const findMany = jest.fn();
+  const service = new CmsService({ mediaAsset: { findMany } } as unknown as PrismaService);
+  const assertMediaReferences = (service as unknown as {
+    assertMediaReferences: (values: Record<string, unknown>, definitions: Array<Record<string, unknown>>) => Promise<void>;
+  }).assertMediaReferences.bind(service);
+  const definitions = [{
+    key: "blocks", type: CmsFieldType.JSON, isRequired: false,
+    isLocalized: true, isActive: true, config: null,
+  }];
+  const imageId = "6f4f1e5c-a4b2-4cb9-85b3-5dd52c7a0a11";
+
+  beforeEach(() => findMany.mockReset());
+
+  it("rejects missing media IDs referenced from image blocks", async () => {
+    findMany.mockResolvedValue([]);
+    await expect(assertMediaReferences({ blocks: [{ type: "image", mediaId: imageId }] }, definitions))
+      .rejects.toThrow("One or more selected media assets no longer exist.");
+  });
+
+  it("rejects non-image media in image or gallery blocks", async () => {
+    findMany.mockResolvedValue([{ id: imageId, kind: CmsMediaKind.DOCUMENT }]);
+    await expect(assertMediaReferences({ blocks: [{ type: "image", mediaId: imageId }] }, definitions))
+      .rejects.toThrow("Image and gallery blocks may reference image assets only.");
+  });
+
+  it("accepts existing image assets referenced by page builder blocks", async () => {
+    findMany.mockResolvedValue([{ id: imageId, kind: CmsMediaKind.IMAGE }]);
+    await expect(assertMediaReferences({ blocks: [{ type: "image", mediaId: imageId }] }, definitions))
+      .resolves.toBeUndefined();
+  });
+});
+
+describe("CmsService optimistic concurrency", () => {
+  it("does not overwrite a translation that changed after the editor loaded it", async () => {
+    const updateMany = jest.fn().mockResolvedValue({ count: 0 });
+    const tx = {
+      contentTranslation: { updateMany, findUniqueOrThrow: jest.fn() },
+      contentRevision: { create: jest.fn() },
+      auditLog: { create: jest.fn() },
+    };
+    const prisma = {
+      $transaction: (callback: (transaction: typeof tx) => Promise<unknown>) => callback(tx),
+      mediaAsset: { findMany: jest.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const service = new CmsService(prisma);
+    const translation = {
+      id: "translation-1", contentId: "content-1", localeId: "locale-1",
+      title: "Old", slug: "old", excerpt: null, seoTitle: null, seoDescription: null,
+      data: {}, status: CmsContentStatus.DRAFT, version: 7,
+      publishedAt: null, scheduledAt: null, publishedSlug: null, publishedSnapshot: null,
+      content: { id: "content-1", data: {}, contentType: { key: "page", name: "Page", isActive: true, fields: [] } },
+    };
+    jest.spyOn(service as unknown as { findTranslation: (...args: unknown[]) => Promise<unknown> }, "findTranslation")
+      .mockResolvedValue(translation);
+    await expect(service.updateTranslation("content-1", "en-US", { title: "New" }, { id: "editor-1" } as never))
+      .rejects.toBeInstanceOf(ConflictException);
+    expect(updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: "translation-1", version: 7, status: CmsContentStatus.DRAFT },
+    }));
+    expect(tx.contentRevision.create).not.toHaveBeenCalled();
   });
 });
