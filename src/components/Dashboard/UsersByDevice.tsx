@@ -24,7 +24,7 @@ const UsersByDevice = () => {
   const [isUserDropdown, setUserDropdown] = useState<boolean>(false);
   const toggleDropdown = () => setUserDropdown(!isUserDropdown);
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
   const [chartData, setChartData] = useState<number[]>([]);
 
   const userdeviceData = createSelector(
