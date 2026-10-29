@@ -52,6 +52,18 @@ export type CmsWebhook = { id: string; name: string; endpointUrl: string; events
 export type CmsWebhookDelivery = { id: string; eventKey: string; status: "PENDING" | "PROCESSING" | "SUCCESS" | "FAILED"; attempts: number; responseStatus?: number | null; lastError?: string | null; nextAttemptAt: string; deliveredAt?: string | null; createdAt: string };
 export type CmsPermissionState = { code: string; name: string; description: string; grantedRoles: Array<"ADMIN" | "MANAGER" | "USER"> };
 
+export type CmsExportPackage = {
+  schemaVersion: 1; exportedAt: string; totalRecords: number; exportedRecords: number; truncated: boolean;
+  records: Array<{ typeKey: string; sharedFields: Record<string, unknown>; translations: Array<{
+    localeCode: string; title: string; slug: string; excerpt?: string | null; seoTitle?: string | null;
+    seoDescription?: string | null; fields: Record<string, unknown>; sourceStatus?: string; sourceVersion?: number; sourcePublishedAt?: string | null;
+  }> }>;
+};
+export type CmsImportResult = {
+  summary: { requested: number; imported: number; partial: number; failed: number };
+  results: Array<{ index: number; typeKey: string; contentId: string | null; status: "IMPORTED" | "PARTIAL" | "FAILED"; translationsImported: number; error?: string }>;
+};
+
 export const cmsApi = {
   async locales(includeInactive = true): Promise<CmsLocale[]> {
     return (await backendApi.get<CmsLocale[]>("/cms/locales", { params: { includeInactive } })).data;
@@ -216,6 +228,12 @@ export const cmsApi = {
   },
   async retryWebhookDelivery(id: string, deliveryId: string): Promise<CmsWebhookDelivery> {
     return (await backendApi.post<CmsWebhookDelivery>(`/cms/webhooks/${id}/deliveries/${deliveryId}/retry`)).data;
+  },
+  async exportContents(limit = 5000): Promise<CmsExportPackage> {
+    return (await backendApi.get<CmsExportPackage>("/cms/import-export/export", { params: { limit } })).data;
+  },
+  async importContents(contents: CmsExportPackage): Promise<CmsImportResult> {
+    return (await backendApi.post<CmsImportResult>("/cms/import-export/import", contents)).data;
   },
   async auditLogs(params: { page?: number; limit?: number; action?: string; entity?: string; search?: string } = {}): Promise<CmsPage<CmsAuditLog>> {
     return (await backendApi.get<CmsPage<CmsAuditLog>>("/cms/audit-logs", { params })).data;
