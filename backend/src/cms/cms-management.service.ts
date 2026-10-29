@@ -240,10 +240,19 @@ export class CmsManagementService implements OnModuleInit {
       const siblings = byParent.get(item.parentId) ?? [];
       siblings.push(row); byParent.set(item.parentId, siblings);
     }
-    const attach = (items: Array<Record<string, unknown>>): Array<Record<string, unknown>> => items.map(item => ({
-      ...item,
-      children: attach(byParent.get(String(item.id)) ?? []),
-    }));
+    const attach = (items: Array<Record<string, unknown>>, ancestors = new Set<string>()): Array<Record<string, unknown>> => {
+      const output: Array<Record<string, unknown>> = [];
+      for (const item of items) {
+        const id = String(item.id);
+        // Defend public rendering against corrupt/imported database cycles even though
+        // management writes reject cycles before storing them.
+        if (ancestors.has(id)) continue;
+        const nextAncestors = new Set(ancestors);
+        nextAncestors.add(id);
+        output.push({ ...item, children: attach(byParent.get(id) ?? [], nextAncestors) });
+      }
+      return output;
+    };
     return { id: menu.id, key: menu.key, name: menu.name, locale: menu.locale, items: attach(byParent.get(null) ?? []) };
   }
 

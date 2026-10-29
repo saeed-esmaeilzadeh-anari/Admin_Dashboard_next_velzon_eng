@@ -7,9 +7,10 @@ const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
 if (!adminEmail) throw new Error("ADMIN_EMAIL must be configured for the CMS database smoke check.");
 
 async function main() {
-  const [admin, locales, pageType, articleType, permissions, grants] = await Promise.all([
+  const [admin, locales, menus, pageType, articleType, permissions, grants] = await Promise.all([
     prisma.user.findUnique({ where: { email: adminEmail } }),
     prisma.locale.findMany({ where: { code: { in: ["fa-IR", "en-US"] } } }),
+    prisma.cmsMenu.findMany({ where: { key: "main" }, include: { locale: { select: { code: true, direction: true } } } }),
     prisma.contentType.findUnique({ where: { key: "page" }, include: { fields: true } }),
     prisma.contentType.findUnique({ where: { key: "article" }, include: { fields: true } }),
     prisma.cmsPermission.findMany({ select: { id: true, code: true } }),
@@ -33,6 +34,15 @@ async function main() {
   assert.equal(en.isDefault, false);
   assert.equal(await prisma.locale.count({ where: { isDefault: true, isActive: true } }), 1,
     "Exactly one active default locale is expected after seeding.");
+
+  const faMainMenu = menus.find(menu => menu.locale.code === "fa-IR");
+  const enMainMenu = menus.find(menu => menu.locale.code === "en-US");
+  assert.ok(faMainMenu, "The localized main navigation should be seeded for Persian.");
+  assert.ok(enMainMenu, "The localized main navigation should be seeded for English.");
+  assert.equal(faMainMenu.isActive, true);
+  assert.equal(enMainMenu.isActive, true);
+  assert.equal(faMainMenu.locale.direction, LocaleDirection.RTL);
+  assert.equal(enMainMenu.locale.direction, LocaleDirection.LTR);
 
   assert.ok(pageType, "Page content type should exist.");
   assert.ok(articleType, "Article content type should exist.");
@@ -101,7 +111,7 @@ async function main() {
     if (!(error instanceof Error) || error.message !== rollbackMarker) throw error;
   }
 
-  console.info("CMS PostgreSQL smoke check passed: admin, locale, dynamic schemas, permissions and revision relationships.");
+  console.info("CMS PostgreSQL smoke check passed: admin, locale, main menus, dynamic schemas, permissions and revision relationships.");
 }
 
 main().catch(error => {

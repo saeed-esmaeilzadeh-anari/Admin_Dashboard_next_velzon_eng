@@ -16,6 +16,21 @@ async function main() {
   await prisma.locale.upsert({ where: { code: "en-US" },
     update: { name: "English (United States)", nativeName: "English", direction: LocaleDirection.LTR, isDefault: false, isActive: true },
     create: { code: "en-US", name: "English (United States)", nativeName: "English", direction: LocaleDirection.LTR, isDefault: false } });
+  // Seed the localized main navigation records so a fresh site has an editable menu per locale.
+  // Existing active flags are preserved on later seed runs.
+  const faLocale = await prisma.locale.findUniqueOrThrow({ where: { code: "fa-IR" } });
+  const enLocale = await prisma.locale.findUniqueOrThrow({ where: { code: "en-US" } });
+  await prisma.cmsMenu.upsert({
+    where: { key_localeId: { key: "main", localeId: faLocale.id } },
+    update: { name: "ناوبری اصلی" },
+    create: { key: "main", name: "ناوبری اصلی", localeId: faLocale.id },
+  });
+  await prisma.cmsMenu.upsert({
+    where: { key_localeId: { key: "main", localeId: enLocale.id } },
+    update: { name: "Main navigation" },
+    create: { key: "main", name: "Main navigation", localeId: enLocale.id },
+  });
+
   await prisma.contentType.upsert({ where: { key: "page" }, update: { name: "Page", isActive: true },
     create: { key: "page", name: "Page", description: "Multilingual website page.", fields: { create: [
       { key: "body", label: "Body", type: CmsFieldType.RICH_TEXT, isRequired: true, isLocalized: true, sortOrder: 10 },

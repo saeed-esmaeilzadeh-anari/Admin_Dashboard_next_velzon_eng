@@ -110,7 +110,8 @@ S3_PUBLIC_BASE_URL should be the public base that serves the objects saved under
 ## Published website, SEO and transfer limitations
 
 - Published entries render at /content/:typeKey/:localeCode/:slug with locale direction, SEO metadata and alternate-language links.
-- Set NEXT_PUBLIC_SITE_URL in the frontend environment and PUBLIC_SITE_URL in the backend environment to the canonical public origin. Next.js exposes /sitemap.xml; the backend also has JSON/XML sitemap endpoints.
+- The seed creates an editable `main` navigation menu for `fa-IR` and `en-US`. Add menu items in the CMS menu editor to display localized navigation on public content pages; the page renderer handles a disabled or missing menu.
+- Set NEXT_PUBLIC_SITE_URL in the frontend environment and PUBLIC_SITE_URL in the backend environment to the canonical public origin. Set NEXT_PUBLIC_SITE_NAME for the public navigation brand. Next.js exposes /sitemap.xml; the backend also has JSON/XML sitemap endpoints.
 - The page builder's first version supports hero, text/Markdown, image, gallery, CTA, FAQ and card-grid blocks; it is not a universal freeform drag/drop builder.
 - JSON import/export is versioned, bounded and returns per-record results. Imports create drafts. Media binaries are not embedded in packages, so referenced media must already be available on the destination.
 - The scheduled publisher and webhook dispatcher use in-process cron workers. Production serverless needs an external durable scheduler/worker.
