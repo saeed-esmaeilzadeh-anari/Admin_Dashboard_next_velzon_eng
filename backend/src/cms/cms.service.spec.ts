@@ -281,7 +281,7 @@ describe("CmsService revision restoration", () => {
       content: { id: "content-1", data: currentContent.data, updatedAt, contentType: { key: "page", name: "Page", isActive: true, fields: [] } },
     });
     revisionFindFirst.mockResolvedValue(revision);
-    contentFindUnique.mockResolvedValueOnce(currentContent).mockResolvedValueOnce({ id: "content-1", updatedAt });
+    contentFindUnique.mockResolvedValue(currentContent);
     contentUpdateMany.mockResolvedValue({ count: 1 });
     translationUpdateMany.mockResolvedValue({ count: 1 });
     translationFindUniqueOrThrow.mockResolvedValueOnce(targetRecord).mockResolvedValueOnce(otherRecord);
