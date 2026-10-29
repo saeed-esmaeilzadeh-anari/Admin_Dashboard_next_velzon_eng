@@ -373,7 +373,7 @@ export class CmsService {
     return this.transition(id, locale, CmsContentStatus.IN_REVIEW, [CmsContentStatus.DRAFT], user, "Submitted for review");
   }
   async publish(id: string, locale: string, user: AuthenticatedUser) {
-    return this.transition(id, locale, CmsContentStatus.PUBLISHED, [CmsContentStatus.IN_REVIEW], user, "Published");
+    return this.transition(id, locale, CmsContentStatus.PUBLISHED, [CmsContentStatus.IN_REVIEW, CmsContentStatus.SCHEDULED], user, "Published");
   }
   async reject(id: string, locale: string, dto: RejectContentDto, user: AuthenticatedUser) {
     return this.transition(id, locale, CmsContentStatus.DRAFT, [CmsContentStatus.IN_REVIEW], user, "Rejected: " + dto.reason, dto.reason);
@@ -387,7 +387,7 @@ export class CmsService {
   }
   async unpublish(id: string, locale: string, user: AuthenticatedUser) {
     const tr = await this.findTranslation(id, locale);
-    if (!tr.publishedSnapshot) throw new BadRequestException("This translation has no published version.");
+    if (!tr.publishedSnapshot && tr.status !== CmsContentStatus.SCHEDULED) throw new BadRequestException("This translation has no published version.");
     return this.transition(id, locale, CmsContentStatus.DRAFT,
       [CmsContentStatus.PUBLISHED, CmsContentStatus.DRAFT, CmsContentStatus.IN_REVIEW, CmsContentStatus.SCHEDULED],
       user, "Unpublished", undefined, undefined, true);
