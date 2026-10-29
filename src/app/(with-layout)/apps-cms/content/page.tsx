@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Col, Container, Form, Input, Label, Row, Spinner, Table } from "reactstrap";
 import { useTranslation } from "react-i18next";
@@ -32,8 +32,10 @@ export default function CmsContentListPage() {
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const requestSequence = useRef(0);
 
   const load = useCallback(async () => {
+    const requestId = ++requestSequence.current;
     setLoading(true);
     setError("");
     try {
@@ -42,19 +44,23 @@ export default function CmsContentListPage() {
         cmsApi.contentTypes(true),
         cmsApi.locales(true),
       ]);
+      if (requestId !== requestSequence.current) return;
       setItems(contentPage.data);
       setTotalPages(contentPage.pagination.pages);
       setTotalContent(contentPage.pagination.total);
       setTypes(nextTypes);
       setLocales(nextLocales.filter(locale => locale.isActive));
     } catch (cause) {
-      setError(getErrorMessage(cause));
+      if (requestId === requestSequence.current) setError(getErrorMessage(cause));
     } finally {
-      setLoading(false);
+      if (requestId === requestSequence.current) setLoading(false);
     }
   }, [typeKey, localeCode, status, search, page]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+    return () => { requestSequence.current += 1; };
+  }, [load]);
 
   const rows = useMemo<CmsRow[]>(() => items.flatMap(content => content.translations.map(translation => ({ content, translation }))), [items]);
 
