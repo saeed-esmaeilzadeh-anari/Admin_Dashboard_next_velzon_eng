@@ -36,7 +36,7 @@ export type CmsTaxonomy = { id: string; key: string; name: string; description?:
 export type CmsTaxonomyTerm = {
   id: string; taxonomyId: string; parentId?: string | null; name: string; slug: string; description?: string | null;
   sortOrder: number; isActive: boolean; parent?: { id: string; name: string; slug: string } | null;
-  translations?: Array<{ id: string; localeId: string; name: string; slug: string; locale?: CmsLocale }>;
+  translations?: Array<{ id: string; localeId: string; name: string; slug: string; description?: string | null; locale?: CmsLocale }>;
   _count?: { contents: number; children: number };
 };
 export type CmsMenu = { id: string; key: string; name: string; localeId: string; isActive: boolean; locale?: CmsLocale; _count?: { items: number } };
@@ -72,6 +72,18 @@ export type CmsExportPackage = {
     localeCode: string; title: string; slug: string; excerpt?: string | null; seoTitle?: string | null;
     seoDescription?: string | null; fields: Record<string, unknown>; sourceStatus?: string; sourceVersion?: number; sourcePublishedAt?: string | null;
   }> }>;
+};
+export type CmsImportPackage = {
+  schemaVersion: 1;
+  records: Array<{
+    typeKey: string;
+    sharedFields?: Record<string, unknown>;
+    translations: Array<{
+      localeCode: string; title: string; slug: string;
+      excerpt?: string | null; seoTitle?: string | null; seoDescription?: string | null;
+      fields?: Record<string, unknown>;
+    }>;
+  }>;
 };
 export type CmsImportResult = {
   summary: { requested: number; imported: number; partial: number; failed: number };
@@ -252,7 +264,7 @@ export const cmsApi = {
   async exportContents(limit = 5000): Promise<CmsExportPackage> {
     return (await backendApi.get<CmsExportPackage>("/cms/import-export/export", { params: { limit } })).data;
   },
-  async importContents(contents: CmsExportPackage): Promise<CmsImportResult> {
+  async importContents(contents: CmsImportPackage): Promise<CmsImportResult> {
     return (await backendApi.post<CmsImportResult>("/cms/import-export/import", contents)).data;
   },
   async auditLogs(params: { page?: number; limit?: number; action?: string; entity?: string; search?: string } = {}): Promise<CmsPage<CmsAuditLog>> {

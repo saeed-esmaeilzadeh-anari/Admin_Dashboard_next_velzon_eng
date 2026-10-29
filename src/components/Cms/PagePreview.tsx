@@ -34,7 +34,7 @@ export default function CmsPagePreview({title,excerpt,fields,mediaAssets=[],dire
    const block=raw as Block;const type=text(block.type);
    if(type==="hero"){
     const href=safeHref(block.buttonUrl);
-    return <section key={text(block.id)||index} className="p-4 p-md-5 rounded-4" style={{background:"var(--vz-light, #f5f7fb)"}}><small className="text-primary fw-semibold">{text(block.eyebrow)}</small><h2 className="display-6 fw-bold mt-2">{text(block.title)}</h2><p className="fs-5" style={{whiteSpace:"pre-wrap"}}>{text(block.body)}</p>{href&&block.buttonLabel&&<a className="btn btn-primary mt-2" href={href}>{text(block.buttonLabel)}</a>}</section>;
+    return <section key={text(block.id)||index} className="p-4 p-md-5 rounded-4" style={{background:"var(--vz-light, #f5f7fb)"}}><small className="text-primary fw-semibold">{text(block.eyebrow)}</small><h2 className="display-6 fw-bold mt-2">{text(block.title)}</h2><p className="fs-5" style={{whiteSpace:"pre-wrap"}}>{text(block.body)}</p>{href&&text(block.buttonLabel).trim()&&<a className="btn btn-primary mt-2" href={href}>{text(block.buttonLabel)}</a>}</section>;
    }
    if(type==="richText")return <section key={text(block.id)||index}><h2 className="h3 fw-bold mb-3">{text(block.heading)}</h2><div style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{text(block.bodyMarkdown)}</div></section>;
    if(type==="image"){
@@ -49,7 +49,7 @@ export default function CmsPagePreview({title,excerpt,fields,mediaAssets=[],dire
    }
    if(type==="cta"){
     const href=safeHref(block.buttonUrl);
-    return <section key={text(block.id)||index} className="text-center rounded-4 p-4 p-md-5" style={{background:"var(--vz-light, #f5f7fb)"}}><h2 className="h3 fw-bold">{text(block.heading)}</h2><p style={{whiteSpace:"pre-wrap"}}>{text(block.body)}</p>{href&&block.buttonLabel&&<a className="btn btn-primary" href={href}>{text(block.buttonLabel)}</a>}</section>;
+    return <section key={text(block.id)||index} className="text-center rounded-4 p-4 p-md-5" style={{background:"var(--vz-light, #f5f7fb)"}}><h2 className="h3 fw-bold">{text(block.heading)}</h2><p style={{whiteSpace:"pre-wrap"}}>{text(block.body)}</p>{href&&text(block.buttonLabel).trim()&&<a className="btn btn-primary" href={href}>{text(block.buttonLabel)}</a>}</section>;
    }
    if(type==="faq"){
     const items=Array.isArray(block.items)?block.items.filter(item=>typeof item==="object"&&item!==null) as Array<Record<string,unknown>>:[];

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Col, Container, Form, Input, Label, Row, Spinner, Table } from "reactstrap";
 import { useTranslation } from "react-i18next";
-import { CmsImportResult, cmsApi } from "@/helpers/cmsApi";
+import { CmsImportPackage, CmsImportResult, cmsApi } from "@/helpers/cmsApi";
 
 function errorMessage(error: unknown): string {
   const value = error as { response?: { data?: { message?: string | string[] } }; message?: string };
@@ -42,26 +42,46 @@ export default function CmsImportExportPage() {
       const parsed=JSON.parse(await file.text()) as {schemaVersion?:unknown;records?:unknown};
       if(parsed.schemaVersion!==1||!Array.isArray(parsed.records))throw new Error(t("Invalid CMS export package. Choose a schemaVersion 1 JSON export."));
       if(parsed.records.length<1||parsed.records.length>100)throw new Error(t("Import packages must contain between 1 and 100 content records."));
-      const normalized = {
-        schemaVersion: 1 as const,
-        records: parsed.records.map((rawRecord) => {
-          if (typeof rawRecord !== "object" || rawRecord === null || Array.isArray(rawRecord)) throw new Error(t("Each import record must be an object."));
-          const record = rawRecord as Record<string, unknown>;
-          if (typeof record.typeKey !== "string" || !Array.isArray(record.translations)) throw new Error(t("Each import record needs a type key and translations."));
-          const translations = record.translations.map((rawTranslation) => {
-            if (typeof rawTranslation !== "object" || rawTranslation === null || Array.isArray(rawTranslation)) throw new Error(t("Each translation must be an object."));
-            const translation = rawTranslation as Record<string, unknown>;
+      const isRecord = (value: unknown): value is Record<string, unknown> =>
+        typeof value === "object" && value !== null && !Array.isArray(value);
+      const optionalText = (value: unknown, name: string): string | null | undefined => {
+        if (value === undefined || value === null) return value;
+        if (typeof value !== "string") throw new Error(name + " must be a string or null.");
+        return value;
+      };
+      const rawRecords: unknown[] = parsed.records;
+      const normalized: CmsImportPackage = {
+        schemaVersion: 1,
+        records: rawRecords.map((rawRecord) => {
+          if (!isRecord(rawRecord)) throw new Error(t("Each import record must be an object."));
+          if (typeof rawRecord.typeKey !== "string" || !Array.isArray(rawRecord.translations)) {
+            throw new Error(t("Each import record needs a type key and translations."));
+          }
+          if (rawRecord.translations.length < 1 || rawRecord.translations.length > 20) {
+            throw new Error(t("Each record must contain between 1 and 20 translations."));
+          }
+          const sharedFields = rawRecord.sharedFields === undefined ? {} : rawRecord.sharedFields;
+          if (!isRecord(sharedFields)) throw new Error(t("Shared fields must be a JSON object."));
+          const translations = rawRecord.translations.map((rawTranslation: unknown) => {
+            if (!isRecord(rawTranslation)) throw new Error(t("Each translation must be an object."));
+            if (typeof rawTranslation.localeCode !== "string" ||
+                typeof rawTranslation.title !== "string" ||
+                typeof rawTranslation.slug !== "string") {
+              throw new Error(t("Each translation needs a locale code, title and slug."));
+            }
+            const fields = rawTranslation.fields === undefined ? {} : rawTranslation.fields;
+            if (!isRecord(fields)) throw new Error(t("Translation fields must be a JSON object."));
             return {
-              localeCode: translation.localeCode,
-              title: translation.title,
-              slug: translation.slug,
-              excerpt: translation.excerpt,
-              seoTitle: translation.seoTitle,
-              seoDescription: translation.seoDescription,
-              fields: translation.fields,
+              localeCode: rawTranslation.localeCode,
+              title: rawTranslation.title,
+              slug: rawTranslation.slug,
+              excerpt: optionalText(rawTranslation.excerpt, "excerpt"),
+              seoTitle: optionalText(rawTranslation.seoTitle, "seoTitle"),
+              seoDescription: optionalText(rawTranslation.seoDescription, "seoDescription"),
+              fields,
             };
           });
-          return { typeKey: record.typeKey, sharedFields: record.sharedFields, translations };
+          return { typeKey: rawRecord.typeKey, sharedFields, translations };
         }),
       };
       const data=await cmsApi.importContents(normalized);

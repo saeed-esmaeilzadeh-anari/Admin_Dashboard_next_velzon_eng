@@ -15,6 +15,10 @@ export default function CmsContentPreviewPage(){
  const search=useSearchParams();
  const contentId=params.id;
  const requestedLocale=search.get("localeCode")??"";
+ const apiOrigin=useMemo(()=>{
+  const base=process.env.NEXT_PUBLIC_BACKEND_API_URL??"http://localhost:3001/api/v1";
+  try{return new URL(base).origin;}catch{return "";}
+ },[]);
  const [content,setContent]=useState<CmsContent|null>(null);
  const [media,setMedia]=useState<CmsMediaAsset[]>([]);
  const [locales,setLocales]=useState<CmsLocale[]>([]);
