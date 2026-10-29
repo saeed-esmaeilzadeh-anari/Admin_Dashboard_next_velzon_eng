@@ -135,3 +135,15 @@ Apply migrations with npm run prisma:deploy only after a database backup. Run np
 For serverless deployments, configure an external scheduler to POST /api/v1/internal/cms/jobs/publish-scheduled and /api/v1/internal/cms/jobs/dispatch-webhooks every minute, using Authorization: Bearer <CMS_JOB_TOKEN> stored only in the scheduler's secrets.
 
 The CMS-specific pages are wired to the real API. The legacy e-commerce, CRM, project/task and demo screens are not all migrated from Fake Backend. Before calling the product production-ready, run the release smoke tests in docs/production-readiness.md and verify role permissions, public publishing, storage persistence, redirects, form throttling, webhook signatures, accessibility, and backup/restore.
+
+
+## Serverless scheduled CMS jobs
+
+The NestJS module has in-process minute workers for always-on Node.js deployments. For serverless deployments, use the checked-in GitHub Actions workflow `.github/workflows/cms-jobs.yml` as an external scheduler:
+
+1. In **Repository Settings → Secrets and variables → Actions**, add `CMS_API_BASE_URL` as the public HTTPS API base ending in `/api/v1` and `CMS_JOB_TOKEN` as the same randomly generated secret configured on the backend. Use at least 32 random characters.
+2. The backend must have `CMS_JOB_TOKEN` configured privately. Never store the token in source code or ordinary repository variables.
+3. Run the workflow once with **Actions → CMS Scheduled Jobs → Run workflow** to validate the deployment.
+4. The schedule invokes publication and webhook dispatch endpoints every five minutes. GitHub's scheduler can be delayed; do not use this workflow for deadlines requiring exact-second publication.
+
+The endpoints are authenticated with a constant-time bearer token comparison and return service-unavailable when the backend token is not configured.
