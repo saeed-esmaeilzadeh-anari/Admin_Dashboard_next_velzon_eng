@@ -1,5 +1,5 @@
 import {
-  BadRequestException, Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards,
+  BadRequestException, Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards, UseInterceptors,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { CmsFormSubmissionStatus, Role } from "@prisma/client";
@@ -8,6 +8,7 @@ import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { CmsPermissions } from "./cms-permissions.decorator";
 import { CmsPermissionsGuard } from "./cms-permissions.guard";
+import { CmsAuditInterceptor } from "./cms-audit.interceptor";
 import { CmsManagementService } from "./cms-management.service";
 import {
   AssignTermsDto, CreateCmsFormDto, CreateCmsWebhookDto, CreateMenuDto, CreateMenuItemDto,
@@ -19,6 +20,7 @@ import {
 @ApiTags("cms-management")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard, CmsPermissionsGuard)
+@UseInterceptors(CmsAuditInterceptor)
 @Controller("cms")
 export class CmsManagementController {
   constructor(private readonly cms: CmsManagementService) {}
@@ -100,6 +102,15 @@ export class CmsManagementController {
   @Get("webhooks/:id/deliveries") @Roles(Role.ADMIN) @CmsPermissions("cms.webhooks.manage")
   listWebhookDeliveries(@Param("id", new ParseUUIDPipe()) id: string, @Query("page") pageRaw?: string, @Query("limit") limitRaw?: string) {
     return this.cms.listWebhookDeliveries(id, Math.max(1, Number(pageRaw) || 1), Math.min(100, Math.max(1, Number(limitRaw) || 30)));
+  }
+
+  @Get("audit-logs") @Roles(Role.ADMIN) @CmsPermissions("cms.audit.read")
+  listAuditLogs(@Query("page") pageRaw?: string, @Query("limit") limitRaw?: string, @Query("action") action?: string, @Query("entity") entity?: string, @Query("search") search?: string) {
+    return this.cms.listAuditLogs({
+      page: Math.max(1, Number(pageRaw) || 1),
+      limit: Math.min(100, Math.max(1, Number(limitRaw) || 30)),
+      action, entity, search,
+    });
   }
 
   @Get("permissions") @Roles(Role.ADMIN) @CmsPermissions("cms.permissions.manage")
