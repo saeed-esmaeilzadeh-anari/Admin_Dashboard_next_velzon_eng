@@ -1,5 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
-import { CmsFieldType } from "@prisma/client";
+import { CmsContentStatus, CmsFieldType } from "@prisma/client";
 import { CmsService } from "./cms.service";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -75,5 +75,46 @@ describe("CmsService public sitemap", () => {
     process.env.PUBLIC_SITE_URL = "file:///tmp/cms";
     await expect(service.publicSitemapXml()).rejects.toThrow("PUBLIC_SITE_URL must be an HTTP(S) URL");
     expect(findMany).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("CmsService dashboard summary", () => {
+  it("returns real counts, fills missing workflow statuses with zero and maps recent content", async () => {
+    const prisma = {
+      content: { count: jest.fn().mockResolvedValue(3) },
+      contentTranslation: {
+        count: jest.fn().mockResolvedValue(5),
+        groupBy: jest.fn().mockResolvedValue([
+          { status: CmsContentStatus.DRAFT, _count: { _all: 2 } },
+          { status: CmsContentStatus.PUBLISHED, _count: { _all: 3 } },
+        ]),
+        findMany: jest.fn().mockResolvedValue([{
+          id: "translation-1", contentId: "content-1", title: "Hello", slug: "hello",
+          status: CmsContentStatus.PUBLISHED, version: 4, updatedAt: new Date("2026-10-29T09:00:00.000Z"),
+          locale: { code: "en-US", nativeName: "English", direction: "LTR" },
+          content: { contentType: { key: "article", name: "Article" } },
+        }]),
+      },
+      locale: { count: jest.fn().mockResolvedValue(2) },
+      contentType: { count: jest.fn().mockResolvedValue(4) },
+    } as unknown as PrismaService;
+    const summary = await new CmsService(prisma).dashboardSummary();
+
+    expect(summary.contentCount).toBe(3);
+    expect(summary.translationCount).toBe(5);
+    expect(summary.activeLocaleCount).toBe(2);
+    expect(summary.activeContentTypeCount).toBe(4);
+    expect(summary.statusCounts).toEqual({
+      [CmsContentStatus.DRAFT]: 2,
+      [CmsContentStatus.IN_REVIEW]: 0,
+      [CmsContentStatus.SCHEDULED]: 0,
+      [CmsContentStatus.PUBLISHED]: 3,
+      [CmsContentStatus.ARCHIVED]: 0,
+    });
+    expect(summary.recentlyUpdated[0]).toMatchObject({
+      id: "translation-1", contentId: "content-1", title: "Hello", status: CmsContentStatus.PUBLISHED,
+      contentType: { key: "article", name: "Article" }, locale: { code: "en-US", nativeName: "English" },
+    });
   });
 });

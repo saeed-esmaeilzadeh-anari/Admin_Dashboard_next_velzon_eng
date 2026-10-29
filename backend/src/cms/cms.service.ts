@@ -37,6 +37,50 @@ export class CmsService {
   private readonly logger = new Logger(CmsService.name);
   constructor(private readonly prisma: PrismaService, @Optional() private readonly webhooks?: CmsWebhookService) {}
 
+  async dashboardSummary() {
+    const [contentCount, translationCount, groupedStatuses, activeLocaleCount, activeContentTypeCount, recentlyUpdated] = await Promise.all([
+      this.prisma.content.count(),
+      this.prisma.contentTranslation.count(),
+      this.prisma.contentTranslation.groupBy({ by: ["status"], _count: { _all: true } }),
+      this.prisma.locale.count({ where: { isActive: true } }),
+      this.prisma.contentType.count({ where: { isActive: true } }),
+      this.prisma.contentTranslation.findMany({
+        take: 8,
+        orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+        include: {
+          locale: { select: { code: true, nativeName: true, direction: true } },
+          content: { select: { contentType: { select: { key: true, name: true } } } },
+        },
+      }),
+    ]);
+    const statusCounts: Record<CmsContentStatus, number> = {
+      [CmsContentStatus.DRAFT]: 0,
+      [CmsContentStatus.IN_REVIEW]: 0,
+      [CmsContentStatus.SCHEDULED]: 0,
+      [CmsContentStatus.PUBLISHED]: 0,
+      [CmsContentStatus.ARCHIVED]: 0,
+    };
+    for (const row of groupedStatuses) statusCounts[row.status] = row._count._all;
+    return {
+      contentCount,
+      translationCount,
+      activeLocaleCount,
+      activeContentTypeCount,
+      statusCounts,
+      recentlyUpdated: recentlyUpdated.map(item => ({
+        id: item.id,
+        contentId: item.contentId,
+        title: item.title,
+        slug: item.slug,
+        status: item.status,
+        version: item.version,
+        updatedAt: item.updatedAt,
+        locale: item.locale,
+        contentType: item.content.contentType,
+      })),
+    };
+  }
+
   async listLocales(includeInactive = false) {
     return this.prisma.locale.findMany({
       where: includeInactive ? undefined : { isActive: true },

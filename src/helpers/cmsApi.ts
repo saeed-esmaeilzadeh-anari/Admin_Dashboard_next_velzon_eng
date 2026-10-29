@@ -25,6 +25,25 @@ export type CmsContent = {
   data: Record<string, unknown>; translations: CmsTranslation[]; taxonomyTerms?: Array<{ contentId: string; termId: string; term: CmsTaxonomyTerm }>; createdAt: string; updatedAt: string;
 };
 export type CmsPage<T> = { data: T[]; pagination: { page: number; limit: number; total: number; pages: number } };
+export type CmsDashboardSummary = {
+  contentCount: number;
+  translationCount: number;
+  activeLocaleCount: number;
+  activeContentTypeCount: number;
+  statusCounts: Record<CmsStatus, number>;
+  recentlyUpdated: Array<{
+    id: string;
+    contentId: string;
+    title: string;
+    slug: string;
+    status: CmsStatus;
+    version: number;
+    updatedAt: string;
+    locale: Pick<CmsLocale, "code" | "nativeName" | "direction">;
+    contentType: Pick<CmsContentType, "key" | "name">;
+  }>;
+};
+
 
 export type CmsMediaKind = "IMAGE" | "VIDEO" | "AUDIO" | "DOCUMENT" | "OTHER";
 export type CmsMediaAsset = {
@@ -91,6 +110,9 @@ export type CmsImportResult = {
 };
 
 export const cmsApi = {
+  async dashboardSummary(): Promise<CmsDashboardSummary> {
+    return (await backendApi.get<CmsDashboardSummary>("/cms/dashboard/summary")).data;
+  },
   async locales(includeInactive = true): Promise<CmsLocale[]> {
     return (await backendApi.get<CmsLocale[]>("/cms/locales", { params: { includeInactive } })).data;
   },

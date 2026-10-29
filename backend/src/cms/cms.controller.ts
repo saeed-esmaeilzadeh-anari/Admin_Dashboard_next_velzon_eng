@@ -20,6 +20,10 @@ import {
 @Controller("cms")
 export class CmsController {
   constructor(private readonly cms: CmsService) {}
+  @Get("dashboard/summary") @CmsPermissions("cms.content.read")
+  @ApiOperation({ summary: "Return CMS content counts, workflow totals and recent translations" })
+  dashboardSummary() { return this.cms.dashboardSummary(); }
+
   @Get("locales") @CmsPermissions("cms.content.read") listLocales() { return this.cms.listLocales(true); }
   @Post("locales") @CmsPermissions("cms.locales.manage") createLocale(@Body() dto: CreateLocaleDto) { return this.cms.createLocale(dto); }
   @Patch("locales/:id") @CmsPermissions("cms.locales.manage") updateLocale(@Param("id", new ParseUUIDPipe()) id: string, @Body() dto: UpdateLocaleDto) { return this.cms.updateLocale(id, dto); }
