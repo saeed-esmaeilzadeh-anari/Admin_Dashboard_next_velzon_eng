@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Col, Container, Form, Input, Label, Row, Spinner } from "reactstrap";
 import { useTranslation } from "react-i18next";
-import { cmsApi, CmsContent, CmsField, CmsLocale, CmsMediaAsset, CmsStatus, CmsTranslation } from "@/helpers/cmsApi";
+import { cmsApi, CmsContent, CmsField, CmsLocale, CmsMediaAsset, CmsStatus, CmsTranslation, CmsTaxonomy, CmsTaxonomyTerm } from "@/helpers/cmsApi";
 import PageBuilderField from "@/components/Cms/PageBuilderField";
 
 function messageFrom(error: unknown): string {
@@ -56,6 +56,9 @@ export default function CmsContentEditorPage() {
   const [localizedValues, setLocalizedValues] = useState<Record<string, unknown>>({});
   const [sharedValues, setSharedValues] = useState<Record<string, unknown>>({});
   const [mediaAssets, setMediaAssets] = useState<CmsMediaAsset[]>([]);
+  const [taxonomies, setTaxonomies] = useState<CmsTaxonomy[]>([]);
+  const [taxonomyTerms, setTaxonomyTerms] = useState<CmsTaxonomyTerm[]>([]);
+  const [selectedTermIds, setSelectedTermIds] = useState<string[]>([]);
   const [revisions, setRevisions] = useState<NonNullable<CmsTranslation["revisions"]>>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -75,10 +78,15 @@ export default function CmsContentEditorPage() {
     setLoading(true);
     setError("");
     try {
-      const [nextContent, nextLocales, mediaPage] = await Promise.all([cmsApi.content(contentId), cmsApi.locales(true), cmsApi.media({page:1,limit:100})]);
+      const [nextContent, nextLocales, mediaPage, nextTaxonomies] = await Promise.all([cmsApi.content(contentId), cmsApi.locales(true), cmsApi.media({page:1,limit:100}), cmsApi.taxonomies().catch(() => [] as CmsTaxonomy[])]);
+      const termGroups = await Promise.all(nextTaxonomies.map(async taxonomy => ({ taxonomyId: taxonomy.id, terms: await cmsApi.taxonomyTerms(taxonomy.id).catch(() => [] as CmsTaxonomyTerm[]) })));
+      const allTerms = termGroups.flatMap(group => group.terms);
       setContent(nextContent);
       setLocales(nextLocales.filter(locale => locale.isActive));
       setMediaAssets(mediaPage.data);
+      setTaxonomies(nextTaxonomies);
+      setTaxonomyTerms(allTerms);
+      setSelectedTermIds((nextContent.taxonomyTerms ?? []).map(item => item.termId));
       setLocaleCode(current => current || searchParams.get("localeCode") || nextContent.translations[0]?.locale?.code || nextLocales.find(locale => locale.isDefault && locale.isActive)?.code || "");
     } catch (cause) {
       setError(messageFrom(cause));
@@ -168,6 +176,7 @@ export default function CmsContentEditorPage() {
         }
         if (Object.keys(sharedFields).length) await cmsApi.updateSharedFields(content.id, sharedFields);
       }
+      if (taxonomies.length > 0) await cmsApi.assignContentTerms(content.id, selectedTermIds);
       setNotice(t("Changes saved"));
       const updated = await cmsApi.content(content.id);
       setContent(updated);
@@ -261,6 +270,12 @@ export default function CmsContentEditorPage() {
                 {isNewTranslation ? <Alert color="info">{t("Save this language version first. Then submit it for review or schedule publication.")}</Alert> : <div className="d-grid gap-2">{workflowActions.map(item => <Button key={item.action} type="button" color={item.color} outline={item.action === "reject" || item.action === "unpublish" || item.action === "archive"} disabled={Boolean(busyAction)} onClick={() => void workflow(item.action)}>{busyAction === item.action ? <Spinner size="sm" className="me-2" /> : null}{t(item.label)}</Button>)}</div>}
                 <hr /><div className="small text-muted">{t("Language direction")}: {selectedLocale?.direction ?? t("Unknown")} · {t("Translation state is managed independently for each language.")}</div>
               </CardBody></Card>
+              {taxonomies.length > 0 && <Card><CardHeader><h5 className="card-title mb-0">{t("Taxonomies")}</h5><small className="text-muted">{t("Assignments apply to all language versions of this content.")}</small></CardHeader><CardBody>
+                {taxonomies.map(taxonomy => <div key={taxonomy.id} className="mb-3"><div className="fw-medium mb-2">{taxonomy.name}</div>
+                  {(taxonomyTerms.filter(term => term.taxonomyId === taxonomy.id && term.isActive)).map(term => <div className="form-check" key={term.id}><Input type="checkbox" id={`taxonomy-term-${term.id}`} checked={selectedTermIds.includes(term.id)} onChange={event => setSelectedTermIds(current => event.target.checked ? [...new Set([...current,term.id])] : current.filter(id => id !== term.id))}/><Label check for={`taxonomy-term-${term.id}`}>{term.name}<small className="text-muted ms-2">{term.slug}</small></Label></div>)}
+                  {!taxonomyTerms.some(term => term.taxonomyId === taxonomy.id && term.isActive) && <small className="text-muted">{t("No active terms")}</small>}
+                </div>)}
+              </CardBody></Card>}
               <Card><CardHeader><h5 className="card-title mb-0">{t("Version history")}</h5></CardHeader><CardBody>
                 {!selectedTranslation ? <div className="text-muted small">{t("Save the translation to create revision history.")}</div> :
                   revisions.length === 0 ? <div className="text-muted small">{t("No revisions found")}</div> :
