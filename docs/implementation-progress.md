@@ -31,3 +31,11 @@ Branch: feat/full-stack-foundation
 - No production database, public frontend/backend deployment, real login smoke test, E2E browser suite, accessibility audit, load test or backup/restore rehearsal has been executed here.
 
 Do not treat the project as production-final until current-tip backend and frontend CI are green and those deployment/security checks have been completed.
+
+
+## Security dependency patch — 2026-10-29
+
+- Updated the root dependency lock through npm on a GitHub runner to Next.js 15.5.28, React/React DOM 19.2.7, and eslint-config-next 15.5.28.
+- Removed `typescript.ignoreBuildErrors` from `next.config.js`, so a production build can no longer silently skip type errors; the frontend CI separately runs `npm run type-check` before `next build`.
+- The official Next.js October 14, 2026 security advisory identifies Next.js 15.5.28 as a patched release for the listed upstream vulnerabilities. This is a dependency patch, not a statement that the deployed application was already secured: run CI and redeploy before serving production traffic.
+- Frontend CI on source commit `a14104144fa6dc74bdc12f3982515bb65d1465a8` passed type-check and production build after the duplicate public content route was removed. A new run is required for the updated dependency lock and stricter production type-check behavior.

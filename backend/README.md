@@ -118,3 +118,8 @@ S3_PUBLIC_BASE_URL should be the public base that serves the objects saved under
 - Production DB provisioning, environment secret setup, persistent storage validation, deployed login/content smoke tests, E2E/browser coverage, accessibility QA and backup/restore drills must be performed before a production launch.
 
 See docs/implementation-progress.md and docs/cms-audit.md for the current implementation ledger and verification state.
+
+
+## Security and production launch
+
+See [docs/security-and-deployment.md](../docs/security-and-deployment.md) for the pre-production environment, dependency, migration, storage, security and smoke-test checklist. This branch has not itself provisioned or exercised a production environment.
