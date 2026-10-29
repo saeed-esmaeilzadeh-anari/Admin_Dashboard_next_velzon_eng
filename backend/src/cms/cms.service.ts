@@ -271,8 +271,12 @@ export class CmsService {
     if (!type || !type.isActive) throw new BadRequestException("Active content type was not found.");
     if (!locale || !locale.isActive) throw new BadRequestException("Active locale was not found.");
     const split = this.validateAndSplitFields(dto.fields ?? {}, type.fields, true);
-    await this.assertMediaReferences(split.localizedData, type.fields.filter(field => field.isLocalized));
-    await this.assertMediaReferences(split.sharedData, type.fields.filter(field => !field.isLocalized));
+    const localizedDefinitions = type.fields.filter(field => field.isLocalized);
+    const sharedDefinitions = type.fields.filter(field => !field.isLocalized);
+    await this.assertMediaReferences(split.localizedData, localizedDefinitions);
+    await this.assertMediaReferences(split.sharedData, sharedDefinitions);
+    await this.assertContentReferences(split.localizedData, localizedDefinitions);
+    await this.assertContentReferences(split.sharedData, sharedDefinitions);
     const created = await this.prisma.$transaction(async tx => {
       const item = await tx.content.create({
         data: { contentTypeId: type.id, createdById: user.id, data: asJson(split.sharedData) },
@@ -317,6 +321,7 @@ export class CmsService {
     const localizedDefinitions = content.contentType.fields.filter(field => field.isLocalized && field.isActive);
     const split = this.validateAndSplitFields(dto.fields ?? {}, localizedDefinitions, true);
     await this.assertMediaReferences(split.localizedData, localizedDefinitions);
+    await this.assertContentReferences(split.localizedData, localizedDefinitions);
     const shared = asRecord(content.data);
     const created = await this.prisma.$transaction(async tx => {
       const translation = await tx.contentTranslation.create({
@@ -349,7 +354,9 @@ export class CmsService {
     const currentData = asRecord(tr.data);
     const nextData = dto.fields === undefined ? currentData
       : this.mergeFieldPatch(currentData, dto.fields, tr.content.contentType.fields.filter(field => field.isLocalized && field.isActive));
-    await this.assertMediaReferences(nextData, tr.content.contentType.fields.filter(field => field.isLocalized));
+    const localizedDefinitions = tr.content.contentType.fields.filter(field => field.isLocalized);
+    await this.assertMediaReferences(nextData, localizedDefinitions);
+    await this.assertContentReferences(nextData, localizedDefinitions);
     const next = {
       ...tr, title: dto.title ?? tr.title, slug: dto.slug ?? tr.slug,
       excerpt: dto.excerpt !== undefined ? dto.excerpt : tr.excerpt,
@@ -398,6 +405,7 @@ export class CmsService {
     const nextData = { ...asRecord(item.data), ...patch };
     this.assertRequiredFields(nextData, defs);
     await this.assertMediaReferences(nextData, defs);
+    await this.assertContentReferences(nextData, defs);
     await this.prisma.$transaction(async tx => {
       const contentClaim = await tx.content.updateMany({
         where: { id: contentId, updatedAt: item.updatedAt },
@@ -488,6 +496,8 @@ export class CmsService {
     const sharedDefinitions = tr.content.contentType.fields.filter(field => !field.isLocalized);
     await this.assertMediaReferences(snapshot.data, localizedDefinitions);
     await this.assertMediaReferences(snapshot.sharedData, sharedDefinitions);
+    await this.assertContentReferences(snapshot.data, localizedDefinitions);
+    await this.assertContentReferences(snapshot.sharedData, sharedDefinitions);
 
     const currentContent = await this.prisma.content.findUnique({
       where: { id: contentId },
@@ -1002,6 +1012,57 @@ export class CmsService {
         return block;
       });
     }
+    const relationDefinitions = item.content.contentType.fields.filter(definition =>
+      definition.type === CmsFieldType.RELATION || definition.type === CmsFieldType.RELATION_MULTIPLE);
+    const relationIds = new Set<string>();
+    for (const definition of relationDefinitions) {
+      const value = fields[definition.key];
+      if (definition.type === CmsFieldType.RELATION && typeof value === "string" && this.isUuid(value)) relationIds.add(value);
+      if (definition.type === CmsFieldType.RELATION_MULTIPLE && Array.isArray(value)) {
+        for (const id of value) if (typeof id === "string" && this.isUuid(id)) relationIds.add(id);
+      }
+    }
+    const relatedRecords = relationIds.size ? await this.prisma.content.findMany({
+      where: { id: { in: [...relationIds] }, contentType: { is: { isActive: true } } },
+      select: {
+        id: true,
+        contentType: { select: { key: true, name: true } },
+        translations: {
+          where: {
+            publishedSlug: { not: null },
+            locale: { is: { code: item.locale.code, isActive: true } },
+          },
+          select: {
+            publishedSlug: true, publishedSnapshot: true, publishedAt: true,
+            locale: { select: { code: true, name: true, direction: true } },
+          },
+        },
+      },
+    }) : [];
+    const relatedById = new Map(relatedRecords.map(record => {
+      const translation = record.translations[0];
+      if (!translation?.publishedSlug || !translation.publishedSnapshot) return [record.id, null] as const;
+      const publicSnapshot = asRecord(translation.publishedSnapshot);
+      return [record.id, {
+        id: record.id,
+        type: record.contentType,
+        locale: translation.locale,
+        title: publicSnapshot.title ?? null,
+        slug: translation.publishedSlug,
+        excerpt: publicSnapshot.excerpt ?? null,
+        publishedAt: translation.publishedAt,
+      }] as const;
+    }));
+    for (const definition of relationDefinitions) {
+      const value = fields[definition.key];
+      if (definition.type === CmsFieldType.RELATION) {
+        fields[definition.key] = typeof value === "string" ? relatedById.get(value) ?? null : null;
+      } else {
+        fields[definition.key] = Array.isArray(value)
+          ? value.filter((id): id is string => typeof id === "string").map(id => relatedById.get(id) ?? null).filter(Boolean)
+          : [];
+      }
+    }
     const terms = (item.content.taxonomyTerms ?? []).map(link => {
       const term = link.term;
       const translation = term.translations.find(value => value.locale.code === item.locale.code);
@@ -1108,6 +1169,43 @@ export class CmsService {
     }
   }
 
+  private async assertContentReferences(values: Record<string, unknown>, definitions: FieldDefinition[]) {
+    const references: Array<{ field: FieldDefinition; ids: string[] }> = [];
+    const uniqueIds = new Set<string>();
+    for (const field of definitions) {
+      const value = values[field.key];
+      if (field.type === CmsFieldType.RELATION && typeof value === "string" && value) {
+        if (!this.isUuid(value)) throw new BadRequestException("Relation field " + field.key + " must reference a valid content ID.");
+        references.push({ field, ids: [value] });
+        uniqueIds.add(value);
+      } else if (field.type === CmsFieldType.RELATION_MULTIPLE && Array.isArray(value)) {
+        if (value.length > 100 || !value.every(id => typeof id === "string" && this.isUuid(id))) {
+          throw new BadRequestException("Relation field " + field.key + " must contain at most 100 valid content IDs.");
+        }
+        const ids = value as string[];
+        references.push({ field, ids });
+        for (const id of ids) uniqueIds.add(id);
+      }
+    }
+    if (!uniqueIds.size) return;
+    const existing = await this.prisma.content.findMany({
+      where: { id: { in: [...uniqueIds] } },
+      select: { id: true, contentType: { select: { key: true } } },
+    });
+    const byId = new Map(existing.map(record => [record.id, record.contentType.key]));
+    for (const reference of references) {
+      const config = asRecord(reference.field.config);
+      const targetTypeKey = typeof config.targetTypeKey === "string" ? config.targetTypeKey.trim() : "";
+      for (const id of reference.ids) {
+        const actualType = byId.get(id);
+        if (!actualType) throw new BadRequestException("One or more related content records no longer exist.");
+        if (targetTypeKey && actualType !== targetTypeKey) {
+          throw new BadRequestException("Relation field " + reference.field.key + " only accepts content type " + targetTypeKey + ".");
+        }
+      }
+    }
+  }
+
   private isUuid(value: string): boolean {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   }
@@ -1145,7 +1243,52 @@ export class CmsService {
       return;
     }
     if (field.type === CmsFieldType.MEDIA) {
-      if (typeof value !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) return wrong();
+      if (typeof value !== "string" || !this.isUuid(value)) return wrong();
+      return;
+    }
+    if (field.type === CmsFieldType.RELATION) {
+      if (typeof value !== "string" || !this.isUuid(value)) return wrong();
+      return;
+    }
+    if (field.type === CmsFieldType.RELATION_MULTIPLE) {
+      if (!Array.isArray(value) || value.length > 100 || !value.every(item => typeof item === "string" && this.isUuid(item))) return wrong();
+      return;
+    }
+    if (field.type === CmsFieldType.REPEATER) {
+      if (!Array.isArray(value) || value.length > 100 || !Array.isArray(config.fields) ||
+          config.fields.length === 0 || config.fields.length > 50 || !config.fields.every(isRecord)) return wrong();
+      const children = config.fields as Array<Record<string, unknown>>;
+      const childKeys = new Set<string>();
+      const allowedChildTypes: CmsFieldType[] = [
+        CmsFieldType.TEXT, CmsFieldType.TEXTAREA, CmsFieldType.RICH_TEXT, CmsFieldType.MARKDOWN,
+        CmsFieldType.INTEGER, CmsFieldType.DECIMAL, CmsFieldType.BOOLEAN, CmsFieldType.DATE,
+        CmsFieldType.DATETIME, CmsFieldType.SELECT, CmsFieldType.MULTISELECT, CmsFieldType.EMAIL, CmsFieldType.URL,
+      ];
+      const nestedDefinitions: FieldDefinition[] = [];
+      for (const child of children) {
+        if (typeof child.key !== "string" || !/^[a-z][a-z0-9_-]{0,63}$/.test(child.key) ||
+            childKeys.has(child.key) || typeof child.type !== "string" ||
+            !allowedChildTypes.includes(child.type as CmsFieldType)) return wrong();
+        childKeys.add(child.key);
+        const childConfig = isRecord(child.config) ? asJson(child.config) : Array.isArray(child.options) ? asJson({ options: child.options }) : null;
+        nestedDefinitions.push({
+          key: field.key + "." + child.key,
+          type: child.type as CmsFieldType,
+          isRequired: child.isRequired === true,
+          isLocalized: true,
+          isActive: true,
+          config: childConfig as Prisma.JsonValue | null,
+        });
+      }
+      for (const row of value) {
+        if (!isRecord(row) || Object.keys(row).some(key => !childKeys.has(key))) return wrong();
+        for (const nested of nestedDefinitions) {
+          const childKey = nested.key.slice(field.key.length + 1);
+          const childValue = row[childKey];
+          if (nested.isRequired && isMissing(childValue)) return wrong();
+          if (childValue !== undefined && childValue !== null && childValue !== "") this.validateFieldValue(nested, childValue);
+        }
+      }
       return;
     }
     if (field.type === CmsFieldType.MEDIA_MULTIPLE) {
