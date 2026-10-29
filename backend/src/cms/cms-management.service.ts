@@ -397,6 +397,18 @@ export class CmsManagementService {
     return { data, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
   }
 
+  async retryWebhookDelivery(webhookId: string, deliveryId: string) {
+    const delivery = await this.prisma.cmsWebhookDelivery.findFirst({ where: { id: deliveryId, webhookId } });
+    if (!delivery) throw new NotFoundException("Webhook delivery not found.");
+    const webhook = await this.prisma.cmsWebhook.findUnique({ where: { id: webhookId } });
+    if (!webhook || !webhook.isActive) throw new BadRequestException("Enable the webhook before retrying a delivery.");
+    return this.prisma.cmsWebhookDelivery.update({
+      where: { id: deliveryId },
+      data: { status: CmsWebhookDeliveryStatus.PENDING, attempts: 0, lastError: null, responseStatus: null, deliveredAt: null, nextAttemptAt: new Date() },
+      select: { id: true, eventKey: true, status: true, attempts: true, responseStatus: true, lastError: true, nextAttemptAt: true, createdAt: true },
+    });
+  }
+
   async listPermissions() {
     const [permissions, grants] = await Promise.all([
       this.prisma.cmsPermission.findMany({ orderBy: { code: "asc" } }),
