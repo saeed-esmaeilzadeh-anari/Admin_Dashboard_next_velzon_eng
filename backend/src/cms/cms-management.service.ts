@@ -230,7 +230,7 @@ export class CmsManagementService {
     if (!menu) throw new NotFoundException("Published menu was not found.");
     const all = await this.prisma.cmsMenuItem.findMany({
       where: { menuId: menu.id, isActive: true }, orderBy: { sortOrder: "asc" },
-      include: { content: { include: { translations: { where: { locale: { is: { code: localeCode } }, publishedSlug: { not: null } }, take: 1 } } } },
+      include: { content: { include: { contentType: { select: { key: true } }, translations: { where: { locale: { is: { code: localeCode } }, publishedSlug: { not: null } }, take: 1 } } } },
     });
     const byParent = new Map<string | null, Array<Record<string, unknown>>>();
     for (const item of all) {
