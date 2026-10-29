@@ -693,5 +693,6 @@
   "Markdown or plain text; HTML tags are displayed as text for safety": "Markdown or plain text; HTML tags are displayed as text for safety",
   "Translation count": "Translation count",
   "Page builder blocks": "Page builder blocks",
-  "Languages": "Languages"
+  "Languages": "Languages",
+  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet."
 }
