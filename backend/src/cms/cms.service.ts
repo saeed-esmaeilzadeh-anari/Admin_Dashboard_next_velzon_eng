@@ -531,6 +531,46 @@ export class CmsService {
     };
   }
 
+  async publicSitemap() {
+    const rows = await this.prisma.contentTranslation.findMany({
+      where: {
+        publishedSlug: { not: null },
+        publishedAt: { not: null },
+        locale: { is: { isActive: true } },
+        content: { is: { contentType: { is: { isActive: true } } } },
+      },
+      orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+      include: {
+        locale: { select: { code: true, name: true } },
+        content: {
+          select: {
+            contentType: { select: { key: true } },
+            translations: {
+              where: {
+                publishedSlug: { not: null },
+                publishedAt: { not: null },
+                locale: { is: { isActive: true } },
+              },
+              include: { locale: { select: { code: true, name: true } } },
+            },
+          },
+        },
+      },
+    });
+    return rows.map(item => ({
+      typeKey: item.content.contentType.key,
+      localeCode: item.locale.code,
+      slug: item.publishedSlug,
+      lastModified: item.publishedAt?.toISOString() ?? item.updatedAt.toISOString(),
+      alternates: item.content.translations.map(translation => ({
+        localeCode: translation.locale.code,
+        slug: translation.publishedSlug,
+        href: "/content/" + item.content.contentType.key + "/" + translation.locale.code + "/" + translation.publishedSlug,
+      })),
+      href: "/content/" + item.content.contentType.key + "/" + item.locale.code + "/" + item.publishedSlug,
+    }));
+  }
+
   async listPublicContent(typeKey: string, localeCode: string, query: ListPublicContentQuery) {
     const page = Number(query.page) || 1;
     const limit = Math.min(100, Number(query.limit) || 20);
