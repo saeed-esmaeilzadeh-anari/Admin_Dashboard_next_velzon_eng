@@ -34,6 +34,7 @@ const permissionCatalog = [
   ["cms.forms.submissions.manage", "Manage form submissions", "Mark submissions reviewed, resolved or spam."],
   ["cms.webhooks.manage", "Manage webhooks", "Configure trusted outbound webhook endpoints."],
   ["cms.permissions.manage", "Manage CMS permissions", "Change role permission grants."],
+  ["cms.audit.read", "Read audit log", "View CMS activity history."],
 ] as const;
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -407,6 +408,29 @@ export class CmsManagementService {
       data: { status: CmsWebhookDeliveryStatus.PENDING, attempts: 0, lastError: null, responseStatus: null, deliveredAt: null, nextAttemptAt: new Date() },
       select: { id: true, eventKey: true, status: true, attempts: true, responseStatus: true, lastError: true, nextAttemptAt: true, createdAt: true },
     });
+  }
+
+  async listAuditLogs(query: { page?: number; limit?: number; action?: string; entity?: string; search?: string }) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 30));
+    const where: Prisma.AuditLogWhereInput = {};
+    if (query.action?.trim()) where.action = { contains: query.action.trim(), mode: "insensitive" };
+    if (query.entity?.trim()) where.entity = { contains: query.entity.trim(), mode: "insensitive" };
+    if (query.search?.trim()) {
+      where.OR = [
+        { action: { contains: query.search.trim(), mode: "insensitive" } },
+        { entity: { contains: query.search.trim(), mode: "insensitive" } },
+        { entityId: { contains: query.search.trim(), mode: "insensitive" } },
+      ];
+    }
+    const [data,total] = await Promise.all([
+      this.prisma.auditLog.findMany({
+        where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: "desc" },
+        include: { user: { select: { id: true, name: true, email: true, role: true } } },
+      }),
+      this.prisma.auditLog.count({ where }),
+    ]);
+    return { data, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
   }
 
   async listPermissions() {
