@@ -4,6 +4,10 @@ import { notFound } from "next/navigation";
 import { cmsApi, CmsMediaAsset, CmsPublicContent } from "@/helpers/cmsApi";
 import PagePreview from "@/components/Cms/PagePreview";
 
+// Published content changes should be visible after publication, without waiting for a build or ISR window.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type RouteProps = { params: Promise<{ typeKey: string; localeCode: string; slug: string }> };
 
 const loadPublishedContent = cache(async (typeKey: string, localeCode: string, slug: string): Promise<CmsPublicContent | null> => {
