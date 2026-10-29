@@ -284,5 +284,8 @@
   "Content preview": "Предпросмотр контента",
   "View published page": "Открыть опубликованную страницу",
   "Languages": "Языки",
-  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "Поля медиа и конструктора страниц поддерживаются. Универсальные поля связей и повторяющихся элементов пока не поддерживаются."
+  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "Поля медиа и конструктора страниц поддерживаются. Универсальные поля связей и повторяющихся элементов пока не поддерживаются.",
+  "Content entries": "Материалы",
+  "Previous": "Назад",
+  "Next": "Далее"
 }
