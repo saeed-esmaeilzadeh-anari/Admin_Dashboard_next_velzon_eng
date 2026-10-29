@@ -693,5 +693,6 @@
   "Markdown or plain text; HTML tags are displayed as text for safety": "متن Markdown یا متن ساده؛ برچسب‌های HTML برای امنیت به‌صورت متن نمایش داده می‌شوند",
   "Translation count": "تعداد ترجمه‌ها",
   "Page builder blocks": "بلوک‌های صفحه‌ساز",
-  "Languages": "زبان‌ها"
+  "Languages": "زبان‌ها",
+  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "فیلدهای رسانه و صفحه‌ساز پشتیبانی می‌شوند؛ فیلدهای عمومی رابطه و تکرارشونده هنوز پشتیبانی نمی‌شوند."
 }
