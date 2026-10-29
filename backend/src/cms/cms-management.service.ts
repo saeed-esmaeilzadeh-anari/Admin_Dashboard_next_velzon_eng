@@ -235,7 +235,7 @@ export class CmsManagementService {
     const byParent = new Map<string | null, Array<Record<string, unknown>>>();
     for (const item of all) {
       const linkedTranslation = item.content?.translations[0];
-      const href = item.url ?? (linkedTranslation ? "/" + localeCode + "/" + linkedTranslation.publishedSlug : null);
+      const href = item.url ?? (linkedTranslation && item.content?.contentType?.key ? "/content/" + item.content.contentType.key + "/" + localeCode + "/" + linkedTranslation.publishedSlug : null);
       const row = { id: item.id, label: item.label, href, targetBlank: item.targetBlank, sortOrder: item.sortOrder, parentId: item.parentId, children: [] as Array<Record<string, unknown>> };
       const siblings = byParent.get(item.parentId) ?? [];
       siblings.push(row); byParent.set(item.parentId, siblings);
