@@ -17,7 +17,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
     "test": "jest --runInBand",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:db-smoke": "tsx scripts/verify-cms-seed.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
