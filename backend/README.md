@@ -87,3 +87,14 @@ This increment wires the CMS-specific screens to real API endpoints; it does not
 - The API sitemap is `GET /api/v1/public/cms/sitemap.xml`; the frontend also exposes it at `/sitemap.xml`.
 - Set `PUBLIC_SITE_URL` to the canonical website URL (for example `https://www.example.com`) before deployment. The sitemap includes active published translations and language alternate links.
 - Public rich text is presented as text instead of injecting author-provided HTML. For rich formatting, replace that renderer with a maintained HTML sanitizer and a reviewed allowlist before allowing raw HTML.
+
+
+## Public CMS routes and content transfer
+
+- Public content detail: `GET /api/v1/public/cms/:typeKey/:localeCode/:slug` — returns the stored published snapshot, locale-specific terms, and resolved media metadata.
+- Public sitemap JSON: `GET /api/v1/public/cms/sitemap`; backend XML sitemap: `GET /api/v1/public/cms/sitemap.xml`.
+- Public menu: `GET /api/v1/public/cms/menus/:key/:localeCode` — returns localized tree links into the public content route.
+- Import/export: `GET /api/v1/cms/import-export/export?limit=5000` and `POST /api/v1/cms/import-export/import`. Imports create new drafts and return per-record imported/partial/failed results. Binaries are not included in the JSON package.
+- Frontend published page pattern: `/content/:typeKey/:localeCode/:slug`. Set `NEXT_PUBLIC_SITE_URL` to an absolute public website origin to enable populated `/sitemap.xml` metadata. Without that variable, the Next sitemap intentionally returns no URLs rather than inventing a production domain.
+
+Local media files are not durable on ephemeral/serverless filesystems, and the in-process scheduler/webhook worker requires a continuously running process. A serverless production deployment needs persistent media storage and an external durable scheduler/worker.
