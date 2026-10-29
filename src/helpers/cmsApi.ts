@@ -52,6 +52,19 @@ export type CmsWebhook = { id: string; name: string; endpointUrl: string; events
 export type CmsWebhookDelivery = { id: string; eventKey: string; status: "PENDING" | "PROCESSING" | "SUCCESS" | "FAILED"; attempts: number; responseStatus?: number | null; lastError?: string | null; nextAttemptAt: string; deliveredAt?: string | null; createdAt: string };
 export type CmsPermissionState = { code: string; name: string; description: string; grantedRoles: Array<"ADMIN" | "MANAGER" | "USER"> };
 
+export type CmsPublicContent = {
+  id: string; type: { key: string; name: string };
+  locale: { code: string; name: string; direction: "LTR" | "RTL" };
+  title: string; slug: string; excerpt?: string | null; seoTitle?: string | null;
+  seoDescription?: string | null; fields: Record<string, unknown>;
+  terms: Array<{ id: string; taxonomy: { key: string; name: string }; name: string; slug: string; description?: string | null }>;
+  publishedAt?: string | null;
+};
+export type CmsSitemapEntry = {
+  typeKey: string; localeCode: string; slug: string; href: string; lastModified: string;
+  alternates: Array<{ localeCode: string; slug: string | null; href: string }>;
+};
+
 export type CmsExportPackage = {
   schemaVersion: 1; exportedAt: string; totalRecords: number; exportedRecords: number; truncated: boolean;
   records: Array<{ typeKey: string; sharedFields: Record<string, unknown>; translations: Array<{
@@ -228,6 +241,12 @@ export const cmsApi = {
   },
   async retryWebhookDelivery(id: string, deliveryId: string): Promise<CmsWebhookDelivery> {
     return (await backendApi.post<CmsWebhookDelivery>(`/cms/webhooks/${id}/deliveries/${deliveryId}/retry`)).data;
+  },
+  async publicContent(typeKey: string, localeCode: string, slug: string): Promise<CmsPublicContent> {
+    return (await backendApi.get<CmsPublicContent>(`/public/cms/${encodeURIComponent(typeKey)}/${encodeURIComponent(localeCode)}/${encodeURIComponent(slug)}`)).data;
+  },
+  async publicSitemap(): Promise<CmsSitemapEntry[]> {
+    return (await backendApi.get<CmsSitemapEntry[]>("/public/cms/sitemap")).data;
   },
   async exportContents(limit = 5000): Promise<CmsExportPackage> {
     return (await backendApi.get<CmsExportPackage>("/cms/import-export/export", { params: { limit } })).data;
