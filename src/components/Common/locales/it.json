@@ -284,5 +284,8 @@
   "Content preview": "Anteprima contenuto",
   "View published page": "Visualizza pagina pubblicata",
   "Languages": "Lingue",
-  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "I campi per media e page builder sono supportati. I campi generici di relazione e ripetizione non sono ancora supportati."
+  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "I campi per media e page builder sono supportati. I campi generici di relazione e ripetizione non sono ancora supportati.",
+  "Content entries": "Voci di contenuto",
+  "Previous": "Precedente",
+  "Next": "Successivo"
 }
