@@ -104,7 +104,7 @@ export class CmsManagementController {
     return this.cms.listWebhookDeliveries(id, Math.max(1, Number(pageRaw) || 1), Math.min(100, Math.max(1, Number(limitRaw) || 30)));
   }
 
-  @Get("audit-logs") @Roles(Role.ADMIN) @CmsPermissions("cms.audit.read")
+  @Get("audit-logs") @CmsPermissions("cms.audit.read")
   listAuditLogs(@Query("page") pageRaw?: string, @Query("limit") limitRaw?: string, @Query("action") action?: string, @Query("entity") entity?: string, @Query("search") search?: string) {
     return this.cms.listAuditLogs({
       page: Math.max(1, Number(pageRaw) || 1),
