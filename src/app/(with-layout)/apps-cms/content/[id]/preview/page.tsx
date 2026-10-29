@@ -25,16 +25,16 @@ export default function CmsContentPreviewPage(){
   setLoading(true);setError("");
   try{
    const [nextContent,mediaPage,nextLocales]=await Promise.all([cmsApi.content(contentId),cmsApi.media({page:1,limit:100}),cmsApi.locales(true)]);
-   setContent(nextContent);setMedia(mediaPage.data);setLocales(nextLocales.filter(locale=>locale.isActive));
+   setContent(nextContent);setMedia(mediaPage.data.map(asset=>({...asset,url:asset.url.startsWith("http")?asset.url:apiOrigin+asset.url})));setLocales(nextLocales.filter(locale=>locale.isActive));
    setLocaleCode(current=>current||requestedLocale||nextContent.translations[0]?.locale?.code||"");
   }catch(cause){setError(getError(cause));}
   finally{setLoading(false);}
- },[contentId,requestedLocale]);
+ },[contentId,requestedLocale,apiOrigin]);
  useEffect(()=>{void load();},[load]);
  const translation=useMemo<CmsTranslation|null>(()=>content?.translations.find(item=>item.locale?.code===localeCode)??null,[content,localeCode]);
  const fields=useMemo(()=>({...content?.data,...(translation?.data??{})}),[content,translation]);
  const locale=locales.find(item=>item.code===localeCode);
- const mediaById=new Map(media.map(asset=>[asset.id,asset]));
+
  return <div className="page-content" dir={locale?.direction==="RTL"||["fa","ar"].includes(i18n.language.split("-")[0])?"rtl":"ltr"}><Container fluid>
   <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
    <div><h4 className="mb-1">{t("Content preview")}</h4><p className="text-muted mb-0">{t("Preview current saved draft values. Changes are not published by this page.")}</p></div>
