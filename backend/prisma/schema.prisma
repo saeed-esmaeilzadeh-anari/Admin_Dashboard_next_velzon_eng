@@ -294,6 +294,8 @@ enum CmsFieldType {
   EMAIL
   URL
   JSON
+  MEDIA
+  MEDIA_MULTIPLE
 }
 
 enum CmsContentStatus {
