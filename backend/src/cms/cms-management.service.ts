@@ -73,7 +73,7 @@ export class CmsManagementService {
   }
 
   async updateTaxonomy(id: string, dto: UpdateTaxonomyDto) {
-    const taxonomy = await this.prisma.taxonomy.findUnique({ where: { id }, include: { terms: { where: { parentId: { not: null } }, take: 1 } });
+    const taxonomy = await this.prisma.taxonomy.findUnique({ where: { id }, include: { terms: { where: { parentId: { not: null } }, take: 1 } } });
     if (!taxonomy) throw new NotFoundException("Taxonomy not found.");
     if (dto.isHierarchical === false && taxonomy.terms.length) {
       throw new BadRequestException("A taxonomy with child terms cannot be made flat until its hierarchy is removed.");
