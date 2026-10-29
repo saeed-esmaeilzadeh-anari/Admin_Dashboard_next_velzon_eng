@@ -648,7 +648,7 @@ export class CmsService {
       if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) {
         throw new Error("PUBLIC_SITE_URL must be an HTTP(S) URL without credentials.");
       }
-      base = parsed.origin + parsed.pathname.replace(/\\/+$/, "");
+      base = parsed.origin + parsed.pathname.replace(/\/+$/, "");
     } catch (error) {
       throw new BadRequestException(error instanceof Error ? error.message : "PUBLIC_SITE_URL is invalid.");
     }
