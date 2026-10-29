@@ -7,6 +7,8 @@ import { Alert, Badge, Button, Card, CardBody, CardHeader, Col, Container, Form,
 import { useTranslation } from "react-i18next";
 import { cmsApi, CmsContent, CmsField, CmsLocale, CmsMediaAsset, CmsStatus, CmsTranslation, CmsTaxonomy, CmsTaxonomyTerm } from "@/helpers/cmsApi";
 import PageBuilderField from "@/components/Cms/PageBuilderField";
+import RelationField from "@/components/Cms/RelationField";
+import RepeaterField from "@/components/Cms/RepeaterField";
 
 function messageFrom(error: unknown): string {
   const value = error as { response?: { data?: { message?: string | string[] } }; message?: string };
@@ -14,6 +16,7 @@ function messageFrom(error: unknown): string {
   return Array.isArray(message) ? message.join(", ") : message ?? "Unable to complete the request.";
 }
 function inputValue(field: CmsField, value: unknown): unknown {
+  if (field.type === "REPEATER" || field.type === "RELATION_MULTIPLE") return Array.isArray(value) ? value : [];
   if (field.key === "blocks") {
     if (Array.isArray(value)) return value;
     if (typeof value === "string") { try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
@@ -128,6 +131,12 @@ export default function CmsContentEditorPage() {
 
   const renderField = (field: CmsField, values: Record<string, unknown>) => {
     const value = values[field.key];
+    if (field.type === "RELATION" || field.type === "RELATION_MULTIPLE") {
+      return <Col md={12} key={field.key}><div className="mb-3"><small className="text-muted d-block mb-1">{field.isLocalized ? t("Translated field") : t("Shared field")}</small><RelationField field={field} value={value} localeCode={localeCode} onChange={next => setDynamicValue(field, next)} /></div></Col>;
+    }
+    if (field.type === "REPEATER") {
+      return <Col md={12} key={field.key}><div className="mb-3"><RepeaterField field={field} value={value} onChange={next => setDynamicValue(field, next)} /></div></Col>;
+    }
     const options = Array.isArray(field.config?.options) ? field.config.options as Array<string | { value: string; label?: string }> : [];
     const choices = options.map(option => typeof option === "string" ? { value: option, label: option } : { value: option.value, label: option.label ?? option.value });
     return <Col md={field.type === "TEXTAREA" || field.type === "RICH_TEXT" || field.type === "MARKDOWN" || field.type === "JSON" ? 12 : 6} key={field.key}>
