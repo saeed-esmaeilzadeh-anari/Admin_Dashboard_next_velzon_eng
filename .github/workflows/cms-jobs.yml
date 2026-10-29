@@ -1,0 +1,59 @@
+name: CMS Scheduled Jobs
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cms-scheduled-jobs
+  cancel-in-progress: false
+
+jobs:
+  run-cms-jobs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CMS_API_BASE_URL: ${{ secrets.CMS_API_BASE_URL }}
+      CMS_JOB_TOKEN: ${{ secrets.CMS_JOB_TOKEN }}
+    steps:
+      - name: Validate deployment secrets
+        shell: bash
+        run: |
+          if [[ -z "$CMS_API_BASE_URL" || -z "$CMS_JOB_TOKEN" ]]; then
+            echo "::notice::Set CMS_API_BASE_URL and CMS_JOB_TOKEN in repository Actions secrets to enable scheduled CMS jobs."
+            exit 0
+          fi
+          if [[ "$CMS_API_BASE_URL" != https://* ]]; then
+            echo "::error::CMS_API_BASE_URL must use HTTPS."
+            exit 1
+          fi
+          if [[ "${#CMS_JOB_TOKEN}" -lt 32 ]]; then
+            echo "::error::CMS_JOB_TOKEN must contain at least 32 characters."
+            exit 1
+          fi
+      - name: Publish scheduled content
+        if: ${{ env.CMS_API_BASE_URL != '' && env.CMS_JOB_TOKEN != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${CMS_API_BASE_URL%/}"
+          curl --silent --show-error --fail-with-body --retry 3 --retry-delay 2 \
+            --connect-timeout 10 --max-time 90 \
+            --request POST "${base}/internal/cms/jobs/publish-scheduled" \
+            --header "Authorization: Bearer ${CMS_JOB_TOKEN}" \
+            --header "Content-Type: application/json"
+      - name: Dispatch pending webhooks
+        if: ${{ env.CMS_API_BASE_URL != '' && env.CMS_JOB_TOKEN != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${CMS_API_BASE_URL%/}"
+          curl --silent --show-error --fail-with-body --retry 3 --retry-delay 2 \
+            --connect-timeout 10 --max-time 90 \
+            --request POST "${base}/internal/cms/jobs/dispatch-webhooks" \
+            --header "Authorization: Bearer ${CMS_JOB_TOKEN}" \
+            --header "Content-Type: application/json"
