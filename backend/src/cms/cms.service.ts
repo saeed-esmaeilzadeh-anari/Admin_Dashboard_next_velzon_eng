@@ -548,6 +548,10 @@ export class CmsService {
             select: {
               data: true,
               contentType: { select: { key: true, name: true, fields: { select: { key: true, type: true } } } },
+              translations: {
+                where: { publishedSlug: { not: null }, locale: { is: { isActive: true } } },
+                select: { publishedSlug: true, locale: { select: { code: true } } },
+              },
               taxonomyTerms: {
                 where: { term: { is: { isActive: true, taxonomy: { is: { isActive: true } } } } },
                 include: { term: { include: {
@@ -576,6 +580,10 @@ export class CmsService {
           select: {
             data: true,
             contentType: { select: { key: true, name: true, fields: { select: { key: true, type: true } } } },
+            translations: {
+              where: { publishedSlug: { not: null }, locale: { is: { isActive: true } } },
+              select: { publishedSlug: true, locale: { select: { code: true } } },
+            },
             taxonomyTerms: {
               where: { term: { is: { isActive: true, taxonomy: { is: { isActive: true } } } } },
               include: { term: { include: {
@@ -589,6 +597,55 @@ export class CmsService {
     });
     if (!item) throw new NotFoundException("Published content was not found.");
     return this.toPublicView(item);
+  }
+
+
+  async publicSitemapXml(): Promise<string> {
+    const configuredBase = process.env.PUBLIC_SITE_URL ?? "http://localhost:3000";
+    let base: string;
+    try {
+      const parsed = new URL(configuredBase);
+      if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) {
+        throw new Error("PUBLIC_SITE_URL must be an HTTP(S) URL without credentials.");
+      }
+      base = parsed.origin + parsed.pathname.replace(/\\/+$/, "");
+    } catch (error) {
+      throw new BadRequestException(error instanceof Error ? error.message : "PUBLIC_SITE_URL is invalid.");
+    }
+    const published = await this.prisma.contentTranslation.findMany({
+      where: {
+        publishedSlug: { not: null },
+        locale: { is: { isActive: true } },
+        content: { is: { contentType: { is: { isActive: true } } } },
+      },
+      orderBy: [{ updatedAt: "desc" }],
+      select: {
+        publishedSlug: true, updatedAt: true,
+        locale: { select: { code: true } },
+        content: {
+          select: {
+            contentType: { select: { key: true } },
+            translations: {
+              where: { publishedSlug: { not: null }, locale: { is: { isActive: true } } },
+              select: { publishedSlug: true, locale: { select: { code: true } } },
+            },
+          },
+        },
+      },
+    });
+    const xmlEscape = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+    const urlEntries = published.filter(item => item.publishedSlug).map(item => {
+      const typeKey = item.content.contentType.key;
+      const loc = base + "/content/" + encodeURIComponent(typeKey) + "/" + encodeURIComponent(item.locale.code) + "/" + encodeURIComponent(item.publishedSlug!);
+      const links = item.content.translations.filter(translation => translation.publishedSlug).map(translation => {
+        const href = base + "/content/" + encodeURIComponent(typeKey) + "/" + encodeURIComponent(translation.locale.code) + "/" + encodeURIComponent(translation.publishedSlug!);
+        return '<xhtml:link rel="alternate" hreflang="' + xmlEscape(translation.locale.code) + '" href="' + xmlEscape(href) + '"/>';
+      }).join("");
+      return "<url><loc>" + xmlEscape(loc) + "</loc><lastmod>" + item.updatedAt.toISOString() + "</lastmod>" + links + "</url>";
+    }).join("");
+    return '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' +
+      urlEntries + "</urlset>";
   }
 
   async publishDueContents(): Promise<number> {
@@ -703,6 +760,7 @@ export class CmsService {
     content: {
       data: Prisma.JsonValue;
       contentType: { key: string; name: string; fields: Array<{ key: string; type: CmsFieldType }> };
+      translations?: Array<{ publishedSlug: string | null; locale: { code: string } }>;
       taxonomyTerms?: Array<{ term: {
         id: string; name: string; slug: string; description: string | null;
         taxonomy: { key: string; name: string };
@@ -765,6 +823,9 @@ export class CmsService {
       locale: item.locale, title: snapshot.title, slug: item.publishedSlug,
       excerpt: snapshot.excerpt ?? null, seoTitle: snapshot.seoTitle ?? null,
       seoDescription: snapshot.seoDescription ?? null, fields, terms, publishedAt: item.publishedAt,
+      alternates: (item.content.translations ?? []).filter(value => Boolean(value.publishedSlug)).map(value => ({
+        localeCode: value.locale.code, slug: value.publishedSlug,
+      })),
     };
   }
 
