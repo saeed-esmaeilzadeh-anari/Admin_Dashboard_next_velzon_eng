@@ -29,6 +29,24 @@ async function main() {
       { key: "featured", label: "Featured", type: CmsFieldType.BOOLEAN, isLocalized: false, sortOrder: 30 },
     ] } } });
 
+
+  const pageType = await prisma.contentType.findUniqueOrThrow({ where: { key: "page" } });
+  const articleType = await prisma.contentType.findUniqueOrThrow({ where: { key: "article" } });
+  const defaultFields = [
+    { contentTypeId: pageType.id, key: "coverImage", label: "Cover image", type: CmsFieldType.MEDIA, isRequired: false, isLocalized: true, sortOrder: 40 },
+    { contentTypeId: pageType.id, key: "gallery", label: "Gallery images", type: CmsFieldType.MEDIA_MULTIPLE, isRequired: false, isLocalized: true, sortOrder: 50 },
+    { contentTypeId: pageType.id, key: "blocks", label: "Page builder blocks", type: CmsFieldType.JSON, isRequired: false, isLocalized: true, sortOrder: 60 },
+    { contentTypeId: articleType.id, key: "coverImage", label: "Cover image", type: CmsFieldType.MEDIA, isRequired: false, isLocalized: true, sortOrder: 40 },
+  ];
+  for (const field of defaultFields) {
+    const { contentTypeId, key, ...data } = field;
+    await prisma.contentTypeField.upsert({
+      where: { contentTypeId_key: { contentTypeId, key } },
+      update: { label: data.label, type: data.type, isRequired: data.isRequired, isLocalized: data.isLocalized, sortOrder: data.sortOrder, isActive: true },
+      create: { contentTypeId, key, ...data },
+    });
+  }
+
   const permissionDefinitions: Array<{ code: string; name: string; description: string }> = [
     { code: "cms.content.read", name: "Read CMS content", description: "Read content and translations." },
     { code: "cms.content.create", name: "Create CMS content", description: "Create content records and language versions." },
