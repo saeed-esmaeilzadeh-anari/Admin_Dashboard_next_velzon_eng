@@ -4,10 +4,8 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
-import { Role } from "@prisma/client";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { AuthenticatedUser, CurrentUser } from "../common/decorators/current-user.decorator";
-import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { CmsPermissions } from "./cms-permissions.decorator";
 import { CmsPermissionsGuard } from "./cms-permissions.guard";
@@ -28,7 +26,6 @@ export class CmsMediaController {
   list(@Query() query: ListMediaQueryDto) { return this.media.list(query); }
 
   @Post()
-  @Roles(Role.ADMIN, Role.MANAGER)
   @CmsPermissions("cms.media.upload")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: Number(process.env.CMS_MAX_UPLOAD_BYTES ?? 25 * 1024 * 1024) } }))
   @ApiConsumes("multipart/form-data")
@@ -41,12 +38,10 @@ export class CmsMediaController {
   ) { return this.media.upload(file, user.id, altText, caption); }
 
   @Patch(":id")
-  @Roles(Role.ADMIN, Role.MANAGER)
   @CmsPermissions("cms.media.upload")
   update(@Param("id") id: string, @Body() dto: UpdateMediaAssetDto) { return this.media.update(id, dto); }
 
   @Delete(":id")
-  @Roles(Role.ADMIN)
   @CmsPermissions("cms.media.delete")
   delete(@Param("id") id: string) { return this.media.delete(id); }
 }
