@@ -67,7 +67,8 @@ async function main() {
     { code: "cms.forms.submissions.read", name: "Read form submissions", description: "Review public form submissions." },
     { code: "cms.forms.submissions.manage", name: "Manage form submissions", description: "Review or mark submissions as spam." },
     { code: "cms.webhooks.manage", name: "Manage webhooks", description: "Configure trusted outbound webhook endpoints." },
-    { code: "cms.permissions.manage", name: "Manage CMS permissions", description: "Change role permission grants." }
+    { code: "cms.permissions.manage", name: "Manage CMS permissions", description: "Change role permission grants." },
+    { code: "cms.audit.read", name: "Read audit log", description: "View CMS activity history." }
   ];
   const seededPermissions = [];
   for (const definition of permissionDefinitions) {
