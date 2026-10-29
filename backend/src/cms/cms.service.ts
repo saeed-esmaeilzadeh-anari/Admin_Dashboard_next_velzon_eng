@@ -1093,7 +1093,7 @@ export class CmsService {
           for (const key of ["buttonUrl", "url"]) {
             const href = block[key];
             if (typeof href !== "string" || !href) continue;
-            const safePath = href.startsWith("/") && !href.startsWith("//") && !/[\\r\\n\\\\]/.test(href);
+            const safePath = href.startsWith("/") && !href.startsWith("//") && !href.includes(String.fromCharCode(92)) && !href.includes(String.fromCharCode(13)) && !href.includes(String.fromCharCode(10));
             let safeExternal = false;
             try { safeExternal = new URL(href).protocol === "https:"; } catch { /* local paths are handled above */ }
             if (!safePath && !safeExternal) return wrong();
