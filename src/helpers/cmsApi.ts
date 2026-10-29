@@ -43,6 +43,11 @@ export type CmsMenu = { id: string; key: string; name: string; localeId: string;
 export type CmsMenuItem = { id: string; menuId: string; parentId?: string | null; contentId?: string | null; label: string; url?: string | null; targetBlank: boolean; sortOrder: number; isActive: boolean };
 export type CmsRedirect = { id: string; sourcePath: string; destinationPath: string; statusCode: number; isActive: boolean; hitCount: number; localeId?: string | null; locale?: CmsLocale | null };
 export type CmsFormDefinition = { id: string; key: string; name: string; description?: string | null; schema: { fields: Array<Record<string, unknown>>; [key: string]: unknown }; successMessage?: string | null; isActive: boolean; _count?: { submissions: number } };
+export type CmsAuditLog = {
+  id: string; userId?: string | null; action: string; entity: string; entityId?: string | null;
+  metadata?: Record<string, unknown> | null; createdAt: string;
+  user?: { id: string; name: string; email: string; role: string } | null;
+};
 export type CmsWebhook = { id: string; name: string; endpointUrl: string; events: string[]; isActive: boolean; createdAt: string; _count?: { deliveries: number } };
 export type CmsWebhookDelivery = { id: string; eventKey: string; status: "PENDING" | "PROCESSING" | "SUCCESS" | "FAILED"; attempts: number; responseStatus?: number | null; lastError?: string | null; nextAttemptAt: string; deliveredAt?: string | null; createdAt: string };
 export type CmsPermissionState = { code: string; name: string; description: string; grantedRoles: Array<"ADMIN" | "MANAGER" | "USER"> };
@@ -211,6 +216,9 @@ export const cmsApi = {
   },
   async retryWebhookDelivery(id: string, deliveryId: string): Promise<CmsWebhookDelivery> {
     return (await backendApi.post<CmsWebhookDelivery>(`/cms/webhooks/${id}/deliveries/${deliveryId}/retry`)).data;
+  },
+  async auditLogs(params: { page?: number; limit?: number; action?: string; entity?: string; search?: string } = {}): Promise<CmsPage<CmsAuditLog>> {
+    return (await backendApi.get<CmsPage<CmsAuditLog>>("/cms/audit-logs", { params })).data;
   },
   async permissions(): Promise<{ catalog: CmsPermissionState[]; roles: Array<{ role: "ADMIN" | "MANAGER" | "USER"; permissionCodes: string[] }> }> {
     return (await backendApi.get("/cms/permissions")).data;
