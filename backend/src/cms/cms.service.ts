@@ -450,12 +450,26 @@ export class CmsService {
     const [items, total] = await Promise.all([
       this.prisma.contentTranslation.findMany({
         where, skip: (page - 1) * limit, take: limit, orderBy: { publishedAt: "desc" },
-        include: { locale: { select: { code: true, name: true, direction: true } },
-          content: { select: { data: true, contentType: { select: { key: true, name: true } } } } },
+        include: {
+          locale: { select: { code: true, name: true, direction: true } },
+          content: {
+            select: {
+              data: true,
+              contentType: { select: { key: true, name: true, fields: { select: { key: true, type: true } } } },
+              taxonomyTerms: {
+                where: { term: { is: { isActive: true, taxonomy: { is: { isActive: true } } } } },
+                include: { term: { include: {
+                  taxonomy: { select: { key: true, name: true } },
+                  translations: { where: { locale: { is: { code: localeCode } } }, include: { locale: { select: { code: true, name: true } } } },
+                } } },
+              },
+            },
+          },
+        },
       }),
       this.prisma.contentTranslation.count({ where }),
     ]);
-    return { data: items.map(item => this.toPublicView(item)), pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+    return { data: await Promise.all(items.map(item => this.toPublicView(item))), pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
   }
 
   async getPublicContent(typeKey: string, localeCode: string, slug: string) {
@@ -464,8 +478,22 @@ export class CmsService {
         publishedSlug: slug, locale: { is: { code: localeCode, isActive: true } },
         content: { is: { contentType: { is: { key: typeKey, isActive: true } } } },
       },
-      include: { locale: { select: { code: true, name: true, direction: true } },
-        content: { select: { data: true, contentType: { select: { key: true, name: true } } } } },
+      include: {
+        locale: { select: { code: true, name: true, direction: true } },
+        content: {
+          select: {
+            data: true,
+            contentType: { select: { key: true, name: true, fields: { select: { key: true, type: true } } } },
+            taxonomyTerms: {
+              where: { term: { is: { isActive: true, taxonomy: { is: { isActive: true } } } } },
+              include: { term: { include: {
+                taxonomy: { select: { key: true, name: true } },
+                translations: { where: { locale: { is: { code: localeCode } } }, include: { locale: { select: { code: true, name: true } } } },
+              } } },
+            },
+          },
+        },
+      },
     });
     if (!item) throw new NotFoundException("Published content was not found.");
     return this.toPublicView(item);
@@ -577,17 +605,74 @@ export class CmsService {
     });
   }
 
-  private toPublicView(item: {
+  private async toPublicView(item: {
     id: string; locale: { code: string; name: string; direction: LocaleDirection };
     publishedSlug: string | null; publishedAt: Date | null; publishedSnapshot: Prisma.JsonValue | null;
-    content: { data: Prisma.JsonValue; contentType: { key: string; name: string } };
+    content: {
+      data: Prisma.JsonValue;
+      contentType: { key: string; name: string; fields: Array<{ key: string; type: CmsFieldType }> };
+      taxonomyTerms?: Array<{ term: {
+        id: string; name: string; slug: string; description: string | null;
+        taxonomy: { key: string; name: string };
+        translations: Array<{ name: string; slug: string; description: string | null; locale: { code: string; name: string } }>;
+      } }>;
+    };
   }) {
     const snapshot = asRecord(item.publishedSnapshot);
+    const fields: Record<string, unknown> = { ...asRecord(snapshot.sharedData), ...asRecord(snapshot.data) };
+    const mediaIds = new Set<string>();
+    for (const definition of item.content.contentType.fields) {
+      const value = fields[definition.key];
+      if (definition.type === CmsFieldType.MEDIA && typeof value === "string") mediaIds.add(value);
+      if (definition.type === CmsFieldType.MEDIA_MULTIPLE && Array.isArray(value)) {
+        for (const mediaId of value) if (typeof mediaId === "string") mediaIds.add(mediaId);
+      }
+    }
+    const blocks = Array.isArray(fields.blocks) ? fields.blocks.filter(isRecord) : [];
+    for (const block of blocks) {
+      if (typeof block.mediaId === "string") mediaIds.add(block.mediaId);
+      if (Array.isArray(block.mediaIds)) for (const mediaId of block.mediaIds) if (typeof mediaId === "string") mediaIds.add(mediaId);
+    }
+    const assets = mediaIds.size ? await this.prisma.mediaAsset.findMany({
+      where: { id: { in: [...mediaIds] } },
+      select: { id: true, url: true, mimeType: true, kind: true, sizeBytes: true, altText: true, caption: true },
+    }) : [];
+    const assetsById = new Map(assets.map(asset => [asset.id, asset]));
+    const publicAsset = (id: string) => {
+      const asset = assetsById.get(id);
+      return asset ? { ...asset } : null;
+    };
+    for (const definition of item.content.contentType.fields) {
+      const value = fields[definition.key];
+      if (definition.type === CmsFieldType.MEDIA && typeof value === "string") fields[definition.key] = publicAsset(value);
+      if (definition.type === CmsFieldType.MEDIA_MULTIPLE && Array.isArray(value)) {
+        fields[definition.key] = value.filter((mediaId): mediaId is string => typeof mediaId === "string").map(publicAsset).filter(Boolean);
+      }
+    }
+    if (blocks.length) {
+      fields.blocks = blocks.map(block => {
+        if (typeof block.mediaId === "string") return { ...block, media: publicAsset(block.mediaId) };
+        if (Array.isArray(block.mediaIds)) {
+          const ids = block.mediaIds.filter((id): id is string => typeof id === "string");
+          return { ...block, mediaItems: ids.map(publicAsset).filter(Boolean) };
+        }
+        return block;
+      });
+    }
+    const terms = (item.content.taxonomyTerms ?? []).map(link => {
+      const term = link.term;
+      const translation = term.translations.find(value => value.locale.code === item.locale.code);
+      return {
+        id: term.id, taxonomy: term.taxonomy,
+        name: translation?.name ?? term.name, slug: translation?.slug ?? term.slug,
+        description: translation?.description ?? term.description,
+      };
+    });
     return {
-      id: item.id, type: item.content.contentType, locale: item.locale, title: snapshot.title,
-      slug: item.publishedSlug, excerpt: snapshot.excerpt ?? null,
-      seoTitle: snapshot.seoTitle ?? null, seoDescription: snapshot.seoDescription ?? null,
-      fields: { ...asRecord(snapshot.sharedData), ...asRecord(snapshot.data) }, publishedAt: item.publishedAt,
+      id: item.id, type: { key: item.content.contentType.key, name: item.content.contentType.name },
+      locale: item.locale, title: snapshot.title, slug: item.publishedSlug,
+      excerpt: snapshot.excerpt ?? null, seoTitle: snapshot.seoTitle ?? null,
+      seoDescription: snapshot.seoDescription ?? null, fields, terms, publishedAt: item.publishedAt,
     };
   }
 
