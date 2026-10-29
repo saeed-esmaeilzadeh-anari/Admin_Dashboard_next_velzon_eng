@@ -23,17 +23,42 @@ function isPublicIpv4(value: string): boolean {
   if (a === 203 && b === 0 && c === 113) return false;
   return true;
 }
-function isPublicAddress(address: string): boolean {
+function expandIpv6(address: string): number[] | null {
+  const value = address.toLowerCase();
+  if (value.includes("%") || value.includes(".")) return null;
+  const halves = value.split("::");
+  if (halves.length > 2) return null;
+  const left = halves[0] ? halves[0].split(":") : [];
+  const right = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+  const missing = 8 - left.length - right.length;
+  if ((halves.length === 1 && missing !== 0) || (halves.length === 2 && missing < 1)) return null;
+  const parts = [...left, ...Array(missing).fill("0"), ...right];
+  if (parts.length !== 8 || parts.some(part => !/^[0-9a-f]{1,4}$/.test(part))) return null;
+  return parts.map(part => Number.parseInt(part, 16));
+}
+
+/**
+ * Webhooks are allowed to dial only addresses within IPv6 global-unicast space.
+ * Treat transition/documentation ranges conservatively: DNS rebinding is mitigated
+ * separately by pinning the validated DNS result into the HTTPS socket.
+ */
+function isPublicIpv6(address: string): boolean {
+  const words = expandIpv6(address);
+  if (!words) return false;
+  const first = words[0];
+  const second = words[1];
+  // Only the 2000::/3 global-unicast allocation range is eligible.
+  if (first < 0x2000 || first > 0x3fff) return false;
+  // 2001:0000::/23 (special-purpose), 2001:db8::/32 (documentation) and 2002::/16 (6to4).
+  if (first === 0x2001 && (second <= 0x01ff || second === 0x0db8)) return false;
+  if (first === 0x2002) return false;
+  return true;
+}
+
+export function isPublicAddress(address: string): boolean {
   const family = isIP(address);
   if (family === 4) return isPublicIpv4(address);
-  if (family === 6) {
-    const value = address.toLowerCase();
-    if (value === "::" || value === "::1" || value.startsWith("fc") || value.startsWith("fd") ||
-      value.startsWith("fe8") || value.startsWith("fe9") || value.startsWith("fea") ||
-      value.startsWith("feb") || value.startsWith("ff") || value.startsWith("2001:db8") ||
-      value.startsWith("::ffff:")) return false;
-    return true;
-  }
+  if (family === 6) return isPublicIpv6(address);
   return false;
 }
 function jsonValue(value: unknown): Prisma.InputJsonValue {
