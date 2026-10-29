@@ -218,3 +218,110 @@ describe("CmsService optimistic concurrency", () => {
     expect(tx.contentRevision.create).not.toHaveBeenCalled();
   });
 });
+
+
+
+describe("CmsService revision restoration", () => {
+  const revisionFindFirst = jest.fn();
+  const contentFindUnique = jest.fn();
+  const contentUpdateMany = jest.fn();
+  const translationUpdateMany = jest.fn();
+  const translationFindUniqueOrThrow = jest.fn();
+  const revisionCreate = jest.fn();
+  const auditCreate = jest.fn();
+  const tx = {
+    content: { updateMany: contentUpdateMany },
+    contentTranslation: { updateMany: translationUpdateMany, findUniqueOrThrow: translationFindUniqueOrThrow },
+    contentRevision: { create: revisionCreate },
+    auditLog: { create: auditCreate },
+  };
+  const prisma = {
+    contentRevision: { findFirst: revisionFindFirst },
+    content: { findUnique: contentFindUnique },
+    $transaction: jest.fn(async (callback: (transaction: typeof tx) => Promise<unknown>) => callback(tx)),
+  } as unknown as PrismaService;
+  const service = new CmsService(prisma);
+  const findTranslation = jest.spyOn(service as unknown as { findTranslation: (...args: unknown[]) => Promise<unknown> }, "findTranslation");
+  const updatedAt = new Date("2026-10-29T08:00:00.000Z");
+  const target = {
+    id: "translation-fa", contentId: "content-1", localeId: "locale-fa", title: "Current",
+    slug: "current", excerpt: null, seoTitle: null, seoDescription: null, data: { body: "current" },
+    status: CmsContentStatus.PUBLISHED, version: 3, publishedAt: updatedAt, scheduledAt: null,
+    publishedSlug: "current", publishedSnapshot: { title: "Live", data: {}, sharedData: {} },
+    locale: { code: "fa-IR" },
+  };
+  const another = {
+    id: "translation-en", contentId: "content-1", localeId: "locale-en", title: "English",
+    slug: "english", excerpt: null, seoTitle: null, seoDescription: null, data: { body: "English" },
+    status: CmsContentStatus.PUBLISHED, version: 5, publishedAt: updatedAt, scheduledAt: null,
+    publishedSlug: "english", publishedSnapshot: { title: "Live English", data: {}, sharedData: {} },
+    locale: { code: "en-US" },
+  };
+  const currentContent = { id: "content-1", data: { theme: "light" }, updatedAt, translations: [target, another] };
+  const targetRecord = {
+    id: target.id, contentId: target.contentId, localeId: target.localeId, title: "Restored title",
+    slug: "restored-title", excerpt: null, seoTitle: null, seoDescription: null, data: { body: "Restored body" },
+    status: CmsContentStatus.DRAFT, version: 4,
+  };
+  const otherRecord = {
+    id: another.id, contentId: another.contentId, localeId: another.localeId, title: another.title,
+    slug: another.slug, excerpt: null, seoTitle: null, seoDescription: null, data: another.data,
+    status: CmsContentStatus.DRAFT, version: 6,
+  };
+  const snapshot = {
+    title: "Restored title", slug: "restored-title", excerpt: null, seoTitle: null,
+    seoDescription: null, data: { body: "Restored body" }, sharedData: { theme: "dark" },
+  };
+  const revision = { id: "revision-2", translationId: target.id, version: 2, snapshot };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    findTranslation.mockResolvedValue({
+      ...target,
+      content: { id: "content-1", data: currentContent.data, updatedAt, contentType: { key: "page", name: "Page", isActive: true, fields: [] } },
+    });
+    revisionFindFirst.mockResolvedValue(revision);
+    contentFindUnique.mockResolvedValueOnce(currentContent).mockResolvedValueOnce({ id: "content-1", updatedAt });
+    contentUpdateMany.mockResolvedValue({ count: 1 });
+    translationUpdateMany.mockResolvedValue({ count: 1 });
+    translationFindUniqueOrThrow.mockResolvedValueOnce(targetRecord).mockResolvedValueOnce(otherRecord);
+    revisionCreate.mockResolvedValue({});
+    auditCreate.mockResolvedValue({});
+  });
+
+  it("fails safely if one locale changes while a revision is being restored", async () => {
+    translationUpdateMany.mockResolvedValueOnce({ count: 0 });
+    await expect(service.restoreRevision("content-1", "fa-IR", revision.id, { id: "editor-1" } as never))
+      .rejects.toBeInstanceOf(ConflictException);
+    expect(translationUpdateMany).toHaveBeenCalledTimes(1);
+    expect(revisionCreate).not.toHaveBeenCalled();
+    expect(auditCreate).not.toHaveBeenCalled();
+  });
+
+  it("restores the selected translation and advances all language versions when shared fields roll back", async () => {
+    await service.restoreRevision("content-1", "fa-IR", revision.id, { id: "editor-1" } as never);
+    expect(contentUpdateMany).toHaveBeenCalledWith({
+      where: { id: "content-1", updatedAt },
+      data: { data: { theme: "dark" } },
+    });
+    expect(translationUpdateMany).toHaveBeenNthCalledWith(1, {
+      where: { id: target.id, version: 3, status: CmsContentStatus.PUBLISHED },
+      data: expect.objectContaining({
+        title: "Restored title", slug: "restored-title", status: CmsContentStatus.DRAFT,
+        scheduledAt: null, version: 4,
+      }),
+    });
+    expect(translationUpdateMany).toHaveBeenNthCalledWith(2, {
+      where: { id: another.id, version: 5, status: CmsContentStatus.PUBLISHED },
+      data: expect.objectContaining({ status: CmsContentStatus.DRAFT, scheduledAt: null, version: 6 }),
+    });
+    expect(revisionCreate).toHaveBeenCalledTimes(2);
+    expect(revisionCreate.mock.calls[1][0].data.changeNote).toBe("Shared fields restored from revision 2");
+    expect(auditCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        action: "cms.content.revision_restored",
+        metadata: { contentId: "content-1", localeCode: "fa-IR", sourceVersion: 2, affectedTranslations: 2 },
+      }),
+    }));
+  });
+});
