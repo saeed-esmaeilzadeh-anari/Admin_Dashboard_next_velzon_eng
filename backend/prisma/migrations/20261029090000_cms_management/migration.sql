@@ -87,7 +87,7 @@ CREATE INDEX "cms_form_submissions_formId_status_createdAt_idx" ON "cms_form_sub
 ALTER TABLE "cms_form_submissions" ADD CONSTRAINT "cms_form_submissions_formId_fkey" FOREIGN KEY ("formId") REFERENCES "cms_forms"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 CREATE TABLE "cms_webhooks" (
-"id" UUID NOT NULL,"name" TEXT NOT NULL,"endpointUrl" TEXT NOT NULL,"secret" TEXT NOT NULL,"events" TEXT[],"isActive" BOOLEAN NOT NULL DEFAULT true,
+"id" UUID NOT NULL,"name" TEXT NOT NULL,"endpointUrl" TEXT NOT NULL,"secret" TEXT NOT NULL,"events" TEXT[] NOT NULL,"isActive" BOOLEAN NOT NULL DEFAULT true,
 "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL,CONSTRAINT "cms_webhooks_pkey" PRIMARY KEY ("id"));
 CREATE INDEX "cms_webhooks_isActive_name_idx" ON "cms_webhooks"("isActive","name");
 CREATE TABLE "cms_webhook_deliveries" (
