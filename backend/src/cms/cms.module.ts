@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { AuthModule } from "../auth/auth.module";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { PrismaModule } from "../prisma/prisma.module";
@@ -14,7 +15,7 @@ import { CmsService } from "./cms.service";
 import { CmsWebhookService, CmsWebhookWorker } from "./cms-webhook.service";
 import { PublicCmsController } from "./public-cms.controller";
 @Module({
-  imports: [AuthModule, PrismaModule],
+  imports: [AuthModule, PrismaModule, ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }])],
   controllers: [CmsController, PublicCmsController, CmsManagementController, CmsPublicManagementController, CmsMediaController],
   providers: [CmsService, CmsScheduler, RolesGuard, CmsManagementService, CmsMediaService, CmsPermissionsGuard, CmsWebhookService, CmsWebhookWorker],
   exports: [CmsService],
