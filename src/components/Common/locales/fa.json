@@ -694,5 +694,6 @@
   "Translation count": "تعداد ترجمه‌ها",
   "Page builder blocks": "بلوک‌های صفحه‌ساز",
   "Languages": "زبان‌ها",
-  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "فیلدهای رسانه و صفحه‌ساز پشتیبانی می‌شوند؛ فیلدهای عمومی رابطه و تکرارشونده هنوز پشتیبانی نمی‌شوند."
+  "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "فیلدهای رسانه و صفحه‌ساز پشتیبانی می‌شوند؛ فیلدهای عمومی رابطه و تکرارشونده هنوز پشتیبانی نمی‌شوند.",
+  "Content entries": "تعداد محتواها"
 }
