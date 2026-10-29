@@ -28,6 +28,73 @@ async function main() {
       { key: "summary", label: "Summary", type: CmsFieldType.TEXTAREA, isLocalized: true, sortOrder: 20 },
       { key: "featured", label: "Featured", type: CmsFieldType.BOOLEAN, isLocalized: false, sortOrder: 30 },
     ] } } });
+
+
+  const pageType = await prisma.contentType.findUniqueOrThrow({ where: { key: "page" } });
+  const articleType = await prisma.contentType.findUniqueOrThrow({ where: { key: "article" } });
+  const defaultFields = [
+    { contentTypeId: pageType.id, key: "coverImage", label: "Cover image", type: CmsFieldType.MEDIA, isRequired: false, isLocalized: true, sortOrder: 40 },
+    { contentTypeId: pageType.id, key: "gallery", label: "Gallery images", type: CmsFieldType.MEDIA_MULTIPLE, isRequired: false, isLocalized: true, sortOrder: 50 },
+    { contentTypeId: pageType.id, key: "blocks", label: "Page builder blocks", type: CmsFieldType.JSON, isRequired: false, isLocalized: true, sortOrder: 60 },
+    { contentTypeId: articleType.id, key: "coverImage", label: "Cover image", type: CmsFieldType.MEDIA, isRequired: false, isLocalized: true, sortOrder: 40 },
+  ];
+  for (const field of defaultFields) {
+    const { contentTypeId, key, ...data } = field;
+    await prisma.contentTypeField.upsert({
+      where: { contentTypeId_key: { contentTypeId, key } },
+      update: { label: data.label, type: data.type, isRequired: data.isRequired, isLocalized: data.isLocalized, sortOrder: data.sortOrder, isActive: true },
+      create: { contentTypeId, key, ...data },
+    });
+  }
+
+  const permissionDefinitions: Array<{ code: string; name: string; description: string }> = [
+    { code: "cms.content.read", name: "Read CMS content", description: "Read content and translations." },
+    { code: "cms.content.create", name: "Create CMS content", description: "Create content records and language versions." },
+    { code: "cms.content.edit", name: "Edit CMS content", description: "Edit draft content and shared fields." },
+    { code: "cms.content.submit", name: "Submit for review", description: "Submit content to editorial review." },
+    { code: "cms.content.review", name: "Review content", description: "Review, reject or return submitted content." },
+    { code: "cms.content.publish", name: "Publish content", description: "Publish and schedule content." },
+    { code: "cms.content.archive", name: "Archive content", description: "Archive or restore content." },
+    { code: "cms.locales.manage", name: "Manage locales", description: "Create and configure content languages." },
+    { code: "cms.content-types.manage", name: "Manage content types", description: "Create content schemas and fields." },
+    { code: "cms.media.read", name: "Read media library", description: "View media assets." },
+    { code: "cms.media.upload", name: "Upload media", description: "Upload new assets and edit metadata." },
+    { code: "cms.media.delete", name: "Delete media", description: "Remove media assets." },
+    { code: "cms.taxonomy.manage", name: "Manage taxonomies", description: "Create and organize taxonomies and terms." },
+    { code: "cms.menus.manage", name: "Manage menus", description: "Manage localized navigation menus." },
+    { code: "cms.redirects.manage", name: "Manage redirects", description: "Manage redirects." },
+    { code: "cms.forms.manage", name: "Manage forms", description: "Create and configure public forms." },
+    { code: "cms.forms.submissions.read", name: "Read form submissions", description: "Review public form submissions." },
+    { code: "cms.forms.submissions.manage", name: "Manage form submissions", description: "Review or mark submissions as spam." },
+    { code: "cms.webhooks.manage", name: "Manage webhooks", description: "Configure trusted outbound webhook endpoints." },
+    { code: "cms.permissions.manage", name: "Manage CMS permissions", description: "Change role permission grants." },
+    { code: "cms.audit.read", name: "Read audit log", description: "View CMS activity history." }
+  ];
+  const seededPermissions = [];
+  for (const definition of permissionDefinitions) {
+    seededPermissions.push(await prisma.cmsPermission.upsert({
+      where: { code: definition.code },
+      update: { name: definition.name, description: definition.description },
+      create: definition,
+    }));
+  }
+  const adminGrantCount = await prisma.cmsRolePermission.count({ where: { role: Role.ADMIN } });
+  if (adminGrantCount === 0) {
+    await prisma.cmsRolePermission.createMany({ data: seededPermissions.map(permission => ({ role: Role.ADMIN, permissionId: permission.id })) });
+  }
+  const managerGrantCount = await prisma.cmsRolePermission.count({ where: { role: Role.MANAGER } });
+  if (managerGrantCount === 0) {
+    const managerCodes = new Set([
+      "cms.content.read", "cms.content.create", "cms.content.edit", "cms.content.submit",
+      "cms.content.review", "cms.media.read", "cms.media.upload", "cms.taxonomy.manage",
+      "cms.menus.manage", "cms.redirects.manage", "cms.forms.manage",
+      "cms.forms.submissions.read", "cms.forms.submissions.manage"
+    ]);
+    await prisma.cmsRolePermission.createMany({
+      data: seededPermissions.filter(permission => managerCodes.has(permission.code)).map(permission => ({ role: Role.MANAGER, permissionId: permission.id })),
+    });
+  }
+
   await prisma.category.upsert({ where: { slug: "general" }, update: {}, create: { name: "General", slug: "general" } });
   console.info("Administrator, locales and starter content types seeded.");
 }

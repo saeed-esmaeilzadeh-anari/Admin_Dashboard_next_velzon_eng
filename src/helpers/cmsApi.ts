@@ -1,7 +1,7 @@
 import backendApi from "@/helpers/backendApi";
 
 export type CmsStatus = "DRAFT" | "IN_REVIEW" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
-export type CmsFieldType = "TEXT" | "TEXTAREA" | "RICH_TEXT" | "MARKDOWN" | "INTEGER" | "DECIMAL" | "BOOLEAN" | "DATE" | "DATETIME" | "SELECT" | "MULTISELECT" | "EMAIL" | "URL" | "JSON";
+export type CmsFieldType = "TEXT" | "TEXTAREA" | "RICH_TEXT" | "MARKDOWN" | "INTEGER" | "DECIMAL" | "BOOLEAN" | "DATE" | "DATETIME" | "SELECT" | "MULTISELECT" | "EMAIL" | "URL" | "JSON" | "MEDIA" | "MEDIA_MULTIPLE";
 export type CmsLocale = {
   id: string; code: string; name: string; nativeName: string; direction: "LTR" | "RTL";
   isDefault: boolean; isActive: boolean; fallbackLocaleId?: string | null;
@@ -15,16 +15,80 @@ export type CmsContentType = {
   fields: CmsField[]; _count?: { contents: number };
 };
 export type CmsTranslation = {
-  id: string; localeId: string; title: string; slug: string; excerpt?: string | null;
+  id: string; localeId: string; title: string; slug: string; excerpt?: string | null; data?: Record<string, unknown>;
   seoTitle?: string | null; seoDescription?: string | null; status: CmsStatus; version: number;
   publishedAt?: string | null; scheduledAt?: string | null; publishedSlug?: string | null;
   locale?: CmsLocale; revisions?: Array<{ id: string; version: number; changeNote?: string | null; createdAt: string }>;
 };
 export type CmsContent = {
-  id: string; contentType: Pick<CmsContentType, "id" | "key" | "name">;
-  data: Record<string, unknown>; translations: CmsTranslation[]; createdAt: string; updatedAt: string;
+  id: string; contentType: Pick<CmsContentType, "id" | "key" | "name"> & { fields?: CmsField[] };
+  data: Record<string, unknown>; translations: CmsTranslation[]; taxonomyTerms?: Array<{ contentId: string; termId: string; term: CmsTaxonomyTerm }>; createdAt: string; updatedAt: string;
 };
 export type CmsPage<T> = { data: T[]; pagination: { page: number; limit: number; total: number; pages: number } };
+
+export type CmsMediaKind = "IMAGE" | "VIDEO" | "AUDIO" | "DOCUMENT" | "OTHER";
+export type CmsMediaAsset = {
+  id: string; storageKey: string; originalName: string; mimeType: string; kind: CmsMediaKind;
+  sizeBytes: number; url: string; altText?: string | null; caption?: string | null; createdAt: string;
+  uploadedBy?: { id: string; name: string; email: string } | null;
+};
+export type CmsTaxonomy = { id: string; key: string; name: string; description?: string | null; isHierarchical: boolean; isActive: boolean; _count?: { terms: number } };
+export type CmsTaxonomyTerm = {
+  id: string; taxonomyId: string; parentId?: string | null; name: string; slug: string; description?: string | null;
+  sortOrder: number; isActive: boolean; parent?: { id: string; name: string; slug: string } | null;
+  translations?: Array<{ id: string; localeId: string; name: string; slug: string; description?: string | null; locale?: CmsLocale }>;
+  _count?: { contents: number; children: number };
+};
+export type CmsMenu = { id: string; key: string; name: string; localeId: string; isActive: boolean; locale?: CmsLocale; _count?: { items: number } };
+export type CmsMenuItem = { id: string; menuId: string; parentId?: string | null; contentId?: string | null; label: string; url?: string | null; targetBlank: boolean; sortOrder: number; isActive: boolean };
+export type CmsRedirect = { id: string; sourcePath: string; destinationPath: string; statusCode: number; isActive: boolean; hitCount: number; localeId?: string | null; locale?: CmsLocale | null };
+export type CmsFormDefinition = { id: string; key: string; name: string; description?: string | null; schema: { fields: Array<Record<string, unknown>>; [key: string]: unknown }; successMessage?: string | null; isActive: boolean; _count?: { submissions: number } };
+export type CmsAuditLog = {
+  id: string; userId?: string | null; action: string; entity: string; entityId?: string | null;
+  metadata?: Record<string, unknown> | null; createdAt: string;
+  user?: { id: string; name: string; email: string; role: string } | null;
+};
+export type CmsWebhook = { id: string; name: string; endpointUrl: string; events: string[]; isActive: boolean; createdAt: string; _count?: { deliveries: number } };
+export type CmsWebhookDelivery = { id: string; eventKey: string; status: "PENDING" | "PROCESSING" | "SUCCESS" | "FAILED"; attempts: number; responseStatus?: number | null; lastError?: string | null; nextAttemptAt: string; deliveredAt?: string | null; createdAt: string };
+export type CmsPermissionState = { code: string; name: string; description: string; grantedRoles: Array<"ADMIN" | "MANAGER" | "USER"> };
+
+export type CmsPublicContent = {
+  id: string; type: { key: string; name: string };
+  locale: { code: string; name: string; direction: "LTR" | "RTL" };
+  title: string; slug: string; excerpt?: string | null; seoTitle?: string | null;
+  seoDescription?: string | null; fields: Record<string, unknown>;
+  terms: Array<{ id: string; taxonomy: { key: string; name: string }; name: string; slug: string; description?: string | null }>;
+  publishedAt?: string | null;
+  alternates?: Array<{ localeCode: string; slug: string | null }>;
+};
+export type CmsSitemapEntry = {
+  typeKey: string; localeCode: string; slug: string; href: string; lastModified: string;
+  alternates: Array<{ localeCode: string; slug: string | null; href: string }>;
+};
+
+export type CmsExportPackage = {
+  schemaVersion: 1; exportedAt: string; totalRecords: number; exportedRecords: number; truncated: boolean;
+  records: Array<{ typeKey: string; sharedFields: Record<string, unknown>; translations: Array<{
+    localeCode: string; title: string; slug: string; excerpt?: string | null; seoTitle?: string | null;
+    seoDescription?: string | null; fields: Record<string, unknown>; sourceStatus?: string; sourceVersion?: number; sourcePublishedAt?: string | null;
+  }> }>;
+};
+export type CmsImportPackage = {
+  schemaVersion: 1;
+  records: Array<{
+    typeKey: string;
+    sharedFields?: Record<string, unknown>;
+    translations: Array<{
+      localeCode: string; title: string; slug: string;
+      excerpt?: string | null; seoTitle?: string | null; seoDescription?: string | null;
+      fields?: Record<string, unknown>;
+    }>;
+  }>;
+};
+export type CmsImportResult = {
+  summary: { requested: number; imported: number; partial: number; failed: number };
+  results: Array<{ index: number; typeKey: string; contentId: string | null; status: "IMPORTED" | "PARTIAL" | "FAILED"; translationsImported: number; error?: string }>;
+};
 
 export const cmsApi = {
   async locales(includeInactive = true): Promise<CmsLocale[]> {
@@ -77,5 +141,139 @@ export const cmsApi = {
   },
   async restoreRevision(id: string, localeCode: string, revisionId: string): Promise<CmsContent> {
     return (await backendApi.post<CmsContent>(`/cms/contents/${id}/translations/${encodeURIComponent(localeCode)}/revisions/${revisionId}/restore`)).data;
+  },
+
+  async media(params: { page?: number; limit?: number; kind?: CmsMediaKind; search?: string } = {}): Promise<CmsPage<CmsMediaAsset>> {
+    return (await backendApi.get<CmsPage<CmsMediaAsset>>("/cms/media", { params })).data;
+  },
+  async uploadMedia(file: File, altText = "", caption = ""): Promise<CmsMediaAsset> {
+    const form = new FormData();
+    form.append("file", file);
+    if (altText) form.append("altText", altText);
+    if (caption) form.append("caption", caption);
+    return (await backendApi.post<CmsMediaAsset>("/cms/media", form, { headers: { "Content-Type": "multipart/form-data" } })).data;
+  },
+  async updateMedia(id: string, input: { altText?: string | null; caption?: string | null }): Promise<CmsMediaAsset> {
+    return (await backendApi.patch<CmsMediaAsset>(`/cms/media/${id}`, input)).data;
+  },
+  async deleteMedia(id: string): Promise<{ id: string; deleted: boolean; fileRemoved: boolean }> {
+    return (await backendApi.delete<{ id: string; deleted: boolean; fileRemoved: boolean }>(`/cms/media/${id}`)).data;
+  },
+  async taxonomies(): Promise<CmsTaxonomy[]> {
+    return (await backendApi.get<CmsTaxonomy[]>("/cms/taxonomies")).data;
+  },
+  async createTaxonomy(input: { key: string; name: string; description?: string; isHierarchical?: boolean }): Promise<CmsTaxonomy> {
+    return (await backendApi.post<CmsTaxonomy>("/cms/taxonomies", input)).data;
+  },
+  async updateTaxonomy(id: string, input: Partial<Pick<CmsTaxonomy, "name" | "description" | "isHierarchical" | "isActive">>): Promise<CmsTaxonomy> {
+    return (await backendApi.patch<CmsTaxonomy>(`/cms/taxonomies/${id}`, input)).data;
+  },
+  async taxonomyTerms(taxonomyId: string): Promise<CmsTaxonomyTerm[]> {
+    return (await backendApi.get<CmsTaxonomyTerm[]>(`/cms/taxonomies/${taxonomyId}/terms`)).data;
+  },
+  async createTaxonomyTerm(taxonomyId: string, input: { name: string; slug: string; description?: string; parentId?: string | null; sortOrder?: number }): Promise<CmsTaxonomyTerm> {
+    return (await backendApi.post<CmsTaxonomyTerm>(`/cms/taxonomies/${taxonomyId}/terms`, input)).data;
+  },
+  async updateTaxonomyTerm(taxonomyId: string, termId: string, input: Partial<CmsTaxonomyTerm>): Promise<CmsTaxonomyTerm> {
+    return (await backendApi.patch<CmsTaxonomyTerm>(`/cms/taxonomies/${taxonomyId}/terms/${termId}`, input)).data;
+  },
+  async translateTaxonomyTerm(termId: string, input: { localeCode: string; name: string; slug: string; description?: string }): Promise<CmsTaxonomyTerm> {
+    return (await backendApi.post<CmsTaxonomyTerm>(`/cms/taxonomy-terms/${termId}/translations`, input)).data;
+  },
+  async assignContentTerms(contentId: string, termIds: string[]): Promise<Array<{ contentId: string; termId: string; term: CmsTaxonomyTerm }>> {
+    return (await backendApi.put<Array<{ contentId: string; termId: string; term: CmsTaxonomyTerm }>>(`/cms/contents/${contentId}/terms`, { termIds })).data;
+  },
+  async menus(): Promise<CmsMenu[]> {
+    return (await backendApi.get<CmsMenu[]>("/cms/menus")).data;
+  },
+  async createMenu(input: { key: string; name: string; localeCode: string }): Promise<CmsMenu> {
+    return (await backendApi.post<CmsMenu>("/cms/menus", input)).data;
+  },
+  async updateMenu(id: string, input: Partial<Pick<CmsMenu, "name" | "isActive">>): Promise<CmsMenu> {
+    return (await backendApi.patch<CmsMenu>(`/cms/menus/${id}`, input)).data;
+  },
+  async menuItems(menuId: string): Promise<CmsMenuItem[]> {
+    return (await backendApi.get<CmsMenuItem[]>(`/cms/menus/${menuId}/items`)).data;
+  },
+  async createMenuItem(menuId: string, input: Partial<CmsMenuItem> & Pick<CmsMenuItem, "label">): Promise<CmsMenuItem> {
+    return (await backendApi.post<CmsMenuItem>(`/cms/menus/${menuId}/items`, input)).data;
+  },
+  async updateMenuItem(menuId: string, itemId: string, input: Partial<CmsMenuItem>): Promise<CmsMenuItem> {
+    return (await backendApi.patch<CmsMenuItem>(`/cms/menus/${menuId}/items/${itemId}`, input)).data;
+  },
+  async deleteMenuItem(menuId: string, itemId: string): Promise<{ id: string; deleted: boolean }> {
+    return (await backendApi.delete<{ id: string; deleted: boolean }>(`/cms/menus/${menuId}/items/${itemId}`)).data;
+  },
+  async redirects(): Promise<CmsRedirect[]> {
+    return (await backendApi.get<CmsRedirect[]>("/cms/redirects")).data;
+  },
+  async createRedirect(input: { sourcePath: string; destinationPath: string; statusCode?: number; localeCode?: string | null }): Promise<CmsRedirect> {
+    return (await backendApi.post<CmsRedirect>("/cms/redirects", input)).data;
+  },
+  async updateRedirect(id: string, input: Partial<CmsRedirect> & { localeCode?: string | null }): Promise<CmsRedirect> {
+    return (await backendApi.patch<CmsRedirect>(`/cms/redirects/${id}`, input)).data;
+  },
+  async resolveRedirect(path: string, localeCode?: string): Promise<{ destinationPath: string; statusCode: number }> {
+    return (await backendApi.get<{ destinationPath: string; statusCode: number }>("/public/cms/redirects/resolve", { params: { path, localeCode } })).data;
+  },
+  async forms(): Promise<CmsFormDefinition[]> {
+    return (await backendApi.get<CmsFormDefinition[]>("/cms/forms")).data;
+  },
+  async createForm(input: { key: string; name: string; description?: string; schema: CmsFormDefinition["schema"]; successMessage?: string }): Promise<CmsFormDefinition> {
+    return (await backendApi.post<CmsFormDefinition>("/cms/forms", input)).data;
+  },
+  async updateForm(id: string, input: Partial<Pick<CmsFormDefinition, "name" | "description" | "schema" | "successMessage" | "isActive">>): Promise<CmsFormDefinition> {
+    return (await backendApi.patch<CmsFormDefinition>(`/cms/forms/${id}`, input)).data;
+  },
+  async formSubmissions(formId: string, params: { page?: number; limit?: number; status?: string } = {}): Promise<CmsPage<Record<string, unknown>>> {
+    return (await backendApi.get<CmsPage<Record<string, unknown>>>(`/cms/forms/${formId}/submissions`, { params })).data;
+  },
+  async updateFormSubmission(formId: string, submissionId: string, input: { status: "NEW" | "REVIEWED" | "RESOLVED" | "SPAM"; internalNote?: string | null }): Promise<Record<string, unknown>> {
+    return (await backendApi.patch<Record<string, unknown>>(`/cms/forms/${formId}/submissions/${submissionId}`, input)).data;
+  },
+  async publicForm(key: string): Promise<{ key: string; name: string; description?: string | null; schema: CmsFormDefinition["schema"]; successMessage?: string | null }> {
+    return (await backendApi.get(`/public/cms/forms/${key}`)).data;
+  },
+  async submitPublicForm(key: string, data: Record<string, unknown>): Promise<{ id: string; status: string; createdAt: string; message: string }> {
+    return (await backendApi.post(`/public/cms/forms/${key}/submissions`, { data })).data;
+  },
+  async webhooks(): Promise<CmsWebhook[]> {
+    return (await backendApi.get<CmsWebhook[]>("/cms/webhooks")).data;
+  },
+  async createWebhook(input: { name: string; endpointUrl: string; secret: string; events: string[] }): Promise<CmsWebhook> {
+    return (await backendApi.post<CmsWebhook>("/cms/webhooks", input)).data;
+  },
+  async updateWebhook(id: string, input: Partial<{ name: string; endpointUrl: string; secret: string; events: string[]; isActive: boolean }>): Promise<CmsWebhook> {
+    return (await backendApi.patch<CmsWebhook>(`/cms/webhooks/${id}`, input)).data;
+  },
+  async deleteWebhook(id: string): Promise<{ id: string; deleted: boolean }> {
+    return (await backendApi.delete<{ id: string; deleted: boolean }>(`/cms/webhooks/${id}`)).data;
+  },
+  async webhookDeliveries(id: string, params: { page?: number; limit?: number } = {}): Promise<CmsPage<CmsWebhookDelivery>> {
+    return (await backendApi.get<CmsPage<CmsWebhookDelivery>>(`/cms/webhooks/${id}/deliveries`, { params })).data;
+  },
+  async retryWebhookDelivery(id: string, deliveryId: string): Promise<CmsWebhookDelivery> {
+    return (await backendApi.post<CmsWebhookDelivery>(`/cms/webhooks/${id}/deliveries/${deliveryId}/retry`)).data;
+  },
+  async publicContent(typeKey: string, localeCode: string, slug: string): Promise<CmsPublicContent> {
+    return (await backendApi.get<CmsPublicContent>(`/public/cms/${encodeURIComponent(typeKey)}/${encodeURIComponent(localeCode)}/${encodeURIComponent(slug)}`)).data;
+  },
+  async publicSitemap(): Promise<CmsSitemapEntry[]> {
+    return (await backendApi.get<CmsSitemapEntry[]>("/public/cms/sitemap")).data;
+  },
+  async exportContents(limit = 5000): Promise<CmsExportPackage> {
+    return (await backendApi.get<CmsExportPackage>("/cms/import-export/export", { params: { limit } })).data;
+  },
+  async importContents(contents: CmsImportPackage): Promise<CmsImportResult> {
+    return (await backendApi.post<CmsImportResult>("/cms/import-export/import", contents)).data;
+  },
+  async auditLogs(params: { page?: number; limit?: number; action?: string; entity?: string; search?: string } = {}): Promise<CmsPage<CmsAuditLog>> {
+    return (await backendApi.get<CmsPage<CmsAuditLog>>("/cms/audit-logs", { params })).data;
+  },
+  async permissions(): Promise<{ catalog: CmsPermissionState[]; roles: Array<{ role: "ADMIN" | "MANAGER" | "USER"; permissionCodes: string[] }> }> {
+    return (await backendApi.get("/cms/permissions")).data;
+  },
+  async updateRolePermissions(role: "MANAGER" | "USER", permissionCodes: string[]): Promise<{ role: string; permissionCodes: string[] }> {
+    return (await backendApi.put("/cms/permissions/roles", { role, permissionCodes })).data;
   },
 };

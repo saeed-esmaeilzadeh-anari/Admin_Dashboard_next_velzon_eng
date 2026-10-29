@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException, Optional } from "@nestjs/common";
 import { CmsContentStatus, CmsFieldType, LocaleDirection, Prisma } from "@prisma/client";
 import { AuthenticatedUser } from "../common/decorators/current-user.decorator";
 import { PrismaService } from "../prisma/prisma.service";
+import { CmsWebhookService } from "./cms-webhook.service";
 import {
-  CreateContentDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto, CreateTranslationDto,
+  CmsImportPackageDto, CreateContentDto, CreateContentTypeDto, CreateContentTypeFieldDto, CreateLocaleDto, CreateTranslationDto,
   ListCmsContentsQuery, ListPublicContentQuery, RejectContentDto, ScheduleContentDto,
   UpdateContentTranslationDto, UpdateContentTypeDto, UpdateContentTypeFieldDto,
   UpdateLocaleDto, UpdateSharedFieldsDto,
@@ -34,7 +35,7 @@ function asJson(value: unknown): Prisma.InputJsonValue {
 @Injectable()
 export class CmsService {
   private readonly logger = new Logger(CmsService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, @Optional() private readonly webhooks?: CmsWebhookService) {}
 
   async listLocales(includeInactive = false) {
     return this.prisma.locale.findMany({
@@ -201,6 +202,7 @@ export class CmsService {
       where: { id },
       include: {
         contentType: { include: { fields: { orderBy: { sortOrder: "asc" } } } },
+        taxonomyTerms: { include: { term: { include: { taxonomy: true, translations: { include: { locale: true } } } } } },
         createdBy: { select: { id: true, name: true, email: true } },
         translations: {
           include: {
@@ -225,6 +227,8 @@ export class CmsService {
     if (!type || !type.isActive) throw new BadRequestException("Active content type was not found.");
     if (!locale || !locale.isActive) throw new BadRequestException("Active locale was not found.");
     const split = this.validateAndSplitFields(dto.fields ?? {}, type.fields, true);
+    await this.assertMediaReferences(split.localizedData, type.fields.filter(field => field.isLocalized));
+    await this.assertMediaReferences(split.sharedData, type.fields.filter(field => !field.isLocalized));
     const created = await this.prisma.$transaction(async tx => {
       const item = await tx.content.create({
         data: { contentTypeId: type.id, createdById: user.id, data: asJson(split.sharedData) },
@@ -248,6 +252,7 @@ export class CmsService {
       });
       return item;
     });
+    await this.notifyCmsEvent("content.created", { contentId: created.id, typeKey: type.key, localeCode: locale.code, title: dto.title });
     return this.getContent(created.id);
   }
 
@@ -267,6 +272,7 @@ export class CmsService {
     if (!locale || !locale.isActive) throw new BadRequestException("Active locale was not found.");
     const localizedDefinitions = content.contentType.fields.filter(field => field.isLocalized && field.isActive);
     const split = this.validateAndSplitFields(dto.fields ?? {}, localizedDefinitions, true);
+    await this.assertMediaReferences(split.localizedData, localizedDefinitions);
     const shared = asRecord(content.data);
     const created = await this.prisma.$transaction(async tx => {
       const translation = await tx.contentTranslation.create({
@@ -286,6 +292,7 @@ export class CmsService {
       });
       return translation;
     });
+    await this.notifyCmsEvent("content.translation.created", { contentId, translationId: created.id, localeCode: locale.code, title: dto.title });
     return this.getContent(created.contentId);
   }
 
@@ -298,6 +305,7 @@ export class CmsService {
     const currentData = asRecord(tr.data);
     const nextData = dto.fields === undefined ? currentData
       : this.mergeFieldPatch(currentData, dto.fields, tr.content.contentType.fields.filter(field => field.isLocalized && field.isActive));
+    await this.assertMediaReferences(nextData, tr.content.contentType.fields.filter(field => field.isLocalized));
     const next = {
       ...tr, title: dto.title ?? tr.title, slug: dto.slug ?? tr.slug,
       excerpt: dto.excerpt !== undefined ? dto.excerpt : tr.excerpt,
@@ -326,6 +334,7 @@ export class CmsService {
           metadata: asJson({ contentId, localeCode, version }) },
       });
     });
+    await this.notifyCmsEvent("content.updated", { contentId, localeCode, translationId: tr.id, version });
     return this.getContent(contentId);
   }
 
@@ -340,11 +349,22 @@ export class CmsService {
     if (!Object.keys(patch).length) throw new BadRequestException("No shared fields were provided.");
     const nextData = { ...asRecord(item.data), ...patch };
     this.assertRequiredFields(nextData, defs);
+    await this.assertMediaReferences(nextData, defs);
     await this.prisma.$transaction(async tx => {
       await tx.content.update({ where: { id: contentId }, data: { data: asJson(nextData) } });
       for (const translation of item.translations) {
         const version = translation.version + 1;
-        const updated = await tx.contentTranslation.update({ where: { id: translation.id }, data: { version } });
+        const updated = await tx.contentTranslation.update({
+          where: { id: translation.id },
+          data: {
+            version,
+            ...(translation.status === CmsContentStatus.PUBLISHED ||
+                translation.status === CmsContentStatus.IN_REVIEW ||
+                translation.status === CmsContentStatus.SCHEDULED
+              ? { status: CmsContentStatus.DRAFT, scheduledAt: null }
+              : {}),
+          },
+        });
         await tx.contentRevision.create({
           data: { translationId: translation.id, version, createdById: user.id,
             changeNote: "Shared fields updated", snapshot: this.snapshot(updated, nextData) },
@@ -355,6 +375,7 @@ export class CmsService {
           metadata: asJson({ changedKeys: Object.keys(patch) }) },
       });
     });
+    await this.notifyCmsEvent("content.shared_fields.updated", { contentId, changedKeys: Object.keys(patch) });
     return this.getContent(contentId);
   }
 
@@ -362,7 +383,7 @@ export class CmsService {
     return this.transition(id, locale, CmsContentStatus.IN_REVIEW, [CmsContentStatus.DRAFT], user, "Submitted for review");
   }
   async publish(id: string, locale: string, user: AuthenticatedUser) {
-    return this.transition(id, locale, CmsContentStatus.PUBLISHED, [CmsContentStatus.IN_REVIEW], user, "Published");
+    return this.transition(id, locale, CmsContentStatus.PUBLISHED, [CmsContentStatus.IN_REVIEW, CmsContentStatus.SCHEDULED], user, "Published");
   }
   async reject(id: string, locale: string, dto: RejectContentDto, user: AuthenticatedUser) {
     return this.transition(id, locale, CmsContentStatus.DRAFT, [CmsContentStatus.IN_REVIEW], user, "Rejected: " + dto.reason, dto.reason);
@@ -376,7 +397,7 @@ export class CmsService {
   }
   async unpublish(id: string, locale: string, user: AuthenticatedUser) {
     const tr = await this.findTranslation(id, locale);
-    if (!tr.publishedSnapshot) throw new BadRequestException("This translation has no published version.");
+    if (!tr.publishedSnapshot && tr.status !== CmsContentStatus.SCHEDULED) throw new BadRequestException("This translation has no published version.");
     return this.transition(id, locale, CmsContentStatus.DRAFT,
       [CmsContentStatus.PUBLISHED, CmsContentStatus.DRAFT, CmsContentStatus.IN_REVIEW, CmsContentStatus.SCHEDULED],
       user, "Unpublished", undefined, undefined, true);
@@ -428,6 +449,138 @@ export class CmsService {
     return this.getContent(contentId);
   }
 
+  async exportContents(requestedLimit = 5000) {
+    const limit = Math.min(5000, Math.max(1, Number(requestedLimit) || 5000));
+    const [items, total] = await Promise.all([
+      this.prisma.content.findMany({
+        take: limit,
+        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+        include: {
+          contentType: { select: { key: true, name: true } },
+          translations: { include: { locale: { select: { code: true, name: true } } }, orderBy: { updatedAt: "desc" } },
+        },
+      }),
+      this.prisma.content.count(),
+    ]);
+    return {
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      totalRecords: total,
+      exportedRecords: items.length,
+      truncated: total > items.length,
+      records: items.map(item => ({
+        typeKey: item.contentType.key,
+        sharedFields: asRecord(item.data),
+        translations: item.translations.map(translation => ({
+          localeCode: translation.locale.code,
+          title: translation.title,
+          slug: translation.slug,
+          excerpt: translation.excerpt,
+          seoTitle: translation.seoTitle,
+          seoDescription: translation.seoDescription,
+          fields: asRecord(translation.data),
+          sourceStatus: translation.status,
+          sourceVersion: translation.version,
+          sourcePublishedAt: translation.publishedAt?.toISOString() ?? null,
+        })),
+      })),
+    };
+  }
+
+  async importContents(dto: CmsImportPackageDto, user: AuthenticatedUser) {
+    const results: Array<{ index: number; typeKey: string; contentId: string | null; status: "IMPORTED" | "PARTIAL" | "FAILED"; translationsImported: number; error?: string }> = [];
+    for (const [index, item] of dto.records.entries()) {
+      let contentId: string | null = null;
+      let translationsImported = 0;
+      try {
+        const [first, ...remaining] = item.translations;
+        if (!first) throw new BadRequestException("Each imported record must include at least one translation.");
+        const content = await this.createContent({
+          typeKey: item.typeKey,
+          localeCode: first.localeCode,
+          title: first.title,
+          slug: first.slug,
+          excerpt: first.excerpt,
+          seoTitle: first.seoTitle,
+          seoDescription: first.seoDescription,
+          fields: { ...asRecord(item.sharedFields), ...asRecord(first.fields) },
+        }, user);
+        contentId = content.id;
+        translationsImported = 1;
+        for (const translation of remaining) {
+          await this.createTranslation(content.id, {
+            localeCode: translation.localeCode,
+            title: translation.title,
+            slug: translation.slug,
+            excerpt: translation.excerpt,
+            seoTitle: translation.seoTitle,
+            seoDescription: translation.seoDescription,
+            fields: translation.fields ?? {},
+          }, user);
+          translationsImported += 1;
+        }
+        results.push({ index, typeKey: item.typeKey, contentId, status: "IMPORTED", translationsImported });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        results.push({
+          index, typeKey: item.typeKey, contentId,
+          status: contentId ? "PARTIAL" : "FAILED",
+          translationsImported,
+          error: message.slice(0, 1000),
+        });
+      }
+    }
+    return {
+      summary: {
+        requested: results.length,
+        imported: results.filter(result => result.status === "IMPORTED").length,
+        partial: results.filter(result => result.status === "PARTIAL").length,
+        failed: results.filter(result => result.status === "FAILED").length,
+      },
+      results,
+    };
+  }
+
+  async publicSitemap() {
+    const rows = await this.prisma.contentTranslation.findMany({
+      where: {
+        publishedSlug: { not: null },
+        publishedAt: { not: null },
+        locale: { is: { isActive: true } },
+        content: { is: { contentType: { is: { isActive: true } } } },
+      },
+      orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+      include: {
+        locale: { select: { code: true, name: true } },
+        content: {
+          select: {
+            contentType: { select: { key: true } },
+            translations: {
+              where: {
+                publishedSlug: { not: null },
+                publishedAt: { not: null },
+                locale: { is: { isActive: true } },
+              },
+              include: { locale: { select: { code: true, name: true } } },
+            },
+          },
+        },
+      },
+    });
+    return rows.map(item => ({
+      typeKey: item.content.contentType.key,
+      localeCode: item.locale.code,
+      slug: item.publishedSlug,
+      lastModified: item.publishedAt?.toISOString() ?? item.updatedAt.toISOString(),
+      alternates: item.content.translations.map(translation => ({
+        localeCode: translation.locale.code,
+        slug: translation.publishedSlug,
+        href: "/content/" + item.content.contentType.key + "/" + translation.locale.code + "/" + translation.publishedSlug,
+      })),
+      href: "/content/" + item.content.contentType.key + "/" + item.locale.code + "/" + item.publishedSlug,
+    }));
+  }
+
   async listPublicContent(typeKey: string, localeCode: string, query: ListPublicContentQuery) {
     const page = Number(query.page) || 1;
     const limit = Math.min(100, Number(query.limit) || 20);
@@ -439,12 +592,30 @@ export class CmsService {
     const [items, total] = await Promise.all([
       this.prisma.contentTranslation.findMany({
         where, skip: (page - 1) * limit, take: limit, orderBy: { publishedAt: "desc" },
-        include: { locale: { select: { code: true, name: true, direction: true } },
-          content: { select: { data: true, contentType: { select: { key: true, name: true } } } } },
+        include: {
+          locale: { select: { code: true, name: true, direction: true } },
+          content: {
+            select: {
+              data: true,
+              contentType: { select: { key: true, name: true, fields: { select: { key: true, type: true } } } },
+              translations: {
+                where: { publishedSlug: { not: null }, locale: { is: { isActive: true } } },
+                select: { publishedSlug: true, locale: { select: { code: true } } },
+              },
+              taxonomyTerms: {
+                where: { term: { is: { isActive: true, taxonomy: { is: { isActive: true } } } } },
+                include: { term: { include: {
+                  taxonomy: { select: { key: true, name: true } },
+                  translations: { where: { locale: { is: { code: localeCode } } }, include: { locale: { select: { code: true, name: true } } } },
+                } } },
+              },
+            },
+          },
+        },
       }),
       this.prisma.contentTranslation.count({ where }),
     ]);
-    return { data: items.map(item => this.toPublicView(item)), pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+    return { data: await Promise.all(items.map(item => this.toPublicView(item))), pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
   }
 
   async getPublicContent(typeKey: string, localeCode: string, slug: string) {
@@ -453,18 +624,85 @@ export class CmsService {
         publishedSlug: slug, locale: { is: { code: localeCode, isActive: true } },
         content: { is: { contentType: { is: { key: typeKey, isActive: true } } } },
       },
-      include: { locale: { select: { code: true, name: true, direction: true } },
-        content: { select: { data: true, contentType: { select: { key: true, name: true } } } } },
+      include: {
+        locale: { select: { code: true, name: true, direction: true } },
+        content: {
+          select: {
+            data: true,
+            contentType: { select: { key: true, name: true, fields: { select: { key: true, type: true } } } },
+            translations: {
+              where: { publishedSlug: { not: null }, locale: { is: { isActive: true } } },
+              select: { publishedSlug: true, locale: { select: { code: true } } },
+            },
+            taxonomyTerms: {
+              where: { term: { is: { isActive: true, taxonomy: { is: { isActive: true } } } } },
+              include: { term: { include: {
+                taxonomy: { select: { key: true, name: true } },
+                translations: { where: { locale: { is: { code: localeCode } } }, include: { locale: { select: { code: true, name: true } } } },
+              } } },
+            },
+          },
+        },
+      },
     });
     if (!item) throw new NotFoundException("Published content was not found.");
     return this.toPublicView(item);
+  }
+
+
+  async publicSitemapXml(): Promise<string> {
+    const configuredBase = process.env.PUBLIC_SITE_URL ?? "http://localhost:3000";
+    let base: string;
+    try {
+      const parsed = new URL(configuredBase);
+      if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) {
+        throw new Error("PUBLIC_SITE_URL must be an HTTP(S) URL without credentials.");
+      }
+      base = parsed.origin + parsed.pathname.replace(/\/+$/, "");
+    } catch (error) {
+      throw new BadRequestException(error instanceof Error ? error.message : "PUBLIC_SITE_URL is invalid.");
+    }
+    const published = await this.prisma.contentTranslation.findMany({
+      where: {
+        publishedSlug: { not: null },
+        locale: { is: { isActive: true } },
+        content: { is: { contentType: { is: { isActive: true } } } },
+      },
+      orderBy: [{ updatedAt: "desc" }],
+      select: {
+        publishedSlug: true, updatedAt: true,
+        locale: { select: { code: true } },
+        content: {
+          select: {
+            contentType: { select: { key: true } },
+            translations: {
+              where: { publishedSlug: { not: null }, locale: { is: { isActive: true } } },
+              select: { publishedSlug: true, locale: { select: { code: true } } },
+            },
+          },
+        },
+      },
+    });
+    const xmlEscape = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+    const urlEntries = published.filter(item => item.publishedSlug).map(item => {
+      const typeKey = item.content.contentType.key;
+      const loc = base + "/content/" + encodeURIComponent(typeKey) + "/" + encodeURIComponent(item.locale.code) + "/" + encodeURIComponent(item.publishedSlug!);
+      const links = item.content.translations.filter(translation => translation.publishedSlug).map(translation => {
+        const href = base + "/content/" + encodeURIComponent(typeKey) + "/" + encodeURIComponent(translation.locale.code) + "/" + encodeURIComponent(translation.publishedSlug!);
+        return '<xhtml:link rel="alternate" hreflang="' + xmlEscape(translation.locale.code) + '" href="' + xmlEscape(href) + '"/>';
+      }).join("");
+      return "<url><loc>" + xmlEscape(loc) + "</loc><lastmod>" + item.updatedAt.toISOString() + "</lastmod>" + links + "</url>";
+    }).join("");
+    return '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' +
+      urlEntries + "</urlset>";
   }
 
   async publishDueContents(): Promise<number> {
     const now = new Date();
     const due = await this.prisma.contentTranslation.findMany({
       where: { status: CmsContentStatus.SCHEDULED, scheduledAt: { lte: now } },
-      take: 100, orderBy: { scheduledAt: "asc" }, include: { content: true },
+      take: 100, orderBy: { scheduledAt: "asc" }, include: { content: true, locale: { select: { code: true } } },
     });
     let count = 0;
     for (const item of due) {
@@ -487,7 +725,10 @@ export class CmsService {
           });
           return true;
         });
-        if (didPublish) count++;
+        if (didPublish) {
+          count++;
+          await this.notifyCmsEvent("content.published", { contentId: item.contentId, translationId: item.id, localeCode: item.locale.code, scheduledAt: item.scheduledAt?.toISOString() });
+        }
       } catch (error) {
         this.logger.error("Scheduled publishing failed for " + item.id, error instanceof Error ? error.stack : String(error));
       }
@@ -528,7 +769,19 @@ export class CmsService {
         metadata: asJson({ contentId, localeCode, from: tr.status, to: target, reason }),
       } });
     });
+    const eventKey = target === CmsContentStatus.PUBLISHED ? "content.published"
+      : target === CmsContentStatus.SCHEDULED ? "content.scheduled"
+      : clearPublication ? "content.unpublished"
+      : target === CmsContentStatus.ARCHIVED ? "content.archived"
+      : target === CmsContentStatus.IN_REVIEW ? "content.submitted_for_review"
+      : "content.updated";
+    await this.notifyCmsEvent(eventKey, { contentId, translationId: tr.id, localeCode, status: target, version });
     return this.getContent(contentId);
+  }
+
+  private async notifyCmsEvent(eventKey: string, payload: Record<string, unknown>) {
+    try { await this.webhooks?.queueEvent(eventKey, payload); }
+    catch (error) { this.logger.error("Could not enqueue CMS event " + eventKey, error instanceof Error ? error.stack : String(error)); }
   }
 
   private async findTranslation(contentId: string, localeCode: string): Promise<TranslationRecord> {
@@ -551,17 +804,78 @@ export class CmsService {
     });
   }
 
-  private toPublicView(item: {
+  private async toPublicView(item: {
     id: string; locale: { code: string; name: string; direction: LocaleDirection };
     publishedSlug: string | null; publishedAt: Date | null; publishedSnapshot: Prisma.JsonValue | null;
-    content: { data: Prisma.JsonValue; contentType: { key: string; name: string } };
+    content: {
+      data: Prisma.JsonValue;
+      contentType: { key: string; name: string; fields: Array<{ key: string; type: CmsFieldType }> };
+      translations?: Array<{ publishedSlug: string | null; locale: { code: string } }>;
+      taxonomyTerms?: Array<{ term: {
+        id: string; name: string; slug: string; description: string | null;
+        taxonomy: { key: string; name: string };
+        translations: Array<{ name: string; slug: string; description: string | null; locale: { code: string; name: string } }>;
+      } }>;
+    };
   }) {
     const snapshot = asRecord(item.publishedSnapshot);
+    const fields: Record<string, unknown> = { ...asRecord(snapshot.sharedData), ...asRecord(snapshot.data) };
+    const mediaIds = new Set<string>();
+    for (const definition of item.content.contentType.fields) {
+      const value = fields[definition.key];
+      if (definition.type === CmsFieldType.MEDIA && typeof value === "string") mediaIds.add(value);
+      if (definition.type === CmsFieldType.MEDIA_MULTIPLE && Array.isArray(value)) {
+        for (const mediaId of value) if (typeof mediaId === "string") mediaIds.add(mediaId);
+      }
+    }
+    const blocks = Array.isArray(fields.blocks) ? fields.blocks.filter(isRecord) : [];
+    for (const block of blocks) {
+      if (typeof block.mediaId === "string") mediaIds.add(block.mediaId);
+      if (Array.isArray(block.mediaIds)) for (const mediaId of block.mediaIds) if (typeof mediaId === "string") mediaIds.add(mediaId);
+    }
+    const assets = mediaIds.size ? await this.prisma.mediaAsset.findMany({
+      where: { id: { in: [...mediaIds] } },
+      select: { id: true, url: true, mimeType: true, kind: true, sizeBytes: true, altText: true, caption: true },
+    }) : [];
+    const assetsById = new Map(assets.map(asset => [asset.id, asset]));
+    const publicAsset = (id: string) => {
+      const asset = assetsById.get(id);
+      return asset ? { ...asset } : null;
+    };
+    for (const definition of item.content.contentType.fields) {
+      const value = fields[definition.key];
+      if (definition.type === CmsFieldType.MEDIA && typeof value === "string") fields[definition.key] = publicAsset(value);
+      if (definition.type === CmsFieldType.MEDIA_MULTIPLE && Array.isArray(value)) {
+        fields[definition.key] = value.filter((mediaId): mediaId is string => typeof mediaId === "string").map(publicAsset).filter(Boolean);
+      }
+    }
+    if (blocks.length) {
+      fields.blocks = blocks.map(block => {
+        if (typeof block.mediaId === "string") return { ...block, media: publicAsset(block.mediaId) };
+        if (Array.isArray(block.mediaIds)) {
+          const ids = block.mediaIds.filter((id): id is string => typeof id === "string");
+          return { ...block, mediaItems: ids.map(publicAsset).filter(Boolean) };
+        }
+        return block;
+      });
+    }
+    const terms = (item.content.taxonomyTerms ?? []).map(link => {
+      const term = link.term;
+      const translation = term.translations.find(value => value.locale.code === item.locale.code);
+      return {
+        id: term.id, taxonomy: term.taxonomy,
+        name: translation?.name ?? term.name, slug: translation?.slug ?? term.slug,
+        description: translation?.description ?? term.description,
+      };
+    });
     return {
-      id: item.id, type: item.content.contentType, locale: item.locale, title: snapshot.title,
-      slug: item.publishedSlug, excerpt: snapshot.excerpt ?? null,
-      seoTitle: snapshot.seoTitle ?? null, seoDescription: snapshot.seoDescription ?? null,
-      fields: { ...asRecord(snapshot.sharedData), ...asRecord(snapshot.data) }, publishedAt: item.publishedAt,
+      id: item.id, type: { key: item.content.contentType.key, name: item.content.contentType.name },
+      locale: item.locale, title: snapshot.title, slug: item.publishedSlug,
+      excerpt: snapshot.excerpt ?? null, seoTitle: snapshot.seoTitle ?? null,
+      seoDescription: snapshot.seoDescription ?? null, fields, terms, publishedAt: item.publishedAt,
+      alternates: (item.content.translations ?? []).filter(value => Boolean(value.publishedSlug)).map(value => ({
+        localeCode: value.locale.code, slug: value.publishedSlug,
+      })),
     };
   }
 
@@ -601,6 +915,20 @@ export class CmsService {
     }
   }
 
+  private async assertMediaReferences(values: Record<string, unknown>, definitions: FieldDefinition[]) {
+    const mediaIds = new Set<string>();
+    for (const field of definitions) {
+      const value = values[field.key];
+      if (field.type === CmsFieldType.MEDIA && typeof value === "string") mediaIds.add(value);
+      if (field.type === CmsFieldType.MEDIA_MULTIPLE && Array.isArray(value)) {
+        for (const id of value) if (typeof id === "string") mediaIds.add(id);
+      }
+    }
+    if (!mediaIds.size) return;
+    const existing = await this.prisma.mediaAsset.findMany({ where: { id: { in: [...mediaIds] } }, select: { id: true } });
+    if (existing.length !== mediaIds.size) throw new BadRequestException("One or more selected media assets no longer exist.");
+  }
+
   private validateFieldValue(field: FieldDefinition, value: unknown) {
     const config = asRecord(field.config);
     const wrong = (): never => { throw new BadRequestException("Invalid value for field " + field.key + " (" + field.type + ")."); };
@@ -631,6 +959,14 @@ export class CmsService {
       if (field.type === CmsFieldType.MULTISELECT && (!Array.isArray(value) || !value.every(item => typeof item === "string"))) return wrong();
       const selected = field.type === CmsFieldType.SELECT ? [value] : value as unknown[];
       if (options.length && selected.some(item => !options.includes(String(item)))) return wrong();
+      return;
+    }
+    if (field.type === CmsFieldType.MEDIA) {
+      if (typeof value !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) return wrong();
+      return;
+    }
+    if (field.type === CmsFieldType.MEDIA_MULTIPLE) {
+      if (!Array.isArray(value) || value.length > 100 || !value.every(item => typeof item === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item))) return wrong();
       return;
     }
     if (field.type === CmsFieldType.JSON) { if (isRecord(value) || Array.isArray(value)) return; return wrong(); }

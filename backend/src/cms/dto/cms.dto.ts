@@ -1,7 +1,7 @@
 import { CmsContentStatus, CmsFieldType, LocaleDirection } from "@prisma/client";
 import { Type } from "class-transformer";
 import {
-  ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsDateString, IsEnum, IsInt,
+  ArrayMaxSize, ArrayMinSize, Equals, IsArray, IsBoolean, IsDateString, IsEnum, IsInt,
   IsObject, IsOptional, IsString, IsUUID, Length, Matches, Max, MaxLength,
   Min, MinLength, ValidateNested,
 } from "class-validator";
@@ -98,4 +98,30 @@ export class ListCmsContentsQuery {
 export class ListPublicContentQuery {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page = 1;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) limit = 20;
+}
+
+
+export class CmsImportTranslationDto {
+  @IsString() @Matches(localeCodePattern) localeCode!: string;
+  @IsString() @Length(1, 300) title!: string;
+  @IsString() @Length(1, 180) @Matches(slugPattern) slug!: string;
+  @IsOptional() @IsString() @MaxLength(2000) excerpt?: string;
+  @IsOptional() @IsString() @MaxLength(300) seoTitle?: string;
+  @IsOptional() @IsString() @MaxLength(1000) seoDescription?: string;
+  @IsOptional() @IsObject() fields?: Record<string, unknown>;
+}
+
+export class CmsImportRecordDto {
+  @IsString() @Matches(keyPattern) typeKey!: string;
+  @IsOptional() @IsObject() sharedFields?: Record<string, unknown>;
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(20)
+  @ValidateNested({ each: true }) @Type(() => CmsImportTranslationDto)
+  translations!: CmsImportTranslationDto[];
+}
+
+export class CmsImportPackageDto {
+  @IsInt() @Equals(1) schemaVersion!: number;
+  @IsArray() @ArrayMinSize(1) @ArrayMaxSize(100)
+  @ValidateNested({ each: true }) @Type(() => CmsImportRecordDto)
+  records!: CmsImportRecordDto[];
 }

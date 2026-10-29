@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { cmsApi, CmsContentType, CmsField, CmsFieldType } from "@/helpers/cmsApi";
 
 type DraftField = { key: string; label: string; type: CmsFieldType; isRequired: boolean; isLocalized: boolean; options: string; };
-const fieldTypes: CmsFieldType[] = ["TEXT","TEXTAREA","RICH_TEXT","MARKDOWN","INTEGER","DECIMAL","BOOLEAN","DATE","DATETIME","SELECT","MULTISELECT","EMAIL","URL","JSON"];
+const fieldTypes: CmsFieldType[] = ["TEXT","TEXTAREA","RICH_TEXT","MARKDOWN","INTEGER","DECIMAL","BOOLEAN","DATE","DATETIME","SELECT","MULTISELECT","EMAIL","URL","JSON","MEDIA","MEDIA_MULTIPLE"];
 const emptyField = (): DraftField => ({ key: "", label: "", type: "TEXT", isRequired: false, isLocalized: true, options: "" });
 function errorMessage(error: unknown): string {
   const value = error as { response?: { data?: { message?: string | string[] } }; message?: string };

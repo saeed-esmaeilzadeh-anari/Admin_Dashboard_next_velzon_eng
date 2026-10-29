@@ -1,54 +1,41 @@
-# Full-stack implementation progress
+# Full-Stack Implementation Progress
 
-## Added to branch feat/full-stack-foundation
+Branch: feat/full-stack-foundation
 
-- [x] Inspected repository metadata, branch head, package manifest, API helper, auth configuration and environment example.
-- [x] Confirmed the legacy helper imports mock behavior unconditionally.
-- [x] Added a NestJS REST API project under backend.
-- [x] Added Prisma/PostgreSQL models and an initial migration for users, categories, products, customers, orders/order items, CRM leads, projects/tasks, tickets and audit logs.
-- [x] Added administrator seed using environment values; no default password is committed.
-- [x] Added JWT authentication, public registration restricted to USER, current-user endpoint and admin user management.
-- [x] Added DTO validation, CORS allow-list, Helmet and Swagger.
-- [x] Added dashboard summary and endpoints for products/categories, customers, leads, projects, tasks, tickets and orders.
-- [x] Added transactional order creation, server-side price calculation and atomic stock decrements.
-- [x] Added initial implementation audit, data dictionary and relationship documentation.
-- [ ] Frontend page-by-page integration with the new endpoints.
-- [x] Backend CI: Prisma validation/generation, TypeScript check, unit tests and build have passed for the CMS core.
-- [ ] Frontend production type-check/build is still pending on the latest branch tip.
-- [ ] Password reset/email verification, refresh-token rotation, rate limiting, detailed audit writes and file storage.
-- [ ] Add jobs, invoices, messaging, file manager, settings and other workflows after analyzing their source forms.
-- [ ] Deployment and production database provisioning.
+## CMS areas implemented on this branch
 
-## Verification status
+- PostgreSQL/Prisma models and migrations for locale metadata, dynamic content types and fields, stable content identities, per-locale translations, publication snapshots/revisions, media assets, taxonomies and term translations, navigation menus, redirects, forms/submissions, webhook configuration/delivery, role permissions, and audit records.
+- NestJS APIs for CMS content CRUD, language versions, workflow transitions, content type/field administration, media upload and metadata, taxonomies, menus, redirects, forms, webhook delivery/retry, role permission grants, audit log, import/export, and published-only content delivery.
+- Seeded Persian (fa-IR, RTL) and English (en-US, LTR) locales, starter Page/Article content types, dynamic fields for media/gallery/page blocks, a permission catalog, and default ADMIN/MANAGER grants.
+- Dashboard UI for content listing, creation, translation/editing, workflow and revision restore, content type/field management, languages, page builder and preview, media, taxonomies, menus, redirects, forms, webhooks, permissions, audit logs and import/export.
+- Public Next.js content route at /content/:typeKey/:localeCode/:slug with locale direction, basic SEO metadata and language alternates. Public rich text is rendered as text rather than executing arbitrary author HTML.
+- Next.js sitemap metadata route and backend JSON/XML sitemap endpoints for active, published language versions.
+- HMAC-signed webhook delivery with public HTTPS/DNS checks and retry records; configurable local/S3 media storage adapter.
+- Backend and frontend CI workflows are configured for Prisma validation/generation, TypeScript checks, unit tests, Nest build, frontend TypeScript check, and production Next.js build.
 
-The repository was changed through GitHub's API because a local clone was not possible in this environment. Do not treat the source edits alone as proof of a successful build. Backend CI has subsequently passed (see the dated CMS increment below); the latest frontend CI needs its final type-check/build result before the PR is considered verified.
+## Current verification
+
+- Backend CI on code commit f6c163b26c2c0fd94b5b95f8eaeef9275ecf09c6 passed Prisma schema validation, Prisma Client generation, TypeScript checking, unit tests and the Nest build. See https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40826504593.
+- Frontend CI for the current frontend source snapshot (commit 8190cfe2104339cd07167d618da71534155da1fd) was still installing dependencies at last check. The latest branch includes further backend-only and documentation commits, so the frontend source is unchanged since that snapshot, but a successful type-check/build result is still required. See https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40826416336.
+- The repository was edited through GitHub's API because a local clone could not be used in this environment. CI evidence, not the act of committing, determines whether code is verified.
+
+## Remaining work before a production launch
+
+- Existing e-commerce, CRM, project/task, ticket and template/demo screens are not all migrated from Fake Backend to database-backed APIs. This branch implements a CMS, not a finished replacement of every page in the original Velzon template.
+- Fine-grained role-to-action grants exist, but ownership/team scoping and security integration tests for cross-user access remain.
+- The page builder is a first usable block editor (hero, text, image/gallery, CTA, FAQ and card grid), not a complete visual drag-and-drop site builder with arbitrary nested layouts and reusable design templates.
+- Media binaries are not embedded in import/export packages. Import operates per record, produces partial/failure results and creates drafts; ensure referenced media exists in the destination before importing.
+- Rich text/Markdown remains safe plain text in the provided public renderer. Do not render raw HTML without a maintained sanitizer and allowlist.
+- Local filesystem uploads need persistent storage; S3 requires bucket, endpoint/public URL and credential configuration. Secret provisioning and a deployed storage smoke test have not been performed.
+- Scheduled publishing and webhook delivery workers run in-process every minute. Serverless deployment needs an external durable scheduler/queue/worker.
+- No production database, public frontend/backend deployment, real login smoke test, E2E browser suite, accessibility audit, load test or backup/restore rehearsal has been executed here.
+
+Do not treat the project as production-final until current-tip backend and frontend CI are green and those deployment/security checks have been completed.
 
 
-## Multilingual CMS core and management UI — 2026-10-28
+## Security dependency patch — 2026-10-29
 
-### Implemented on this feature branch
-
-- [x] Added versioned migration and Prisma models for locales, content types, dynamic fields, stable content identities, per-locale translations, publication snapshots and revision history.
-- [x] Seeded `fa-IR` as default RTL locale and `en-US` as LTR, plus starter `page` and `article` content types.
-- [x] Added CMS REST APIs for locale administration, content-type/field management, content creation/list/detail, translation create/update, shared-field updates, draft-review-publish-schedule-reject/archive/unpublish/restore and revisions.
-- [x] Added public read APIs that return published snapshots only.
-- [x] Added unit tests for dynamic field validation and CI checks for Prisma validation, client generation, type-check, tests and backend build.
-- [x] Added dashboard CMS navigation and management pages for content list, content create/edit/translation workflow, content types/fields and languages.
-- [x] Added a typed frontend API client and opt-in real backend login via `NEXT_PUBLIC_DEFAULT_AUTH=backend`; template fake auth remains the default.
-- [x] Added Persian and English UI dictionary entries for the new CMS interface and sync document language/direction on language switch.
-
-### CI verification
-
-- Backend CI run https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40660666166 completed successfully at commit `9801924b839d53494219bb7a3efc086b125935d8` (Prisma validate/generate, TypeScript type-check, unit tests and backend build).
-- Frontend CI was introduced and initially exposed a pre-existing peer-dependency conflict (`react-dual-listbox@6` declares React 16–18 peers while this repo has React 19); the workflow now uses `npm install --legacy-peer-deps` to match the repo's existing npm compatibility configuration. Its type-check/build result must be read from the latest run before claiming it is green.
-
-### Explicitly not complete yet
-
-- The CMS has a real backend and several real frontend admin pages, but the full legacy dashboard is **not** converted. Existing e-commerce, CRM, projects, tasks and other template pages still need their own page-by-page integration and regression testing.
-- Media library and local/S3 storage, taxonomies, menus, redirects/sitemap/hreflang, visual page-builder blocks/repeaters, import/export, forms, webhooks/notifications, and detailed permission editor remain unimplemented.
-- The current role enforcement is coarse (ADMIN/MANAGER on CMS write endpoints). Fine-grained per-action and per-content permission policies are required before a production CMS rollout.
-- Rich text is not sanitized by the backend; public rendering must sanitize untrusted rich-text/HTML before injection.
-- In-process minute scheduler is not durable on serverless runtimes; use an external cron or durable worker there.
-- No production database or frontend/backend deployment has been provisioned or smoke-tested by this increment.
-
-Do not describe the complete enterprise scope as finished until these limitations are addressed and tests cover the real workflows.
+- Updated the root dependency lock through npm on a GitHub runner to Next.js 15.5.28, React/React DOM 19.2.7, and eslint-config-next 15.5.28.
+- Removed `typescript.ignoreBuildErrors` from `next.config.js`, so a production build can no longer silently skip type errors; the frontend CI separately runs `npm run type-check` before `next build`.
+- The official Next.js October 14, 2026 security advisory identifies Next.js 15.5.28 as a patched release for the listed upstream vulnerabilities. This is a dependency patch, not a statement that the deployed application was already secured: run CI and redeploy before serving production traffic.
+- Frontend CI on source commit `a14104144fa6dc74bdc12f3982515bb65d1465a8` passed type-check and production build after the duplicate public content route was removed. A new run is required for the updated dependency lock and stricter production type-check behavior.
