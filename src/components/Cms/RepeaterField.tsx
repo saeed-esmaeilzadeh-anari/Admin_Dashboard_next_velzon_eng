@@ -33,7 +33,8 @@ function childOptions(field: RepeaterChild): Array<{ value: string; label: strin
     return null;
   }).filter((value): value is { value: string; label: string } => Boolean(value));
 }
-function inputType(type: string): string {
+type RepeaterInputType = "number" | "date" | "datetime-local" | "email" | "url" | "text";
+function inputType(type: string): RepeaterInputType {
   if (type === "INTEGER" || type === "DECIMAL") return "number";
   if (type === "DATE") return "date";
   if (type === "DATETIME") return "datetime-local";
