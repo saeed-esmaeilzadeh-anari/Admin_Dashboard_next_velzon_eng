@@ -15,13 +15,13 @@ export type CmsContentType = {
   fields: CmsField[]; _count?: { contents: number };
 };
 export type CmsTranslation = {
-  id: string; localeId: string; title: string; slug: string; excerpt?: string | null;
+  id: string; localeId: string; title: string; slug: string; excerpt?: string | null; data?: Record<string, unknown>;
   seoTitle?: string | null; seoDescription?: string | null; status: CmsStatus; version: number;
   publishedAt?: string | null; scheduledAt?: string | null; publishedSlug?: string | null;
   locale?: CmsLocale; revisions?: Array<{ id: string; version: number; changeNote?: string | null; createdAt: string }>;
 };
 export type CmsContent = {
-  id: string; contentType: Pick<CmsContentType, "id" | "key" | "name">;
+  id: string; contentType: Pick<CmsContentType, "id" | "key" | "name"> & { fields?: CmsField[] };
   data: Record<string, unknown>; translations: CmsTranslation[]; createdAt: string; updatedAt: string;
 };
 export type CmsPage<T> = { data: T[]; pagination: { page: number; limit: number; total: number; pages: number } };
