@@ -237,7 +237,7 @@ export default function CmsContentEditorPage() {
     <Container fluid>
       <Row className="align-items-center mb-4">
         <Col><h4 className="mb-1">{isNewTranslation ? t("Add translation") : t("Edit content")}</h4><p className="text-muted mb-0">{content?.contentType.name ?? t("Content")}</p></Col>
-        <Col xs="auto" className="d-flex gap-2">{selectedTranslation && <Link className="btn btn-soft-info" href={`/apps-cms/content/${contentId}/preview?localeCode=${encodeURIComponent(localeCode)}`}><i className="ri-eye-line me-1" />{t("Preview")}</Link>}<Link className="btn btn-light" href="/apps-cms/content">{t("Back to content")}</Link><Button color="light" onClick={() => void reload()} disabled={loading}><i className="ri-refresh-line me-1" />{t("Refresh")}</Button></Col>
+        <Col xs="auto" className="d-flex gap-2">{selectedTranslation && <Link className="btn btn-soft-info" href={`/apps-cms/content/${contentId}/preview?localeCode=${encodeURIComponent(localeCode)}`}><i className="ri-eye-line me-1" />{t("Preview")}</Link>}{selectedTranslation?.publishedSlug && <Link className="btn btn-success" target="_blank" rel="noreferrer" href={`/content/${content?.contentType.key}/${encodeURIComponent(localeCode)}/${encodeURIComponent(selectedTranslation.publishedSlug)}`}>{t("View published page")}</Link>}<Link className="btn btn-light" href="/apps-cms/content">{t("Back to content")}</Link><Button color="light" onClick={() => void reload()} disabled={loading}><i className="ri-refresh-line me-1" />{t("Refresh")}</Button></Col>
       </Row>
       {error && <Alert color="danger" toggle={() => setError("")}>{error}</Alert>}
       {notice && <Alert color="success" toggle={() => setNotice("")}>{notice}</Alert>}
