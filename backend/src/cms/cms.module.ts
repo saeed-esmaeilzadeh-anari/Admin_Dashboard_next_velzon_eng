@@ -5,6 +5,7 @@ import { RolesGuard } from "../common/guards/roles.guard";
 import { PrismaModule } from "../prisma/prisma.module";
 import { CmsController } from "./cms.controller";
 import { CmsManagementController } from "./cms-management.controller";
+import { CmsAuditInterceptor } from "./cms-audit.interceptor";
 import { CmsPublicManagementController } from "./cms-public-management.controller";
 import { CmsManagementService } from "./cms-management.service";
 import { CmsMediaController } from "./cms-media.controller";
@@ -17,7 +18,7 @@ import { PublicCmsController } from "./public-cms.controller";
 @Module({
   imports: [AuthModule, PrismaModule, ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }])],
   controllers: [CmsController, PublicCmsController, CmsManagementController, CmsPublicManagementController, CmsMediaController],
-  providers: [CmsService, CmsScheduler, RolesGuard, CmsManagementService, CmsMediaService, CmsPermissionsGuard, CmsWebhookService, CmsWebhookWorker],
+  providers: [CmsService, CmsScheduler, RolesGuard, CmsManagementService, CmsMediaService, CmsPermissionsGuard, CmsWebhookService, CmsWebhookWorker, CmsAuditInterceptor],
   exports: [CmsService],
 })
 export class CmsModule {}
