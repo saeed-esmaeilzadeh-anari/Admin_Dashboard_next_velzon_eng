@@ -1,4 +1,5 @@
 name: Frontend CMS CI
+# Revalidate the synchronized CMS branch, type-check and production build.
 concurrency:
   group: cms-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
