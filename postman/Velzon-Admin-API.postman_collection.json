@@ -1,0 +1,4121 @@
+{
+  "info": {
+    "_postman_id": "7f1f6e2d-6c0a-4c82-9a15-velzonadminapi",
+    "name": "Velzon Admin API",
+    "description": "Postman collection for the NestJS backend in Admin_Dashboard_next_velzon_eng. API prefix /api/v1. Import the companion environment or set variables manually. Login stores accessToken automatically. CMS payload examples are starting points; verify DTOs in Swagger.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001/api/v1"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@example.com"
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "cmsJobToken",
+      "value": ""
+    },
+    {
+      "key": "currentRole",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "customerId",
+      "value": ""
+    },
+    {
+      "key": "leadId",
+      "value": ""
+    },
+    {
+      "key": "projectId",
+      "value": ""
+    },
+    {
+      "key": "taskId",
+      "value": ""
+    },
+    {
+      "key": "ticketId",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "contentTypeId",
+      "value": ""
+    },
+    {
+      "key": "contentId",
+      "value": ""
+    },
+    {
+      "key": "localeId",
+      "value": ""
+    },
+    {
+      "key": "localeCode",
+      "value": "fa-IR"
+    },
+    {
+      "key": "fieldId",
+      "value": ""
+    },
+    {
+      "key": "revisionId",
+      "value": ""
+    },
+    {
+      "key": "taxonomyId",
+      "value": ""
+    },
+    {
+      "key": "termId",
+      "value": ""
+    },
+    {
+      "key": "menuId",
+      "value": ""
+    },
+    {
+      "key": "formId",
+      "value": ""
+    },
+    {
+      "key": "formKey",
+      "value": "contact"
+    },
+    {
+      "key": "submissionId",
+      "value": ""
+    },
+    {
+      "key": "webhookId",
+      "value": ""
+    },
+    {
+      "key": "deliveryId",
+      "value": ""
+    },
+    {
+      "key": "mediaId",
+      "value": ""
+    },
+    {
+      "key": "typeKey",
+      "value": "page"
+    },
+    {
+      "key": "slug",
+      "value": "sample-page"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Health",
+      "item": [
+        {
+          "name": "Health check",
+          "description": "Checks API and PostgreSQL connectivity.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Authentication",
+      "item": [
+        {
+          "name": "Register USER",
+          "description": "Always creates role USER. Password must be 12-72 chars.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alex Johnson\",\n  \"email\": \"alex@example.com\",\n  \"password\": \"ChangeMe-Strong-123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "description": "Stores response.accessToken in the accessToken collection variable.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login succeeded', () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "if (data.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "if (data.user && data.user.role) pm.collectionVariables.set('currentRole', data.user.role);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Current user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Business API",
+      "description": "JWT required. Most write operations require ADMIN or MANAGER. Pagination: page, limit (max 100), search.",
+      "item": [
+        {
+          "name": "Dashboard summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "summary"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"General\",\n  \"slug\": \"general\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sample product\",\n  \"sku\": \"SKU-001\",\n  \"description\": \"Example\",\n  \"price\": 19.99,\n  \"stock\": 10,\n  \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 24.5,\n  \"stock\": 8\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Archive product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get customer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alex Customer\",\n  \"email\": \"customer@example.com\",\n  \"phone\": \"+10000000000\",\n  \"company\": \"Example Co\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update customer",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+10000000001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Archive customer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customers",
+                "{{customerId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List leads",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create lead",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Taylor Lead\",\n  \"email\": \"lead@example.com\",\n  \"source\": \"Website\",\n  \"status\": \"NEW\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update lead",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{leadId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{leadId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONTACTED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete lead",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/leads/{{leadId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "leads",
+                "{{leadId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects",
+                "{{projectId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Website redesign\",\n  \"description\": \"Project example\",\n  \"status\": \"PLANNING\",\n  \"startDate\": \"2026-11-01T09:00:00.000Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update project",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects",
+                "{{projectId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete project",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/{{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects",
+                "{{projectId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get task",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Prepare release\",\n  \"description\": \"Release task\",\n  \"status\": \"TODO\",\n  \"priority\": \"MEDIUM\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update task",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete task",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tasks",
+                "{{taskId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get ticket",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/{{ticketId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                "{{ticketId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tickets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Support request\",\n  \"description\": \"Detailed issue description\",\n  \"status\": \"OPEN\",\n  \"priority\": \"MEDIUM\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update ticket",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/{{ticketId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                "{{ticketId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete ticket",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/tickets/{{ticketId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "tickets",
+                "{{ticketId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 1\n    }\n  ],\n  \"tax\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update order status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CONFIRMED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Users (ADMIN)",
+      "description": "Admin-only user administration.",
+      "item": [
+        {
+          "name": "List users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update user role/status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"MANAGER\",\n  \"isActive\": true,\n  \"name\": \"Updated User\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - CMS Admin (JWT + permissions)",
+      "description": "Routes require JWT and the matching CMS permission grant. ADMIN bypasses CMS grants. Request bodies are illustrative; Swagger is the source of truth for DTO validation.",
+      "item": [
+        {
+          "name": "CMS dashboard summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/dashboard/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "dashboard",
+                "summary"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List locales",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/locales",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "locales"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create locale",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/locales",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "locales"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"fa-IR\",\n  \"name\": \"Persian\",\n  \"nativeName\": \"فارسی\",\n  \"direction\": \"RTL\",\n  \"isDefault\": true,\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update locale",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/locales/{{localeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "locales",
+                "{{localeId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List content types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/content-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "content-types"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create content type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/content-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "content-types"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"page\",\n  \"name\": \"Page\",\n  \"description\": \"Website pages\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update content type",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/content-types/{{contentTypeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "content-types",
+                "{{contentTypeId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pages\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add content type field",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/content-types/{{contentTypeId}}/fields",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "content-types",
+                "{{contentTypeId}}",
+                "fields"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"subtitle\",\n  \"label\": \"Subtitle\",\n  \"type\": \"TEXT\",\n  \"isRequired\": false,\n  \"isLocalized\": true,\n  \"sortOrder\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update content type field",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/content-types/{{contentTypeId}}/fields/{{fieldId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "content-types",
+                "{{contentTypeId}}",
+                "fields",
+                "{{fieldId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Short subtitle\",\n  \"isRequired\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List contents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentTypeId\": \"{{contentTypeId}}\",\n  \"data\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get content",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create translation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/translations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "translations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"localeCode\": \"fa-IR\",\n  \"title\": \"عنوان صفحه\",\n  \"slug\": \"sample-page\",\n  \"excerpt\": \"خلاصه\",\n  \"data\": {},\n  \"seoTitle\": \"عنوان سئو\",\n  \"seoDescription\": \"توضیحات سئو\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update translation",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/translations/{{localeCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "translations",
+                "{{localeCode}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated title\",\n  \"slug\": \"updated-slug\",\n  \"data\": {},\n  \"status\": \"DRAFT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update shared fields",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/shared-fields",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "shared-fields"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Submit for review",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/translations/{{localeCode}}/submit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "translations",
+                "{{localeCode}}",
+                "submit"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publish",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/translations/{{localeCode}}/publish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "translations",
+                "{{localeCode}}",
+                "publish"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unpublish",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/translations/{{localeCode}}/unpublish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "translations",
+                "{{localeCode}}",
+                "unpublish"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Archive",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/translations/{{localeCode}}/archive",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "translations",
+                "{{localeCode}}",
+                "archive"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Restore to draft",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/translations/{{localeCode}}/restore-to-draft",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "translations",
+                "{{localeCode}}",
+                "restore-to-draft"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject translation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/translations/{{localeCode}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "translations",
+                "{{localeCode}}",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Please revise the content.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Schedule translation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/translations/{{localeCode}}/schedule",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "translations",
+                "{{localeCode}}",
+                "schedule"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledAt\": \"2026-11-02T09:00:00.000Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List translation revisions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/translations/{{localeCode}}/revisions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "translations",
+                "{{localeCode}}",
+                "revisions"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Restore revision",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/translations/{{localeCode}}/revisions/{{revisionId}}/restore`",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "translations",
+                "{{localeCode}}",
+                "revisions",
+                "{{revisionId}}",
+                "restore`"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Export CMS content",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/import-export/export",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "import-export",
+                "export"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5000",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Import CMS content package",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/import-export/import",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "import-export",
+                "import"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": 1,\n  \"locales\": [],\n  \"contentTypes\": [],\n  \"contents\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Taxonomies list",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/taxonomies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "taxonomies"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create taxonomy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/taxonomies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "taxonomies"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"categories\",\n  \"name\": \"Categories\",\n  \"isHierarchical\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Taxonomy terms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/taxonomies/{{taxonomyId}}/terms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "taxonomies",
+                "{{taxonomyId}}",
+                "terms"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create taxonomy term",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/taxonomies/{{taxonomyId}}/terms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "taxonomies",
+                "{{taxonomyId}}",
+                "terms"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"News\",\n  \"slug\": \"news\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update taxonomy term translation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/taxonomy-terms/{{termId}}/translations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "taxonomy-terms",
+                "{{termId}}",
+                "translations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"localeCode\": \"fa-IR\",\n  \"name\": \"اخبار\",\n  \"slug\": \"akhbar\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set content terms",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/contents/{{contentId}}/terms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "contents",
+                "{{contentId}}",
+                "terms"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"termIds\": [\n    \"{{termId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List menus",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/menus",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "menus"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create menu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/menus",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "menus"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"main\",\n  \"name\": \"Main menu\",\n  \"localeCode\": \"fa-IR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List menu items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/menus/{{menuId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "menus",
+                "{{menuId}}",
+                "items"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create menu item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/menus/{{menuId}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "menus",
+                "{{menuId}}",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Home\",\n  \"url\": \"/\",\n  \"sortOrder\": 0,\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List redirects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/redirects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "redirects"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create redirect",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/redirects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "redirects"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourcePath\": \"/old\",\n  \"destinationPath\": \"/new\",\n  \"statusCode\": 301,\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resolve redirect (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/redirects/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "redirects",
+                "resolve"
+              ],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "/old",
+                  "disabled": false
+                },
+                {
+                  "key": "localeCode",
+                  "value": "fa-IR",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List forms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/forms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "forms"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create form",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/forms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "forms"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"contact\",\n  \"name\": \"Contact form\",\n  \"schema\": {\n    \"fields\": []\n  },\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List form submissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/forms/{{formId}}/submissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "forms",
+                "{{formId}}",
+                "submissions"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update form submission",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/forms/{{formId}}/submissions/{{submissionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "forms",
+                "{{formId}}",
+                "submissions",
+                "{{submissionId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"REVIEWED\",\n  \"internalNote\": \"Reviewed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List webhooks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/webhooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "webhooks"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/webhooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "webhooks"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"CMS updates\",\n  \"endpointUrl\": \"https://example.com/webhook\",\n  \"secret\": \"replace-me\",\n  \"events\": [\n    \"content.published\"\n  ],\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Webhook delivery history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/webhooks/{{webhookId}}/deliveries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "webhooks",
+                "{{webhookId}}",
+                "deliveries"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Retry webhook delivery",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/webhooks/{{webhookId}}/deliveries/{{deliveryId}}/retry",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "webhooks",
+                "{{webhookId}}",
+                "deliveries",
+                "{{deliveryId}}",
+                "retry"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List media assets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/media",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "media"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload media (multipart)",
+          "description": "Use form-data key `file` with a file. Check the controller DTO for supported metadata fields.",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/media",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "media"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update media metadata",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cms/media/{{mediaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "media",
+                "{{mediaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"altText\": \"Descriptive alternative text\",\n  \"caption\": \"Image caption\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete media",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/media/{{mediaId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "media",
+                "{{mediaId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List CMS permissions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "permissions"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List CMS audit logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cms/audit-logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cms",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - Public CMS (no token)",
+      "description": "Published content and public form endpoints do not require a Bearer token.",
+      "item": [
+        {
+          "name": "List published content",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/cms/{{typeKey}}/{{localeCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "cms",
+                "{{typeKey}}",
+                "{{localeCode}}"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get published content by slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/cms/{{typeKey}}/{{localeCode}}/{{slug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "cms",
+                "{{typeKey}}",
+                "{{localeCode}}",
+                "{{slug}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Public sitemap JSON",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/cms/sitemap",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "cms",
+                "sitemap"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Public sitemap XML",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/cms/sitemap.xml",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "cms",
+                "sitemap.xml"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get public form schema",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/cms/forms/{{formKey}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "cms",
+                "forms",
+                "{{formKey}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Submit public form",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/cms/forms/{{formKey}}/submissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "cms",
+                "forms",
+                "{{formKey}}",
+                "submissions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Visitor\",\n  \"email\": \"visitor@example.com\",\n  \"message\": \"Hello\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resolve public redirect",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/public/cms/redirects/resolve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "public",
+                "cms",
+                "redirects",
+                "resolve"
+              ],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "/old",
+                  "disabled": false
+                },
+                {
+                  "key": "localeCode",
+                  "value": "fa-IR",
+                  "disabled": false
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 - Internal scheduled jobs (server-side only)",
+      "item": [
+        {
+          "name": "Publish scheduled content",
+          "description": "Server-side scheduler only. Set Authorization: Bearer {{cmsJobToken}} manually; never expose cmsJobToken in frontend code.",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/internal/cms/jobs/publish-scheduled",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "cms",
+                "jobs",
+                "publish-scheduled"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dispatch webhook queue",
+          "description": "Server-side scheduler only. Set Authorization: Bearer {{cmsJobToken}} manually; never expose cmsJobToken in frontend code.",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/internal/cms/jobs/dispatch-webhooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internal",
+                "cms",
+                "jobs",
+                "dispatch-webhooks"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
