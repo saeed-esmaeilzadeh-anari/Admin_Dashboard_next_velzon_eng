@@ -26,5 +26,6 @@ This is a status ledger for the current feature branch. Items described as imple
 
 ## CI references
 
-- Current-tip CI status must be checked before review/merge. The backend has had successful runs on earlier commits, but checks on those older SHAs do not validate subsequent changes.
-- Frontend type-check and production build are required before this branch can be considered verified.
+- Backend CI passed on current feature HEAD `f8b5c3a48cb9e2391a9e6de025aca17534dfff2f`: https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41169331727.
+- Frontend type-check passed on the same HEAD; production build was still running at the time this audit was updated: https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41169331606.
+- The feature branch is synchronized with current `main`; GitHub reports the pull request as mergeable. Production deployment checks remain separate and are not represented by CI.
