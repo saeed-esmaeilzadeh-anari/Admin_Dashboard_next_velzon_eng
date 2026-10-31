@@ -15,9 +15,11 @@ Branch: feat/full-stack-foundation
 
 ## Current verification
 
-- Backend CI on code commit f6c163b26c2c0fd94b5b95f8eaeef9275ecf09c6 passed Prisma schema validation, Prisma Client generation, TypeScript checking, unit tests and the Nest build. See https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40826504593.
-- Frontend CI for the current frontend source snapshot (commit 8190cfe2104339cd07167d618da71534155da1fd) was still installing dependencies at last check. The latest branch includes further backend-only and documentation commits, so the frontend source is unchanged since that snapshot, but a successful type-check/build result is still required. See https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40826416336.
-- The repository was edited through GitHub's API because a local clone could not be used in this environment. CI evidence, not the act of committing, determines whether code is verified.
+- Current branch HEAD: `f8b5c3a48cb9e2391a9e6de025aca17534dfff2f`. The feature branch is synchronized with the latest `main` and GitHub reports the PR as mergeable.
+- Backend CI passed on this exact HEAD: Prisma schema validation, Prisma Client generation, all migrations deployed to PostgreSQL 16, migration status, seed, CMS database smoke test, TypeScript check, unit tests and Nest build. Run: https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41169331727.
+- Frontend CI on this exact HEAD has passed dependency installation and TypeScript checking; the Next.js production build is still running at the time of this update. Run: https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41169331606.
+- Earlier full frontend production build passed at the same frontend source snapshot; between that snapshot and this HEAD, the only application-source change was backend-only. This new exact-HEAD run is being used to close that gap.
+- CI verifies a disposable PostgreSQL database and build outputs; it does not provision or validate production infrastructure. The repository was edited through GitHub's API because a local clone was unavailable.
 
 ## Remaining work before a production launch
 
