@@ -44,7 +44,7 @@ export const login = createAsyncThunk(
       const data = await response.json();
       return data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error instanceof Error ? error.message : String(error));
     }
   }
 );
@@ -71,7 +71,7 @@ export const register = createAsyncThunk(
       const data = await response.json();
       return data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error instanceof Error ? error.message : String(error));
     }
   }
 );

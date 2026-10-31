@@ -1,25 +1,31 @@
-# CMS Implementation Audit (working ledger)
+# CMS Implementation Audit
 
-| Area | Current state | Evidence / next action |
+This is a status ledger for the current feature branch. Items described as implemented refer to code/UI present on the branch; they are not a substitute for successful CI, live database migration, or deployed end-to-end testing.
+
+| Area | Current state | Verification / remaining work |
 |---|---|---|
-| Existing Next.js routes | Large dashboard template with e-commerce, CRM, projects, tasks, tickets and demo pages | Page-by-page field/API audit is still required |
-| Backend foundation | Implemented | NestJS, Prisma/PostgreSQL, JWT, existing business APIs |
-| Locale metadata API | Implemented in CMS core branch slice | Verify schema validation and CI |
-| Persian/English seed locales | Implemented in seed | fa-IR defaults to RTL, en-US to LTR |
-| Dynamic content types / fields | Backend API implemented for initial field types | Field schema and validation tests added |
-| Translation records | Backend data model and write API implemented | Editor supports selecting an existing locale or creating a new language version; UI test coverage still needed |
-| Workflow and revision API | Backend methods/routes implemented | CI and integration tests still needed |
-| Public published-content API | Backend API reads published snapshot | HTML sanitization/rendering and end-to-end tests required |
-| Legacy Fake Backend removal | Not complete | New CMS screens use the real API client; existing template business pages still require page-by-page migration after tests |
-| Media Library / storage | Not implemented | Design local/S3 interface and metadata lifecycle |
-| Taxonomy / menus / redirects / SEO sitemap | Not implemented | Follow after the content UX is connected |
-| Page builder / blocks | Not implemented | Build only after core content editor contract stabilizes |
-| CMS management UI | Initial real screens implemented | Content list/create/edit, dynamic content-type fields and language administration; responsive/manual QA still needed |
-| Fine-grained RBAC | Not implemented | Replace coarse role checks with permission matrix |
-| Production scheduler | Not solved for serverless | Use durable scheduler or external cron trigger |
+| CMS data model | Implemented | Prisma/PostgreSQL models and versioned migrations; CI must pass on current HEAD |
+| Languages and locale direction | Implemented | Persian RTL and English LTR seed locales; UI labels available in English/Persian |
+| Dynamic content types and fields | Implemented | Typed field definitions, server validation, localized/shared fields and safe field deactivation |
+| Content CRUD and translation editing | Implemented | API-backed list, create, edit and language-version pages; regression/browser tests still required |
+| Editorial workflow | Implemented | Draft, review, publish, schedule, reject, unpublish, archive, restore, snapshots and revision history |
+| Visual page builder | Implemented first version | Hero, text/Markdown, image, gallery, CTA, FAQ and card-grid blocks; not a general-purpose drag/drop layout engine yet |
+| Media library | Implemented | Validated local file storage, metadata, API/UI, public media resolution and configurable local/S3 storage; deployment must configure persistent storage/secrets |
+| Taxonomies and term translations | Implemented | Hierarchical terms, localized term data and content assignment; public display/filtering still needs end-to-end coverage |
+| Navigation menus | Implemented | Seed creates editable `main` menus for Persian/English; nested items and localized public navigation are rendered on published pages; menu cycles are rejected and defensively guarded |
+| Redirect manager | Implemented | Middleware resolves active locale-aware redirect rules for public GET/HEAD requests; server rejects redirect chains/loops and safely falls through if the CMS API is unavailable |
+| Forms and submissions | Implemented | Configurable schemas, public validation/submission, throttling and admin status/note management; CAPTCHA/spam filtering/email notifications remain follow-up |
+| Webhooks | Implemented first version | HMAC signatures, public-HTTPS endpoint checks, retry/delivery history and manager UI; needs a continuously running worker or durable queue |
+| Import/export | Implemented | Versioned JSON package, bounded record count, per-record results and imports as drafts; binary files are not bundled and must already exist at the destination |
+| Per-role CMS permissions | Implemented first version | Seeded permission catalog and role grants with server-side guard; object/content ownership policies and security integration tests remain |
+| Audit log | Implemented first version | Middleware/interceptor audit recording and filtered log UI; verify coverage of every sensitive action |
+| Public content renderer | Implemented | Published-only API and Next.js route with locale direction, SEO metadata, alternate-language links, localized main menu and safe Markdown subset; raw HTML is never executed |
+| Sitemap and language alternates | Implemented | Next.js /sitemap.xml, backend JSON/XML sitemap APIs; set canonical site URL before production and verify deployed response |
+| Existing non-CMS template screens | Not fully migrated | Legacy e-commerce/CRM/projects/tasks and other demo screens may still use Fake Backend; each needs source-driven API wiring and regression tests |
+| Production operations | Not complete | No provisioned production DB, frontend/backend deployment, persistent upload store, external scheduler, or deployed smoke/E2E/accessibility test in this task |
 
+## CI references
 
-## CI notes
-
-- Backend CI completed successfully at commit `9801924b839d53494219bb7a3efc086b125935d8`: [workflow run](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/40660666166).
-- Frontend CI status should be checked on the latest run before the CMS UI is treated as validated.
+- Backend CI passed on current feature HEAD `f8b5c3a48cb9e2391a9e6de025aca17534dfff2f`: https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41169331727.
+- Frontend type-check passed on the same HEAD; production build was still running at the time this audit was updated: https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41169331606.
+- The feature branch is synchronized with current `main`; GitHub reports the pull request as mergeable. Production deployment checks remain separate and are not represented by CI.

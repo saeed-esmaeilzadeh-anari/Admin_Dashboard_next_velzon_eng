@@ -36,18 +36,19 @@ export default function RelationField({ field, value, localeCode, onChange }: {
 
   const labelFor = (item: CmsContent) => {
     const translation = item.translations.find(entry => entry.locale?.code === localeCode) ?? item.translations[0];
-    const title = translation?.title ?? item.contentType.name;
-    return `${title} · ${item.contentType.key} · ${item.id.slice(0, 8)}`;
+    return `${translation?.title ?? item.contentType.name} · ${item.contentType.key} · ${item.id.slice(0, 8)}`;
   };
-  const selected = Array.isArray(value) ? value.map(String) : String(value ?? "");
+  const selected: string | string[] = Array.isArray(value) ? value.map(String) : String(value ?? "");
+
   return <div className="cms-relation-field">
     <Label for={`relation-${field.key}`}>{field.label}{field.isRequired ? <span className="text-danger ms-1">*</span> : null}</Label>
     <Input
       id={`relation-${field.key}`}
       type="select"
       multiple={field.type === "RELATION_MULTIPLE"}
-      value={selected as string | string[]}
+      value={selected}
       disabled={loading || Boolean(error)}
+      required={field.isRequired && field.type === "RELATION"}
       onChange={event => {
         if (field.type === "RELATION_MULTIPLE") {
           onChange(Array.from((event.currentTarget as unknown as HTMLSelectElement).selectedOptions).map(option => option.value));

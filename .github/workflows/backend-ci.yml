@@ -1,4 +1,5 @@
 name: Backend CI
+# Revalidate the synchronized CMS branch and database migration chain.
 concurrency:
   group: cms-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -16,9 +17,30 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: velzon_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d velzon_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
     defaults:
       run:
         working-directory: backend
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/velzon_ci?schema=public
+      JWT_SECRET: ci-only-secret-that-is-long-enough-to-pass-the-minimum-length
+      ADMIN_NAME: CI Administrator
+      ADMIN_EMAIL: ci-admin@example.test
+      ADMIN_PASSWORD: ci-only-admin-password-strong-enough
+      PUBLIC_SITE_URL: https://example.test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,25 +51,20 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Validate Prisma schema
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/velzon_ci?schema=public
         run: npx prisma validate
       - name: Generate Prisma Client
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/velzon_ci?schema=public
         run: npx prisma generate
+      - name: Apply all checked-in migrations to PostgreSQL
+        run: npx prisma migrate deploy
+      - name: Verify migration status
+        run: npx prisma migrate status
+      - name: Seed locales, content types, permissions and test administrator
+        run: npm run prisma:seed
+      - name: Smoke-test migrated database and seed invariants
+        run: npm run test:db-smoke
       - name: Type-check
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/velzon_ci?schema=public
-          JWT_SECRET: ci-only-secret-that-is-long-enough-to-pass-the-minimum-length
         run: npm run type-check
       - name: Unit tests
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/velzon_ci?schema=public
-          JWT_SECRET: ci-only-secret-that-is-long-enough-to-pass-the-minimum-length
         run: npm test
       - name: Build
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/velzon_ci?schema=public
-          JWT_SECRET: ci-only-secret-that-is-long-enough-to-pass-the-minimum-length
         run: npm run build

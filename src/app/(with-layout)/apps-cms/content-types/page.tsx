@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { cmsApi, CmsContentType, CmsField, CmsFieldType } from "@/helpers/cmsApi";
 
 type DraftField = { key: string; label: string; type: CmsFieldType; isRequired: boolean; isLocalized: boolean; options: string; };
-const fieldTypes: CmsFieldType[] = ["TEXT","TEXTAREA","RICH_TEXT","MARKDOWN","INTEGER","DECIMAL","BOOLEAN","DATE","DATETIME","SELECT","MULTISELECT","EMAIL","URL","JSON"];
+const fieldTypes: CmsFieldType[] = ["TEXT","TEXTAREA","RICH_TEXT","MARKDOWN","INTEGER","DECIMAL","BOOLEAN","DATE","DATETIME","SELECT","MULTISELECT","EMAIL","URL","JSON","MEDIA","MEDIA_MULTIPLE","RELATION","RELATION_MULTIPLE","REPEATER"];
 const emptyField = (): DraftField => ({ key: "", label: "", type: "TEXT", isRequired: false, isLocalized: true, options: "" });
 function errorMessage(error: unknown): string {
   const value = error as { response?: { data?: { message?: string | string[] } }; message?: string };
@@ -15,8 +15,23 @@ function errorMessage(error: unknown): string {
   return Array.isArray(message) ? message.join(", ") : message ?? "Unable to complete the request.";
 }
 function fieldConfig(field: DraftField) {
-  const options = field.options.split(",").map(value => value.trim()).filter(Boolean);
-  return options.length && (field.type === "SELECT" || field.type === "MULTISELECT") ? { options } : undefined;
+  if (field.type === "SELECT" || field.type === "MULTISELECT") {
+    const options = field.options.split(",").map(value => value.trim()).filter(Boolean);
+    return options.length ? { options } : undefined;
+  }
+  if (field.type === "RELATION" || field.type === "RELATION_MULTIPLE") {
+    const targetTypeKey = field.options.trim();
+    return targetTypeKey ? { targetTypeKey } : undefined;
+  }
+  if (field.type === "REPEATER" && field.options.trim()) {
+    const config = JSON.parse(field.options) as unknown;
+    if (typeof config !== "object" || config === null || Array.isArray(config) ||
+        !Array.isArray((config as { fields?: unknown }).fields)) {
+      throw new Error("Repeater schema must be a JSON object with a fields array.");
+    }
+    return config as Record<string, unknown>;
+  }
+  return undefined;
 }
 function FieldDraftForm({ field, onChange, onRemove, canRemove }: { field: DraftField; onChange: (next: DraftField) => void; onRemove: () => void; canRemove: boolean }) {
   const { t } = useTranslation();
@@ -26,6 +41,8 @@ function FieldDraftForm({ field, onChange, onRemove, canRemove }: { field: Draft
     <Col md={3}><Label>{t("Field type")}</Label><Input type="select" value={field.type} onChange={event => onChange({ ...field, type: event.target.value as CmsFieldType })}>{fieldTypes.map(type => <option key={type} value={type}>{type}</option>)}</Input></Col>
     <Col md={3}><div className="d-flex gap-2 mb-2"><div className="form-check"><Input id={`required-${field.key || "new"}`} type="checkbox" checked={field.isRequired} onChange={event => onChange({ ...field, isRequired: event.target.checked })} /><Label check for={`required-${field.key || "new"}`}>{t("Required")}</Label></div><div className="form-check"><Input id={`localized-${field.key || "new"}`} type="checkbox" checked={field.isLocalized} onChange={event => onChange({ ...field, isLocalized: event.target.checked })} /><Label check for={`localized-${field.key || "new"}`}>{t("Translated")}</Label></div>{canRemove && <Button type="button" color="danger" outline size="sm" onClick={onRemove}><i className="ri-delete-bin-line" /></Button>}</div></Col>
     {(field.type === "SELECT" || field.type === "MULTISELECT") && <Col md={12}><Label>{t("Options separated by commas")}</Label><Input value={field.options} required onChange={event => onChange({ ...field, options: event.target.value })} placeholder="draft, ready, archived" /></Col>}
+    {(field.type === "RELATION" || field.type === "RELATION_MULTIPLE") && <Col md={12}><Label>{t("Target content type key (optional)")}</Label><Input value={field.options} onChange={event => onChange({ ...field, options: event.target.value })} placeholder="article" /><small className="text-muted">{t("Leave blank to allow links to any content type.")}</small></Col>}
+    {field.type === "REPEATER" && <Col md={12}><Label>{t("Nested field schema (JSON)")}</Label><Input type="textarea" rows={5} value={field.options} required onChange={event => onChange({ ...field, options: event.target.value })} placeholder={'{"fields":[{"key":"label","label":"Label","type":"TEXT","isRequired":true}]}'}/><small className="text-muted">{t("Allowed nested field types: text, textarea, number, boolean, date, select, email and URL. The server validates this schema for every repeater item.")}</small></Col>}
   </Row>;
 }
 export default function CmsContentTypesPage() {
@@ -154,7 +171,7 @@ export default function CmsContentTypesPage() {
               <Button type="submit" color="primary" block disabled={saving}>{saving ? <Spinner size="sm" className="me-2" /> : null}{t("Create type")}</Button>
             </Form>
           </CardBody></Card>
-          <Alert color="warning">{t("The current field system supports typed JSON-backed fields. Media relations, repeaters and visual page-builder blocks are planned for later increments.")}</Alert>
+          <Alert color="warning">{t("Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.")}</Alert>
         </Col>
       </Row>
     </Container>

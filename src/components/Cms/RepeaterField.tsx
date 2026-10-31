@@ -6,8 +6,12 @@ import { useTranslation } from "react-i18next";
 import { CmsField } from "@/helpers/cmsApi";
 
 type RepeaterChild = {
-  key: string; label?: string; type: string; isRequired?: boolean;
-  config?: Record<string, unknown>; options?: unknown[];
+  key: string;
+  label?: string;
+  type: string;
+  isRequired?: boolean;
+  config?: Record<string, unknown>;
+  options?: unknown[];
 };
 type RepeatRow = Record<string, unknown>;
 
@@ -21,13 +25,16 @@ function makeRow(fields: RepeaterChild[]): RepeatRow {
 }
 function childOptions(field: RepeaterChild): Array<{ value: string; label: string }> {
   const source = Array.isArray(field.config?.options) ? field.config.options : Array.isArray(field.options) ? field.options : [];
-  return source.map(value => typeof value === "string"
-    ? { value, label: value }
-    : typeof value === "object" && value !== null && "value" in value && typeof value.value === "string"
-      ? { value: value.value, label: "label" in value && typeof value.label === "string" ? value.label : value.value }
-      : null).filter((value): value is { value: string; label: string } => Boolean(value));
+  return source.map(value => {
+    if (typeof value === "string") return { value, label: value };
+    if (typeof value === "object" && value !== null && "value" in value && typeof value.value === "string") {
+      return { value: value.value, label: "label" in value && typeof value.label === "string" ? value.label : value.value };
+    }
+    return null;
+  }).filter((value): value is { value: string; label: string } => Boolean(value));
 }
-function inputType(type: string): string {
+type RepeaterInputType = "number" | "date" | "datetime-local" | "email" | "url" | "text";
+function inputType(type: string): RepeaterInputType {
   if (type === "INTEGER" || type === "DECIMAL") return "number";
   if (type === "DATE") return "date";
   if (type === "DATETIME") return "datetime-local";

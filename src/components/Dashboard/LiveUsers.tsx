@@ -11,7 +11,7 @@ import { getAllData } from "@/slices/thunks";
 import { createSelector } from "reselect";
 
 const LiveUsers = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
 
   const [countryData, setCountryData] = useState<any>([]);
   const [periodType, setPeriodType] = useState<string>("halfyearly");

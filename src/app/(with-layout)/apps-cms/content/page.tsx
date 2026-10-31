@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Col, Container, Form, Input, Label, Row, Spinner, Table } from "reactstrap";
 import { useTranslation } from "react-i18next";
@@ -25,31 +25,42 @@ export default function CmsContentListPage() {
   const [typeKey, setTypeKey] = useState("");
   const [localeCode, setLocaleCode] = useState("");
   const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalContent, setTotalContent] = useState(0);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const requestSequence = useRef(0);
 
   const load = useCallback(async () => {
+    const requestId = ++requestSequence.current;
     setLoading(true);
     setError("");
     try {
       const [contentPage, nextTypes, nextLocales] = await Promise.all([
-        cmsApi.contents({ page: 1, limit: 100, ...(typeKey ? { typeKey } : {}), ...(localeCode ? { localeCode } : {}), ...(status ? { status: status as CmsStatus } : {}), ...(search.trim() ? { search: search.trim() } : {}) }),
+        cmsApi.contents({ page, limit: 20, ...(typeKey ? { typeKey } : {}), ...(localeCode ? { localeCode } : {}), ...(status ? { status: status as CmsStatus } : {}), ...(search.trim() ? { search: search.trim() } : {}) }),
         cmsApi.contentTypes(true),
         cmsApi.locales(true),
       ]);
+      if (requestId !== requestSequence.current) return;
       setItems(contentPage.data);
+      setTotalPages(contentPage.pagination.pages);
+      setTotalContent(contentPage.pagination.total);
       setTypes(nextTypes);
       setLocales(nextLocales.filter(locale => locale.isActive));
     } catch (cause) {
-      setError(getErrorMessage(cause));
+      if (requestId === requestSequence.current) setError(getErrorMessage(cause));
     } finally {
-      setLoading(false);
+      if (requestId === requestSequence.current) setLoading(false);
     }
-  }, [typeKey, localeCode, status, search]);
+  }, [typeKey, localeCode, status, search, page]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+    return () => { requestSequence.current += 1; };
+  }, [load]);
 
   const rows = useMemo<CmsRow[]>(() => items.flatMap(content => content.translations.map(translation => ({ content, translation }))), [items]);
 
@@ -89,6 +100,7 @@ export default function CmsContentListPage() {
           <Button size="sm" color="warning" outline disabled={busy} onClick={() => void performWorkflow(content.id, locale, "reject")}>{t("Reject")}</Button>
         </>}
         {translation.status === "PUBLISHED" && <Button size="sm" color="warning" outline disabled={busy} onClick={() => void performWorkflow(content.id, locale, "unpublish")}>{t("Unpublish")}</Button>}
+        {translation.status === "SCHEDULED" && <><Button size="sm" color="success" disabled={busy} onClick={() => void performWorkflow(content.id, locale, "publish")}>{t("Publish now")}</Button><Button size="sm" color="warning" outline disabled={busy} onClick={() => void performWorkflow(content.id, locale, "unpublish")}>{t("Cancel schedule")}</Button></>}
         {translation.status !== "ARCHIVED" && <Button size="sm" color="danger" outline disabled={busy} onClick={() => void performWorkflow(content.id, locale, "archive")}>{t("Archive")}</Button>}
         {translation.status === "ARCHIVED" && <Button size="sm" color="secondary" outline disabled={busy} onClick={() => void performWorkflow(content.id, locale, "restore-to-draft")}>{t("Restore to draft")}</Button>}
       </div>
@@ -112,10 +124,10 @@ export default function CmsContentListPage() {
           <CardBody>
             <Form onSubmit={event => { event.preventDefault(); void load(); }}>
               <Row className="g-3 mb-4">
-                <Col lg={4}><Label>{t("Search")}</Label><Input value={search} onChange={event => setSearch(event.target.value)} placeholder={t("Search title or slug")} /></Col>
-                <Col sm={6} lg={3}><Label>{t("Content type")}</Label><Input type="select" value={typeKey} onChange={event => setTypeKey(event.target.value)}><option value="">{t("All content types")}</option>{types.map(item => <option key={item.id} value={item.key}>{item.name} ({item.key})</option>)}</Input></Col>
-                <Col sm={6} lg={2}><Label>{t("Language")}</Label><Input type="select" value={localeCode} onChange={event => setLocaleCode(event.target.value)}><option value="">{t("All languages")}</option>{locales.map(locale => <option key={locale.id} value={locale.code}>{locale.nativeName} ({locale.code})</option>)}</Input></Col>
-                <Col sm={6} lg={2}><Label>{t("Status")}</Label><Input type="select" value={status} onChange={event => setStatus(event.target.value)}><option value="">{t("All statuses")}</option>{Object.entries(statusLabels).map(([key, value]) => <option key={key} value={key}>{t(value)}</option>)}</Input></Col>
+                <Col lg={4}><Label>{t("Search")}</Label><Input value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} placeholder={t("Search title or slug")} /></Col>
+                <Col sm={6} lg={3}><Label>{t("Content type")}</Label><Input type="select" value={typeKey} onChange={event => { setTypeKey(event.target.value); setPage(1); }}><option value="">{t("All content types")}</option>{types.map(item => <option key={item.id} value={item.key}>{item.name} ({item.key})</option>)}</Input></Col>
+                <Col sm={6} lg={2}><Label>{t("Language")}</Label><Input type="select" value={localeCode} onChange={event => { setLocaleCode(event.target.value); setPage(1); }}><option value="">{t("All languages")}</option>{locales.map(locale => <option key={locale.id} value={locale.code}>{locale.nativeName} ({locale.code})</option>)}</Input></Col>
+                <Col sm={6} lg={2}><Label>{t("Status")}</Label><Input type="select" value={status} onChange={event => { setStatus(event.target.value); setPage(1); }}><option value="">{t("All statuses")}</option>{Object.entries(statusLabels).map(([key, value]) => <option key={key} value={key}>{t(value)}</option>)}</Input></Col>
                 <Col sm={6} lg={1} className="d-flex align-items-end"><Button type="submit" color="primary" block disabled={loading}>{t("Apply")}</Button></Col>
               </Row>
             </Form>
@@ -140,7 +152,14 @@ export default function CmsContentListPage() {
                 </tbody>
               </Table>
             </div>
-            <div className="d-flex justify-content-between mt-3 text-muted fs-13"><span>{t("Translations shown")}: {rows.length}</span><span>{t("Maximum 100 content records per request")}</span></div>
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+              <span className="text-muted fs-13">{t("Content entries")}: {totalContent} · {t("Translations shown")}: {rows.length}</span>
+              <div className="d-flex align-items-center gap-2">
+                <Button type="button" color="light" size="sm" disabled={loading || page <= 1} onClick={() => setPage(current => Math.max(1, current - 1))}>{t("Previous")}</Button>
+                <span className="text-muted fs-13">{page} / {Math.max(totalPages, 1)}</span>
+                <Button type="button" color="light" size="sm" disabled={loading || page >= totalPages} onClick={() => setPage(current => Math.min(Math.max(totalPages, 1), current + 1))}>{t("Next")}</Button>
+              </div>
+            </div>
           </CardBody>
         </Card>
       </Container>

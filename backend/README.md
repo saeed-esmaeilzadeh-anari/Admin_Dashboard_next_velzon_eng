@@ -1,6 +1,6 @@
-# Velzon Admin API
+# Velzon Admin API and CMS
 
-This is a new NestJS REST API alongside the existing Next.js dashboard. The legacy UI still contains demo data and Fake Backend imports; not every existing page is wired to this API yet.
+This repository contains the NestJS + Prisma/PostgreSQL backend and a Next.js dashboard. CMS-specific screens use the database-backed API. The original template also contains legacy e-commerce, CRM, project/task and demo screens; those are not all converted from Fake Backend in this increment.
 
 ## Requirements
 
@@ -11,28 +11,44 @@ This is a new NestJS REST API alongside the existing Next.js dashboard. The lega
 ## Local setup
 
 1. Copy backend/.env.example to backend/.env.
-2. Set DATABASE_URL and a JWT_SECRET of at least 32 characters.
-3. Set ADMIN_NAME, ADMIN_EMAIL and ADMIN_PASSWORD for the initial administrator.
-4. From the backend directory run npm install, then npm run prisma:generate.
-5. Run npm run prisma:deploy to apply the checked-in migration.
-6. Run npm run prisma:seed to create the administrator and general category.
-7. Run npm run start:dev.
+2. Set DATABASE_URL and a random JWT_SECRET with at least 32 characters.
+3. Set ADMIN_NAME, ADMIN_EMAIL and ADMIN_PASSWORD; the seed requires a password of at least 12 characters.
+4. Set PUBLIC_SITE_URL to the local or production frontend origin for absolute sitemap/hreflang links.
+5. From the backend directory run npm install, then npm run prisma:generate.
+6. Run npm run prisma:deploy to apply the checked-in migrations.
+7. Run npm run prisma:seed to create the administrator, locales, starter Page/Article content types and default CMS role grants.
+8. Run npm run start:dev.
 
-The API base URL is http://localhost:3001/api/v1. Swagger is at http://localhost:3001/docs. The health check is GET /api/v1/health.
+The API base URL is http://localhost:3001/api/v1. Swagger is at http://localhost:3001/docs. Health check: GET /api/v1/health.
 
-## Authentication
+## Real CMS login from the dashboard
+
+Set these values in the root Next.js environment, restart Next.js and sign in with the administrator seeded above:
+
+```dotenv
+NEXT_PUBLIC_DEFAULT_AUTH=backend
+NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001/api/v1
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+The template's fake authentication remains the default until explicitly changed.
+
+## Authentication and security
 
 - POST /api/v1/auth/register creates a standard USER and does not accept a client-supplied role.
 - POST /api/v1/auth/login returns a short-lived 15-minute Bearer access token.
-- GET /api/v1/auth/me returns the authenticated user.
-- Protected calls need Authorization: Bearer <accessToken>.
+- GET /api/v1/auth/me returns the current authenticated user.
+- CMS management requests require a Bearer token. The server-side CMS permission guard checks action-level grants; ADMIN bypasses grants.
+- Use HTTPS and private secrets in deployment. Never commit .env files, database credentials or webhook secrets.
+- Public form submissions are throttled and schema-validated. Webhook deliveries use HMAC-SHA256 and restrict destination addresses to public HTTPS hosts.
+- Rich-text and Markdown from authors are rendered as text by the included public renderer. Do not inject raw HTML unless a reviewed allowlist sanitizer is added.
 
-This first slice does not yet include refresh-token rotation, password reset or email verification. Use HTTPS and a private strong JWT_SECRET in deployment. Never commit .env files or live credentials.
+Password reset, email verification and refresh-token rotation are not part of this first backend foundation.
 
-## API resources
+## Existing business API resources
 
 - Dashboard: GET /api/v1/dashboard/summary
-- Categories: GET and POST /api/v1/categories
+- Categories: GET/POST /api/v1/categories
 - Products: GET /api/v1/products, GET /api/v1/products/:id, POST, PATCH /api/v1/products/:id, DELETE /api/v1/products/:id (archives)
 - Customers: GET /api/v1/customers, GET /api/v1/customers/:id, POST, PATCH /api/v1/customers/:id, DELETE /api/v1/customers/:id (archives)
 - Leads: GET, POST, PATCH /api/v1/leads/:id, DELETE /api/v1/leads/:id
@@ -42,40 +58,92 @@ This first slice does not yet include refresh-token rotation, password reset or 
 - Orders: GET, GET /api/v1/orders/:id, POST /api/v1/orders, PATCH /api/v1/orders/:id/status
 - Users: GET /api/v1/users and PATCH /api/v1/users/:id (admin only)
 
-List endpoints support page, limit (up to 100) and search. Responses include data and pagination metadata. Order totals are computed by the server using decimal database values; tax is a fixed monetary amount, not a percentage. Order creation and stock decrement occur in one transaction.
+List endpoints support page/limit (up to 100) and search. Order totals are computed on the server from decimal database values; order creation and stock decrement happen transactionally.
 
-## Current limitations
+## CMS management API
 
-The initial backend is not a claim that all legacy pages are production-ready. Page-by-page UI integration, tests, rate limiting, password reset, refresh-token rotation, detailed audit writes, uploads, notifications, jobs/invoices/chat/mail modules and deployment infrastructure remain to be implemented. Check docs/implementation-progress.md before treating the system as complete.
+Administrative routes below /api/v1/cms require a JWT and the configured action permission.
 
+- Locales: GET/POST /cms/locales, PATCH /cms/locales/:id.
+- Content types and dynamic fields: GET/POST/PATCH /cms/content-types and POST/PATCH /cms/content-types/:id/fields.
+- Content and translations: GET/POST /cms/contents, GET /cms/contents/:id, POST /cms/contents/:id/translations, PATCH /cms/contents/:id/translations/:localeCode, and PATCH /cms/contents/:id/shared-fields.
+- Workflow: submit, publish, reject, schedule, unpublish, archive and restore-to-draft actions under /cms/contents/:id/translations/:localeCode.
+- Revisions: list versions and restore a selected revision.
+- Taxonomies and term translations: /cms/taxonomies, /cms/taxonomies/:id/terms, /cms/taxonomy-terms/:termId/translations, and PUT /cms/contents/:id/terms.
+- Menus: /cms/menus and nested /cms/menus/:id/items.
+- Redirects: /cms/redirects and /cms/redirects/resolve.
+- Forms: /cms/forms and nested submissions.
+- Webhooks: /cms/webhooks and nested delivery history/retry.
+- Media: GET/POST /cms/media, PATCH/DELETE /cms/media/:id.
+- Access policy and audit: /cms/permissions and /cms/audit-logs.
+- Import/export: GET /cms/import-export/export?limit=5000 and POST /cms/import-export/import.
 
-## CMS endpoints
+Public read paths do not require a token and expose only published snapshots:
 
-The branch contains a multilingual CMS core under `/api/v1/cms`. Administrative routes require a valid Bearer token.
+- Content detail/list: /api/v1/public/cms/:typeKey/:localeCode/:slug and /api/v1/public/cms/:typeKey/:localeCode.
+- Localized menus: /api/v1/public/cms/menus/:key/:localeCode.
+- Public form schema/submission: /api/v1/public/cms/forms/:key and POST /api/v1/public/cms/forms/:key/submissions.
+- Redirect resolution: /api/v1/public/cms/redirects/resolve.
+- Sitemap JSON/XML: /api/v1/public/cms/sitemap and /api/v1/public/cms/sitemap.xml.
 
-- Locale metadata: `GET/POST /cms/locales`, `PATCH /cms/locales/:id`.
-- Content types: `GET/POST /cms/content-types`, `PATCH /cms/content-types/:id`.
-- Dynamic fields: `POST /cms/content-types/:id/fields`, `PATCH /cms/content-types/:id/fields/:fieldId`.
-- Content: `GET /cms/contents`, `GET /cms/contents/:id`, `POST /cms/contents`.
-- Translation: `POST /cms/contents/:id/translations`, `PATCH /cms/contents/:id/translations/:localeCode`.
-- Shared fields: `PATCH /cms/contents/:id/shared-fields`.
-- Editorial actions: `POST /cms/contents/:id/translations/:localeCode/submit|publish|reject|schedule|unpublish|archive|restore-to-draft`.
-- Revisions: `GET /cms/contents/:id/translations/:localeCode/revisions` and restore endpoint below the same route.
-- Public delivery returns published snapshots only: `GET /public/cms/:typeKey/:localeCode` and `GET /public/cms/:typeKey/:localeCode/:slug`.
+## Media storage configuration
 
-Dynamic fields are initially backed by JSON and server-side schema validation. Supported types include text/textarea, rich text, Markdown, integer/decimal, boolean, date/datetime, select/multi-select, email, URL and JSON. Media, relation and repeater fields are not yet implemented.
+Default storage is local. In local development the backend stores files under UPLOAD_DIR/media and serves local asset paths under /uploads/media. On serverless or ephemeral filesystems, local uploads may disappear between invocations; mount persistent storage or use S3-compatible storage.
 
-## Connecting the dashboard to real CMS authentication
-
-For a local run, start PostgreSQL and the API as above. In the Next.js environment set:
+To enable S3-compatible storage, configure all required values privately:
 
 ```dotenv
-NEXT_PUBLIC_DEFAULT_AUTH=backend
-NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001/api/v1
+CMS_MEDIA_STORAGE=s3
+S3_BUCKET=your-private-bucket-name
+S3_REGION=us-east-1
+S3_PUBLIC_BASE_URL=https://cdn.example.com
+# Optional for compatible providers such as MinIO:
+S3_ENDPOINT=https://s3.example.com
+S3_FORCE_PATH_STYLE=false
+# Set both credentials together, or omit both when the runtime has an identity/role:
+S3_ACCESS_KEY_ID=
+S3_SECRET_ACCESS_KEY=
 ```
 
-Then restart Next.js, sign in with the administrator created from `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`, and open `/apps-cms/content`. The template's `fake` login remains the default until this variable is explicitly changed.
+S3_PUBLIC_BASE_URL should be the public base that serves the objects saved under the media/ prefix. Do not put production credentials in source control. The local and S3 storage adapters validate generated object keys; CDN/bucket policies and access permissions must still be configured for the chosen deployment.
 
-## CMS boundaries
+## Published website, SEO and transfer limitations
 
-This increment wires the CMS-specific screens to real API endpoints; it does not replace the legacy mock backend of every e-commerce/CRM/task/template screen. Fine-grained permissions, media storage, taxonomies, menus, page-builder blocks, redirects/sitemap/hreflang, rich-text sanitization and durable serverless scheduling remain required before a production launch.
+- Published entries render at /content/:typeKey/:localeCode/:slug with locale direction, SEO metadata and alternate-language links.
+- The seed creates an editable `main` navigation menu for `fa-IR` and `en-US`. Add menu items in the CMS menu editor to display localized navigation on public content pages; the page renderer handles a disabled or missing menu.
+- Set NEXT_PUBLIC_SITE_URL in the frontend environment and PUBLIC_SITE_URL in the backend environment to the canonical public origin. Active redirect rules are also checked by middleware for public GET/HEAD requests; unavailable CMS services fail open and do not block the page. Set NEXT_PUBLIC_SITE_NAME for the public navigation brand. Next.js exposes /sitemap.xml; the backend also has JSON/XML sitemap endpoints.
+- The page builder's first version supports hero, text/Markdown, image, gallery, CTA, FAQ and card-grid blocks; it is not a universal freeform drag/drop builder.
+- JSON import/export is versioned, bounded and returns per-record results. Imports create drafts. Media binaries are not embedded in packages, so referenced media must already be available on the destination.
+- The scheduled publisher and webhook dispatcher use in-process cron workers. Production serverless needs an external durable scheduler/worker.
+- The CMS screens are wired to real backend APIs. The legacy e-commerce/CRM/project/task/demo screens are not all migrated away from Fake Backend.
+- Production DB provisioning, environment secret setup, persistent storage validation, deployed login/content smoke tests, E2E/browser coverage, accessibility QA and backup/restore drills must be performed before a production launch.
+
+See docs/implementation-progress.md and docs/cms-audit.md for the current implementation ledger and verification state.
+
+
+## Security and production launch
+
+See [docs/security-and-deployment.md](../docs/security-and-deployment.md) for the pre-production environment, dependency, migration, storage, security and smoke-test checklist. This branch has not itself provisioned or exercised a production environment.
+
+
+## Production release checks
+
+Before deploying, provision PostgreSQL with backups and TLS, configure a persistent S3-compatible media store for serverless hosting, and set production secrets through the hosting provider rather than committing them. Set CORS_ORIGINS to the exact public frontend origin, PUBLIC_SITE_URL and NEXT_PUBLIC_SITE_URL to the canonical public origin, NEXT_PUBLIC_SITE_NAME for the site brand, and NEXT_PUBLIC_DEFAULT_AUTH=backend.
+
+Apply migrations with npm run prisma:deploy only after a database backup. Run npm run prisma:seed with a dedicated administrator email; the seed refuses to promote an existing non-admin user and does not rotate an existing administrator password. Configure a strong CMS_JOB_TOKEN if scheduled publishing or webhook dispatch uses serverless hosting.
+
+For serverless deployments, configure an external scheduler to POST /api/v1/internal/cms/jobs/publish-scheduled and /api/v1/internal/cms/jobs/dispatch-webhooks every minute, using Authorization: Bearer <CMS_JOB_TOKEN> stored only in the scheduler's secrets.
+
+The CMS-specific pages are wired to the real API. The legacy e-commerce, CRM, project/task and demo screens are not all migrated from Fake Backend. Before calling the product production-ready, run the release smoke tests in docs/production-readiness.md and verify role permissions, public publishing, storage persistence, redirects, form throttling, webhook signatures, accessibility, and backup/restore.
+
+
+## Serverless scheduled CMS jobs
+
+The NestJS module has in-process minute workers for always-on Node.js deployments. For serverless deployments, use the checked-in GitHub Actions workflow `.github/workflows/cms-jobs.yml` as an external scheduler:
+
+1. In **Repository Settings → Secrets and variables → Actions**, add `CMS_API_BASE_URL` as the public HTTPS API base ending in `/api/v1` and `CMS_JOB_TOKEN` as the same randomly generated secret configured on the backend. Use at least 32 random characters.
+2. The backend must have `CMS_JOB_TOKEN` configured privately. Never store the token in source code or ordinary repository variables.
+3. Run the workflow once with **Actions → CMS Scheduled Jobs → Run workflow** to validate the deployment.
+4. The schedule invokes publication and webhook dispatch endpoints every five minutes. GitHub's scheduler can be delayed; do not use this workflow for deadlines requiring exact-second publication.
+
+The endpoints are authenticated with a constant-time bearer token comparison and return service-unavailable when the backend token is not configured.

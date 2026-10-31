@@ -5,7 +5,10 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Alert, Badge, Button, Card, CardBody, CardHeader, Col, Container, Form, Input, Label, Row, Spinner } from "reactstrap";
 import { useTranslation } from "react-i18next";
-import { cmsApi, CmsContent, CmsField, CmsLocale, CmsStatus, CmsTranslation } from "@/helpers/cmsApi";
+import { cmsApi, CmsContent, CmsField, CmsLocale, CmsMediaAsset, CmsStatus, CmsTranslation, CmsTaxonomy, CmsTaxonomyTerm } from "@/helpers/cmsApi";
+import PageBuilderField from "@/components/Cms/PageBuilderField";
+import RelationField from "@/components/Cms/RelationField";
+import RepeaterField from "@/components/Cms/RepeaterField";
 
 function messageFrom(error: unknown): string {
   const value = error as { response?: { data?: { message?: string | string[] } }; message?: string };
@@ -13,7 +16,13 @@ function messageFrom(error: unknown): string {
   return Array.isArray(message) ? message.join(", ") : message ?? "Unable to complete the request.";
 }
 function inputValue(field: CmsField, value: unknown): unknown {
-  if (value === undefined || value === null) return field.type === "BOOLEAN" ? false : field.type === "MULTISELECT" ? [] : "";
+  if (field.type === "REPEATER" || field.type === "RELATION_MULTIPLE") return Array.isArray(value) ? value : [];
+  if (field.key === "blocks") {
+    if (Array.isArray(value)) return value;
+    if (typeof value === "string") { try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
+    return [];
+  }
+  if (value === undefined || value === null) return field.type === "BOOLEAN" ? false : field.type === "MULTISELECT" || field.type === "MEDIA_MULTIPLE" ? [] : "";
   if (field.type === "JSON" && typeof value !== "string") return JSON.stringify(value, null, 2);
   return value;
 }
@@ -23,7 +32,8 @@ function prepareValue(field: CmsField, value: unknown): unknown {
   if (field.type === "JSON" && typeof value === "string" && value.trim()) return JSON.parse(value);
   return value;
 }
-function inputType(field: CmsField): string {
+type CmsInputType = "number" | "date" | "datetime-local" | "email" | "url" | "text";
+function inputType(field: CmsField): CmsInputType {
   if (field.type === "INTEGER" || field.type === "DECIMAL") return "number";
   if (field.type === "DATE") return "date";
   if (field.type === "DATETIME") return "datetime-local";
@@ -48,6 +58,10 @@ export default function CmsContentEditorPage() {
   const [seoDescription, setSeoDescription] = useState("");
   const [localizedValues, setLocalizedValues] = useState<Record<string, unknown>>({});
   const [sharedValues, setSharedValues] = useState<Record<string, unknown>>({});
+  const [mediaAssets, setMediaAssets] = useState<CmsMediaAsset[]>([]);
+  const [taxonomies, setTaxonomies] = useState<CmsTaxonomy[]>([]);
+  const [taxonomyTerms, setTaxonomyTerms] = useState<CmsTaxonomyTerm[]>([]);
+  const [selectedTermIds, setSelectedTermIds] = useState<string[]>([]);
   const [revisions, setRevisions] = useState<NonNullable<CmsTranslation["revisions"]>>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,7 +72,7 @@ export default function CmsContentEditorPage() {
   const localesByCode = useMemo(() => new Map(locales.map(locale => [locale.code, locale])), [locales]);
   const selectedTranslation = useMemo(() => content?.translations.find(translation => translation.locale?.code === localeCode) ?? null, [content, localeCode]);
   const isNewTranslation = Boolean(content && localeCode && !selectedTranslation);
-  const fields = content?.contentType && "fields" in content.contentType ? (content.contentType as CmsContent["contentType"] & { fields?: CmsField[] }).fields ?? [] : [];
+  const fields = content?.contentType.fields ?? [];
   const localizedDefinitions = useMemo(() => fields.filter(field => field.isLocalized && field.isActive !== false), [fields]);
   const sharedDefinitions = useMemo(() => fields.filter(field => !field.isLocalized && field.isActive !== false), [fields]);
 
@@ -67,9 +81,15 @@ export default function CmsContentEditorPage() {
     setLoading(true);
     setError("");
     try {
-      const [nextContent, nextLocales] = await Promise.all([cmsApi.content(contentId), cmsApi.locales(true)]);
+      const [nextContent, nextLocales, mediaPage, nextTaxonomies] = await Promise.all([cmsApi.content(contentId), cmsApi.locales(true), cmsApi.media({page:1,limit:100}), cmsApi.taxonomies().catch(() => [] as CmsTaxonomy[])]);
+      const termGroups = await Promise.all(nextTaxonomies.map(async taxonomy => ({ taxonomyId: taxonomy.id, terms: await cmsApi.taxonomyTerms(taxonomy.id).catch(() => [] as CmsTaxonomyTerm[]) })));
+      const allTerms = termGroups.flatMap(group => group.terms);
       setContent(nextContent);
       setLocales(nextLocales.filter(locale => locale.isActive));
+      setMediaAssets(mediaPage.data);
+      setTaxonomies(nextTaxonomies);
+      setTaxonomyTerms(allTerms);
+      setSelectedTermIds((nextContent.taxonomyTerms ?? []).map(item => item.termId));
       setLocaleCode(current => current || searchParams.get("localeCode") || nextContent.translations[0]?.locale?.code || nextLocales.find(locale => locale.isDefault && locale.isActive)?.code || "");
     } catch (cause) {
       setError(messageFrom(cause));
@@ -111,6 +131,12 @@ export default function CmsContentEditorPage() {
 
   const renderField = (field: CmsField, values: Record<string, unknown>) => {
     const value = values[field.key];
+    if (field.type === "RELATION" || field.type === "RELATION_MULTIPLE") {
+      return <Col md={12} key={field.key}><div className="mb-3"><small className="text-muted d-block mb-1">{field.isLocalized ? t("Translated field") : t("Shared field")}</small><RelationField field={field} value={value} localeCode={localeCode} onChange={next => setDynamicValue(field, next)} /></div></Col>;
+    }
+    if (field.type === "REPEATER") {
+      return <Col md={12} key={field.key}><div className="mb-3"><RepeaterField field={field} value={value} onChange={next => setDynamicValue(field, next)} /></div></Col>;
+    }
     const options = Array.isArray(field.config?.options) ? field.config.options as Array<string | { value: string; label?: string }> : [];
     const choices = options.map(option => typeof option === "string" ? { value: option, label: option } : { value: option.value, label: option.label ?? option.value });
     return <Col md={field.type === "TEXTAREA" || field.type === "RICH_TEXT" || field.type === "MARKDOWN" || field.type === "JSON" ? 12 : 6} key={field.key}>
@@ -118,8 +144,11 @@ export default function CmsContentEditorPage() {
         <Label for={`field-${field.key}`}>{field.label}{field.isRequired ? <span className="text-danger ms-1">*</span> : null}</Label>
         {field.type === "BOOLEAN" ? <div className="form-check form-switch mt-2"><Input className="form-check-input" type="switch" id={`field-${field.key}`} checked={Boolean(value)} onChange={event => setDynamicValue(field, event.target.checked)} /><Label className="form-check-label" for={`field-${field.key}`}>{t("Enabled")}</Label></div>
           : field.type === "SELECT" ? <Input id={`field-${field.key}`} type="select" value={String(value ?? "")} onChange={event => setDynamicValue(field, event.target.value)}><option value="">{t("Select an option")}</option>{choices.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Input>
-          : field.type === "MULTISELECT" ? <Input id={`field-${field.key}`} type="select" multiple value={Array.isArray(value) ? value.map(String) : []} onChange={event => setDynamicValue(field, Array.from(event.target.selectedOptions).map(option => option.value))}>{choices.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Input>
-          : field.type === "TEXTAREA" || field.type === "RICH_TEXT" || field.type === "MARKDOWN" || field.type === "JSON" ? <Input id={`field-${field.key}`} type="textarea" rows={field.type === "JSON" ? 5 : 4} value={typeof value === "string" ? value : value == null ? "" : JSON.stringify(value, null, 2)} onChange={event => setDynamicValue(field, event.target.value)} placeholder={field.type === "JSON" ? '{"key":"value"}' : field.type === "MARKDOWN" ? "## Heading" : field.type === "RICH_TEXT" ? t("Rich text or HTML content; sanitize before public rendering") : ""} />
+          : field.type === "MULTISELECT" ? <Input id={`field-${field.key}`} type="select" multiple value={Array.isArray(value) ? value.map(String) : []} onChange={event => setDynamicValue(field, Array.from((event.currentTarget as unknown as HTMLSelectElement).selectedOptions).map(option => option.value))}>{choices.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Input>
+          : field.type === "MEDIA" ? <Input id={`field-${field.key}`} type="select" value={String(value ?? "")} onChange={event => setDynamicValue(field, event.target.value)}><option value="">{t("Choose media")}</option>{mediaAssets.map(asset => <option key={asset.id} value={asset.id}>{asset.originalName} · {asset.kind}</option>)}</Input>
+          : field.type === "MEDIA_MULTIPLE" ? <Input id={`field-${field.key}`} type="select" multiple value={Array.isArray(value) ? value.map(String) : []} onChange={event => setDynamicValue(field, Array.from((event.currentTarget as unknown as HTMLSelectElement).selectedOptions).map(option => option.value))}>{mediaAssets.map(asset => <option key={asset.id} value={asset.id}>{asset.originalName} · {asset.kind}</option>)}</Input>
+          : field.key === "blocks" && field.type === "JSON" ? <PageBuilderField value={value} onChange={next => setDynamicValue(field,next)} mediaAssets={mediaAssets} />
+          : field.type === "TEXTAREA" || field.type === "RICH_TEXT" || field.type === "MARKDOWN" || field.type === "JSON" ? <Input id={`field-${field.key}`} type="textarea" rows={field.type === "JSON" ? 5 : 4} value={typeof value === "string" ? value : value == null ? "" : JSON.stringify(value, null, 2)} onChange={event => setDynamicValue(field, event.target.value)} placeholder={field.type === "JSON" ? '{"key":"value"}' : field.type === "MARKDOWN" ? "## Heading" : field.type === "RICH_TEXT" ? t("Markdown or plain text; HTML tags are displayed as text for safety") : ""} />
           : <Input id={`field-${field.key}`} type={inputType(field)} value={value == null ? "" : String(value)} step={field.type === "DECIMAL" ? "any" : field.type === "INTEGER" ? "1" : undefined} onChange={event => setDynamicValue(field, event.target.value)} />}
       </div>
     </Col>;
@@ -133,7 +162,13 @@ export default function CmsContentEditorPage() {
       const localizedFields: Record<string, unknown> = {};
       for (const field of localizedDefinitions) {
         const value = localizedValues[field.key];
-        if (value === "" && !field.isRequired) continue;
+        if (value === "" && !field.isRequired) {
+          // New translations may omit optional empty fields. In an existing translation,
+          // send null so users can actually clear a previously stored value.
+          if (isNewTranslation) continue;
+          localizedFields[field.key] = null;
+          continue;
+        }
         if (field.isRequired && (value === "" || value === null || value === undefined || (Array.isArray(value) && value.length === 0))) {
           throw new Error(`${field.label}: ${t("Required field is missing")}`);
         }
@@ -148,7 +183,11 @@ export default function CmsContentEditorPage() {
         const sharedFields: Record<string, unknown> = {};
         for (const field of sharedDefinitions) {
           const value = sharedValues[field.key];
-          if (value === "" && !field.isRequired) continue;
+          if (value === "" && !field.isRequired) {
+            // An empty optional value represents clearing a field on an existing content record.
+            sharedFields[field.key] = null;
+            continue;
+          }
           if (field.isRequired && (value === "" || value === null || value === undefined || (Array.isArray(value) && value.length === 0))) {
             throw new Error(`${field.label}: ${t("Required field is missing")}`);
           }
@@ -156,6 +195,7 @@ export default function CmsContentEditorPage() {
         }
         if (Object.keys(sharedFields).length) await cmsApi.updateSharedFields(content.id, sharedFields);
       }
+      if (taxonomies.length > 0) await cmsApi.assignContentTerms(content.id, selectedTermIds);
       setNotice(t("Changes saved"));
       const updated = await cmsApi.content(content.id);
       setContent(updated);
@@ -204,7 +244,7 @@ export default function CmsContentEditorPage() {
   const workflowActions: Array<{ action: "submit" | "publish" | "reject" | "schedule" | "unpublish" | "archive" | "restore-to-draft"; label: string; color: string }> = selectedTranslation ? (
     selectedTranslation.status === "DRAFT" ? [{ action: "submit", label: "Submit for review", color: "info" }, ...(selectedTranslation.publishedSlug ? [{ action: "unpublish" as const, label: "Unpublish live copy", color: "warning" }] : []), { action: "archive", label: "Archive", color: "danger" }] :
     selectedTranslation.status === "IN_REVIEW" ? [{ action: "publish", label: "Publish", color: "success" }, { action: "schedule", label: "Schedule publication", color: "primary" }, { action: "reject", label: "Reject", color: "warning" }, { action: "archive", label: "Archive", color: "danger" }] :
-    selectedTranslation.status === "SCHEDULED" ? [{ action: "unpublish", label: "Cancel scheduled/live publication", color: "warning" }] :
+    selectedTranslation.status === "SCHEDULED" ? [{ action: "publish", label: "Publish now", color: "success" }, { action: "unpublish", label: "Cancel schedule", color: "warning" }] :
     selectedTranslation.status === "PUBLISHED" ? [{ action: "unpublish", label: "Unpublish", color: "warning" }, { action: "archive", label: "Archive", color: "danger" }] :
     [{ action: "restore-to-draft", label: "Restore to draft", color: "secondary" }]
   ) : [];
@@ -213,7 +253,7 @@ export default function CmsContentEditorPage() {
     <Container fluid>
       <Row className="align-items-center mb-4">
         <Col><h4 className="mb-1">{isNewTranslation ? t("Add translation") : t("Edit content")}</h4><p className="text-muted mb-0">{content?.contentType.name ?? t("Content")}</p></Col>
-        <Col xs="auto" className="d-flex gap-2"><Link className="btn btn-light" href="/apps-cms/content">{t("Back to content")}</Link><Button color="light" onClick={() => void reload()} disabled={loading}><i className="ri-refresh-line me-1" />{t("Refresh")}</Button></Col>
+        <Col xs="auto" className="d-flex gap-2">{selectedTranslation && <Link className="btn btn-soft-info" href={`/apps-cms/content/${contentId}/preview?localeCode=${encodeURIComponent(localeCode)}`}><i className="ri-eye-line me-1" />{t("Preview")}</Link>}{selectedTranslation?.publishedSlug && <Link className="btn btn-success" target="_blank" rel="noreferrer" href={`/content/${content?.contentType.key}/${encodeURIComponent(localeCode)}/${encodeURIComponent(selectedTranslation.publishedSlug)}`}>{t("View published page")}</Link>}<Link className="btn btn-light" href="/apps-cms/content">{t("Back to content")}</Link><Button color="light" onClick={() => void reload()} disabled={loading}><i className="ri-refresh-line me-1" />{t("Refresh")}</Button></Col>
       </Row>
       {error && <Alert color="danger" toggle={() => setError("")}>{error}</Alert>}
       {notice && <Alert color="success" toggle={() => setNotice("")}>{notice}</Alert>}
@@ -249,6 +289,12 @@ export default function CmsContentEditorPage() {
                 {isNewTranslation ? <Alert color="info">{t("Save this language version first. Then submit it for review or schedule publication.")}</Alert> : <div className="d-grid gap-2">{workflowActions.map(item => <Button key={item.action} type="button" color={item.color} outline={item.action === "reject" || item.action === "unpublish" || item.action === "archive"} disabled={Boolean(busyAction)} onClick={() => void workflow(item.action)}>{busyAction === item.action ? <Spinner size="sm" className="me-2" /> : null}{t(item.label)}</Button>)}</div>}
                 <hr /><div className="small text-muted">{t("Language direction")}: {selectedLocale?.direction ?? t("Unknown")} · {t("Translation state is managed independently for each language.")}</div>
               </CardBody></Card>
+              {taxonomies.length > 0 && <Card><CardHeader><h5 className="card-title mb-0">{t("Taxonomies")}</h5><small className="text-muted">{t("Assignments apply to all language versions of this content.")}</small></CardHeader><CardBody>
+                {taxonomies.map(taxonomy => <div key={taxonomy.id} className="mb-3"><div className="fw-medium mb-2">{taxonomy.name}</div>
+                  {(taxonomyTerms.filter(term => term.taxonomyId === taxonomy.id && term.isActive)).map(term => <div className="form-check" key={term.id}><Input type="checkbox" id={`taxonomy-term-${term.id}`} checked={selectedTermIds.includes(term.id)} onChange={event => setSelectedTermIds(current => event.target.checked ? [...new Set([...current,term.id])] : current.filter(id => id !== term.id))}/><Label check for={`taxonomy-term-${term.id}`}>{term.name}<small className="text-muted ms-2">{term.slug}</small></Label></div>)}
+                  {!taxonomyTerms.some(term => term.taxonomyId === taxonomy.id && term.isActive) && <small className="text-muted">{t("No active terms")}</small>}
+                </div>)}
+              </CardBody></Card>}
               <Card><CardHeader><h5 className="card-title mb-0">{t("Version history")}</h5></CardHeader><CardBody>
                 {!selectedTranslation ? <div className="text-muted small">{t("Save the translation to create revision history.")}</div> :
                   revisions.length === 0 ? <div className="text-muted small">{t("No revisions found")}</div> :
