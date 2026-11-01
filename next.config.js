@@ -7,6 +7,11 @@ const silenceDeprecations = [
   "legacy-js-api",
 ];
 
+const backendApiBaseUrl = (
+  process.env.NEXT_PUBLIC_BACKEND_API_URL?.trim() ||
+  "http://localhost:3001/api/v1"
+).replace(/\\/+$/, "");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -20,10 +25,20 @@ const nextConfig = {
     defaultLocale: "fa",
     localeDetection: false,
   },
+  // Keep browser API requests same-origin. This avoids CORS/preflight differences
+  // between localhost, LAN hostnames and production frontend/backend domains.
+  async rewrites() {
+    return [
+      {
+        source: "/backend-api/:path*",
+        destination: `${backendApiBaseUrl}/:path*`,
+      },
+    ];
+  },
   webpack: config => {
     // Handle asset files like fonts and images
     config.module.rules.push({
-      test: /\.(png|jpg|gif|svg|eot|ttf|woff|woff2)$/,
+      test: /\\.(png|jpg|gif|svg|eot|ttf|woff|woff2)$/,
       type: "asset",
     });
 
