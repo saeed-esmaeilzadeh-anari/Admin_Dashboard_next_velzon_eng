@@ -3,7 +3,7 @@ import axios from "axios";
 const configuredBackendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL?.trim();
 const backendBaseUrl = (
   configuredBackendUrl || "http://localhost:3001/api/v1"
-).replace(/\\/+$/, "");
+).replace(/\/+$/, "");
 
 const backendApi = axios.create({
   baseURL: backendBaseUrl,
