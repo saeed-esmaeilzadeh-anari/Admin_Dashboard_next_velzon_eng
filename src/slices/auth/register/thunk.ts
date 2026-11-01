@@ -23,9 +23,13 @@ const getRegistrationError = (error: any): string => {
 
 export const registerUser = (user: any) => async (dispatch: any) => {
   try {
-    const defaultAuth =
+    const defaultAuth = (
       process.env.NEXT_PUBLIC_DEFAULT_AUTH ||
-      process.env.NEXT_PUBLIC_DEFAULTAUTH;
+      process.env.NEXT_PUBLIC_DEFAULTAUTH ||
+      "backend"
+    )
+      .trim()
+      .toLowerCase();
 
     let data: any;
 
@@ -41,7 +45,7 @@ export const registerUser = (user: any) => async (dispatch: any) => {
         password: user.password,
       });
       data = response.data;
-    } else if (defaultAuth === "fake" || process.env.REACT_APP_API_URL) {
+    } else if (defaultAuth === "fake") {
       data = await postFakeRegister(user);
       if (data?.message !== "success") {
         dispatch(registerUserFailed(getRegistrationError(data)));
@@ -49,7 +53,7 @@ export const registerUser = (user: any) => async (dispatch: any) => {
       }
     } else {
       throw new Error(
-        "Authentication provider is not configured. Set NEXT_PUBLIC_DEFAULT_AUTH."
+        `Unsupported authentication provider "${defaultAuth}". Use backend, firebase, jwt or fake.`
       );
     }
 
