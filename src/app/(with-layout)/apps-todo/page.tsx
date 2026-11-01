@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Col,
   Container,
@@ -16,7 +16,7 @@ import {
 import SimpleBar from "simplebar-react";
 import Flatpickr from "react-flatpickr";
 import moment from "moment";
-import Dragula from "react-dragula";
+
 import { ToastContainer } from "react-toastify";
 import Link from "next/link";
 import DeleteModal from "@common/DeleteModal";
@@ -399,13 +399,35 @@ const ToDoList = () => {
   ];
 
   const [droplist, setDroplist] = useState<boolean>(false);
+  const taskListRef = useRef<HTMLTableSectionElement | null>(null);
 
-  const dragulaDecorator = (componentBackingInstance: any) => {
-    if (componentBackingInstance) {
-      let options = {};
-      Dragula([componentBackingInstance], options);
-    }
-  };
+  // Dragula touches browser globals during module initialization, so it must
+  // be imported only after this client component has mounted.
+  useEffect(() => {
+    let isActive = true;
+    let destroyDragula: (() => void) | undefined;
+
+    const initializeDragula = async () => {
+      try {
+        const { default: createDragula } = await import("react-dragula");
+        const container = taskListRef.current;
+
+        if (!isActive || !container) return;
+
+        const drake = createDragula([container], {});
+        destroyDragula = () => drake.destroy();
+      } catch (error) {
+        console.error("Unable to initialize Todo drag-and-drop:", error);
+      }
+    };
+
+    void initializeDragula();
+
+    return () => {
+      isActive = false;
+      destroyDragula?.();
+    };
+  }, []);
 
   const [imgStore, setImgStore] = useState<any>();
 
@@ -607,7 +629,7 @@ const ToDoList = () => {
                         </tr>
                       </thead>
 
-                      <tbody id="task-list" ref={dragulaDecorator}>
+                      <tbody id="task-list" ref={taskListRef}>
                         {(taskList || []).map((item: any, key: any) => (
                           <tr key={key}>
                             <td>
