@@ -23,8 +23,8 @@ const getBackendLoginUrl = () => {
   const baseUrl = (
     process.env.NEXT_PUBLIC_BACKEND_API_URL?.trim() ||
     "http://localhost:3001/api/v1"
-  ).replace(/\\/+$/, "");
-  return `${baseUrl}/auth/login`;
+  ).replace(/\/+$/, "");
+  return baseUrl + "/auth/login";
 };
 
 const getLoginError = (error: any) => {
@@ -39,20 +39,22 @@ const getLoginError = (error: any) => {
         ? responseMessage
         : "No response body";
 
-    if (/^Cannot (GET|POST|PUT|PATCH|DELETE)\\s/i.test(details)) {
+    if (details.startsWith("Cannot ")) {
       return new Error(
-        `NestJS route returned 404 for POST ${backendUrl}. Server response: ${details}`
+        "NestJS returned 404 for POST " + backendUrl + ". Server response: " + details
       );
     }
 
     return new Error(
-      `The backend proxy returned HTTP 404 for POST ${backendUrl}. Response: ${details}`
+      "The same-origin backend proxy returned HTTP 404 for POST " + backendUrl + ". Response: " + details
     );
   }
 
   if (!error?.response) {
     return new Error(
-      `Cannot reach the backend API at ${backendUrl}. Check that the NestJS server is running and that NEXT_PUBLIC_BACKEND_API_URL is correct. ${error?.message || ""}`.trim()
+      "Cannot reach the backend API at " + backendUrl +
+      ". Check that the NestJS server is running and NEXT_PUBLIC_BACKEND_API_URL is correct. " +
+      (error?.message || "")
     );
   }
 
