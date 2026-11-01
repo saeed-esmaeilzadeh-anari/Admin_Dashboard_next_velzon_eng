@@ -19,20 +19,46 @@ const getAuthProvider = () => {
   return configured.trim().toLowerCase() || "backend";
 };
 
-const getLoginError = (error: any) => {
-  if (error?.response?.status !== 404) return error;
-
-  const baseURL = String(
-    error?.config?.baseURL ||
-      process.env.NEXT_PUBLIC_BACKEND_API_URL ||
-      "http://localhost:3001/api/v1"
+const getBackendLoginUrl = () => {
+  const baseUrl = (
+    process.env.NEXT_PUBLIC_BACKEND_API_URL?.trim() ||
+    "http://localhost:3001/api/v1"
   ).replace(/\/+$/, "");
-  const path = String(error?.config?.url || "/auth/login").replace(/^\/+/, "");
-  const method = String(error?.config?.method || "post").toUpperCase();
+  return baseUrl + "/auth/login";
+};
 
-  return new Error(
-    `Authentication API endpoint not found: ${method} ${baseURL}/${path}. Check NEXT_PUBLIC_BACKEND_API_URL and make sure the NestJS backend is running.`
-  );
+const getLoginError = (error: any) => {
+  const status = error?.response?.status;
+  const responseMessage = error?.response?.data?.message;
+  const backendUrl = getBackendLoginUrl();
+
+  if (status === 404) {
+    const details = Array.isArray(responseMessage)
+      ? responseMessage.join(", ")
+      : typeof responseMessage === "string"
+        ? responseMessage
+        : "No response body";
+
+    if (details.startsWith("Cannot ")) {
+      return new Error(
+        "NestJS returned 404 for POST " + backendUrl + ". Server response: " + details
+      );
+    }
+
+    return new Error(
+      "The same-origin backend proxy returned HTTP 404 for POST " + backendUrl + ". Response: " + details
+    );
+  }
+
+  if (!error?.response) {
+    return new Error(
+      "Cannot reach the backend API at " + backendUrl +
+      ". Check that the NestJS server is running and NEXT_PUBLIC_BACKEND_API_URL is correct. " +
+      (error?.message || "")
+    );
+  }
+
+  return error;
 };
 
 export const loginUser = (user: any, router: any) => async (dispatch: any) => {
