@@ -1,12 +1,9 @@
 import axios from "axios";
 
-const configuredBackendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL?.trim();
-const backendBaseUrl = (
-  configuredBackendUrl || "http://localhost:3001/api/v1"
-).replace(/\/+$/, "");
-
+// The browser talks to Next.js on the current origin. next.config.js forwards
+// /backend-api/* to NEXT_PUBLIC_BACKEND_API_URL, avoiding browser CORS preflights.
 const backendApi = axios.create({
-  baseURL: backendBaseUrl,
+  baseURL: "/backend-api",
   timeout: 15000,
   headers: { "Content-Type": "application/json" },
 });
@@ -28,7 +25,6 @@ backendApi.interceptors.request.use((request) => {
 });
 
 export default backendApi;
-
 
 let isRedirectingForExpiredSession = false;
 
