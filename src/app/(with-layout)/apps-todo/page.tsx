@@ -117,8 +117,10 @@ interface ImgData {
 }
 
 const ToDoList = () => {
-  document.title =
-    "To Do Lists | Velzon - Next.js TypeScript Admin & Dashboard Template";
+  useEffect(() => {
+    document.title =
+      "To Do Lists | Velzon - Next.js TypeScript Admin & Dashboard Template";
+  }, []);
 
   const dispatch: any = useDispatch();
 
