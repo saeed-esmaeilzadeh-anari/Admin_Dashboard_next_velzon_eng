@@ -68,3 +68,57 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: API runtime and authentication smoke test
+        env:
+          PORT: 3101
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start > /tmp/velzon-backend.log 2>&1 &
+          server_pid=$!
+          cleanup() {
+            pkill -P "$server_pid" 2>/dev/null || true
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for attempt in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:3101/api/v1/health -o /tmp/velzon-health.json; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat /tmp/velzon-backend.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            cat /tmp/velzon-backend.log
+            echo "Backend API did not become healthy"
+            exit 1
+          fi
+
+          request_body="$(jq -n --arg email "$ADMIN_EMAIL" --arg password "$ADMIN_PASSWORD" '{email: $email, password: $password}')"
+          status="$(curl --silent --show-error -o /tmp/velzon-login.json -w '%{http_code}' \
+            -X POST http://127.0.0.1:3101/api/v1/auth/login \
+            -H 'Content-Type: application/json' \
+            --data "$request_body")"
+
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            cat /tmp/velzon-login.json
+            cat /tmp/velzon-backend.log
+            echo "Login endpoint returned HTTP $status"
+            exit 1
+          fi
+
+          access_token="$(jq -er '.accessToken' /tmp/velzon-login.json)"
+          curl --fail --silent --show-error \
+            http://127.0.0.1:3101/api/v1/auth/me \
+            -H "Authorization: Bearer $access_token" \
+            | jq -e --arg email "$ADMIN_EMAIL" '.email == $email' >/dev/null
+
+          echo "Backend health, POST /api/v1/auth/login and authenticated GET /api/v1/auth/me passed."
