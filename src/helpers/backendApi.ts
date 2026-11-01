@@ -1,7 +1,12 @@
 import axios from "axios";
 
+const configuredBackendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL?.trim();
+const backendBaseUrl = (
+  configuredBackendUrl || "http://localhost:3001/api/v1"
+).replace(/\\/+$/, "");
+
 const backendApi = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_API_URL ?? "http://localhost:3001/api/v1",
+  baseURL: backendBaseUrl,
   timeout: 15000,
   headers: { "Content-Type": "application/json" },
 });
