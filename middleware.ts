@@ -17,7 +17,7 @@ function matchesPath(pathname: string, route: string): boolean {
 function safeRedirectTarget(destination: unknown, request: NextRequest): URL | null {
   if (typeof destination !== "string" || !destination.trim()) return null;
   const value = destination.trim();
-  if (value.startsWith("/") && !value.startsWith("//") && !/[\\\\\\r\\n]/.test(value)) {
+  if (value.startsWith("/") && !value.startsWith("//") && !/[\\\\\r\n]/.test(value)) {
     try { return new URL(value, request.url); } catch { return null; }
   }
   try {
@@ -45,7 +45,7 @@ function requestedLocale(request: NextRequest): string | undefined {
 async function resolveCmsRedirect(request: NextRequest): Promise<NextResponse | null> {
   if (request.method !== "GET" && request.method !== "HEAD") return null;
 
-  const backendBase = (process.env.NEXT_PUBLIC_BACKEND_API_URL ?? "http://localhost:3001/api/v1").replace(/\\/$/, "");
+  const backendBase = (process.env.NEXT_PUBLIC_BACKEND_API_URL ?? "http://localhost:3001/api/v1").replace(/\/$/, "");
   let resolverUrl: URL;
   try {
     resolverUrl = new URL(backendBase + "/public/cms/redirects/resolve");
