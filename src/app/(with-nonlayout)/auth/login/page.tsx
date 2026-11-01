@@ -31,6 +31,12 @@ import Image from "next/image";
 const Login = () => {
   const dispatch: any = useDispatch();
   const router = useRouter();
+  const authProvider = (
+    process.env.NEXT_PUBLIC_DEFAULT_AUTH ||
+    process.env.NEXT_PUBLIC_DEFAULTAUTH ||
+    "backend"
+  ).trim().toLowerCase() || "backend";
+  const isFirebaseAuth = authProvider === "firebase";
 
   const selectLayoutState = (state: any) => state;
   const loginpageData = createSelector(selectLayoutState, state => ({
@@ -47,15 +53,11 @@ const Login = () => {
 
   useEffect(() => {
     if (user && user) {
-      const updatedUserData =
-        process.env.NEXT_PUBLIC_DEFAULTAUTH === "firebase"
-          ? user.multiFactor.user.email
-          : user.email;
+      const updatedUserData = isFirebaseAuth
+        ? user.multiFactor?.user?.email ?? user.email
+        : user.email;
 
-      const updatedUserPassword =
-        process.env.NEXT_PUBLIC_DEFAULTAUTH === "firebase"
-          ? ""
-          : user.confirm_password;
+      const updatedUserPassword = isFirebaseAuth ? "" : user.confirm_password;
       setUserLogin({
         email: updatedUserData,
         password: updatedUserPassword,
@@ -236,39 +238,35 @@ const Login = () => {
                           </Button>
                         </div>
 
-                        <div className="mt-4 text-center">
-                          <div className="signin-other-title">
-                            <h5 className="fs-13 mb-4 title">Sign In with</h5>
+                        {isFirebaseAuth && (
+                          <div className="mt-4 text-center">
+                            <div className="signin-other-title">
+                              <h5 className="fs-13 mb-4 title">Sign In with</h5>
+                            </div>
+                            <div>
+                              <Link
+                                href="#"
+                                className="btn btn-primary btn-icon me-1"
+                                onClick={e => {
+                                  e.preventDefault();
+                                  socialResponse("facebook");
+                                }}
+                              >
+                                <i className="ri-facebook-fill fs-16" />
+                              </Link>
+                              <Link
+                                href="#"
+                                className="btn btn-danger btn-icon me-1"
+                                onClick={e => {
+                                  e.preventDefault();
+                                  socialResponse("google");
+                                }}
+                              >
+                                <i className="ri-google-fill fs-16" />
+                              </Link>
+                            </div>
                           </div>
-                          <div>
-                            <Link
-                              href="#"
-                              className="btn btn-primary btn-icon me-1"
-                              onClick={e => {
-                                e.preventDefault();
-                                socialResponse("facebook");
-                              }}
-                            >
-                              <i className="ri-facebook-fill fs-16" />
-                            </Link>
-                            <Link
-                              href="#"
-                              className="btn btn-danger btn-icon me-1"
-                              onClick={e => {
-                                e.preventDefault();
-                                socialResponse("google");
-                              }}
-                            >
-                              <i className="ri-google-fill fs-16" />
-                            </Link>
-                            <Button color="dark" className="btn-icon">
-                              <i className="ri-github-fill fs-16"></i>
-                            </Button>{" "}
-                            <Button color="info" className="btn-icon">
-                              <i className="ri-twitter-fill fs-16"></i>
-                            </Button>
-                          </div>
-                        </div>
+                        )}
                       </Form>
                     </div>
                   </CardBody>
