@@ -1,5 +1,18 @@
+"use client";
+
 import React from "react";
-import ReactApexChart from "react-apexcharts";
+import dynamic from "next/dynamic";
+
+// ApexCharts reads window/document during module initialization.
+// Load it only in the browser to keep Next.js server rendering safe.
+const ReactApexChart = dynamic(() => import("react-apexcharts"), {
+  ssr: false,
+  loading: () => (
+    <div className="d-flex align-items-center justify-content-center" style={{ minHeight: 180 }}>
+      <span className="text-muted">Loading chart...</span>
+    </div>
+  ),
+});
 const user = "/images/small/img-4.jpg";
 
 import getChartColorsArray from "@common/ChartsDynamicColor";

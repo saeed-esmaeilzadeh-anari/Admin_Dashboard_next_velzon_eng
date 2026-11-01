@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardBody, CardHeader, Col, Container, Row } from "reactstrap";
 import BreadCrumb from "@common/BreadCrumb";
 import {
@@ -16,8 +16,11 @@ import {
 } from "./BarCharts";
 
 const BarCharts = () => {
-  document.title =
-    "Apex Bar Charts | Velzon - Next.js TypeScript Admin & Dashboard Template";
+  useEffect(() => {
+    document.title =
+      "Apex Bar Charts | Velzon - Next.js TypeScript Admin & Dashboard Template";
+  }, []);
+
   return (
     <React.Fragment>
       <div className="page-content">
