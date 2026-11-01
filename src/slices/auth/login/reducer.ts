@@ -1,11 +1,22 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+const getErrorMessage = (payload: any): string => {
+  const message =
+    payload?.response?.data?.message ??
+    payload?.data?.message ??
+    payload?.message;
+  if (Array.isArray(message)) return message.join(", ");
+  return typeof message === "string" && message.trim()
+    ? message
+    : "Unable to sign in. Please check your email and password.";
+};
+
 export const initialState = {
   user: {},
-  error: "", // for error message
+  error: "",
   loading: false,
   isUserLogout: false,
-  errorMsg: false, // for error
+  errorMsg: false,
 };
 
 const loginSlice = createSlice({
@@ -13,13 +24,14 @@ const loginSlice = createSlice({
   initialState,
   reducers: {
     apiError(state, action) {
-      state.error = action.payload.data;
-      state.loading = true;
+      state.error = getErrorMessage(action.payload);
+      state.loading = false;
       state.isUserLogout = false;
       state.errorMsg = true;
     },
     loginSuccess(state, action) {
       state.user = action.payload;
+      state.error = "";
       state.loading = false;
       state.errorMsg = false;
     },
