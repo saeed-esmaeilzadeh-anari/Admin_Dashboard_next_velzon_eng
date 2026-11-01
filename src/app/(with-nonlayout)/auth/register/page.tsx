@@ -53,9 +53,9 @@ const Register = () => {
       confirm_password: "",
     },
     validationSchema: Yup.object({
-      email: Yup.string().required("Please Enter Your Email"),
-      first_name: Yup.string().required("Please Enter Your Username"),
-      password: Yup.string().required("Please Enter Your Password"),
+      email: Yup.string().email("Please enter a valid email").required("Please Enter Your Email"),
+      first_name: Yup.string().trim().min(2, "Name must contain at least 2 characters").max(100, "Name is too long").required("Please Enter Your Username"),
+      password: Yup.string().min(12, "Password must contain at least 12 characters").max(72, "Password is too long").required("Please Enter Your Password"),
       confirm_password: Yup.string()
         .oneOf([Yup.ref("password"), ""])
         .required("Confirm Password is required"),
@@ -70,18 +70,24 @@ const Register = () => {
   const registerdatatype = createSelector(selectLayoutState, account => ({
     success: account.success,
     error: account.error,
+    registrationError: account.registrationError,
   }));
   // Inside your component
-  const { error, success } = useSelector(registerdatatype);
+  const { error, success, registrationError } = useSelector(registerdatatype);
 
   useEffect(() => {
     if (success) {
-      setTimeout(() => router.push("/login"), 3000);
+      const timeout = window.setTimeout(() => router.push("/auth/login"), 1500);
+      return () => window.clearTimeout(timeout);
     }
 
-    setTimeout(() => {
-      dispatch(resetRegisterFlag());
-    }, 3000);
+    if (error) {
+      setLoader(false);
+      const timeout = window.setTimeout(() => {
+        dispatch(resetRegisterFlag());
+      }, 5000);
+      return () => window.clearTimeout(timeout);
+    }
   }, [dispatch, success, error, router]);
 
   document.title =
@@ -144,12 +150,9 @@ const Register = () => {
                           </>
                         ) : null}
 
-                        {error && error ? (
+                        {error ? (
                           <Alert color="danger">
-                            <div>
-                              Email has been Register Before, Please Use Another
-                              Email Address...{" "}
-                            </div>
+                            {registrationError || "Registration failed. Please check your information and try again."}
                           </Alert>
                         ) : null}
 
@@ -333,7 +336,7 @@ const Register = () => {
                   <p className="mb-0">
                     Already have an account ?{" "}
                     <Link
-                      href="/login"
+                      href="/auth/login"
                       className="fw-semibold text-primary text-decoration-underline"
                     >
                       {" "}
