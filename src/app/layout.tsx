@@ -3,13 +3,13 @@ import { Metadata } from "next";
 import React from "react";
 import { hkGrotesk, iransansweb } from "@/config/fonts";
 import "../assets/scss/themes.scss";
-import "./globals.css";
 // ApexCharts default styles
 import "apexcharts/dist/apexcharts.css";
 // Swiper styles
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import "./globals.css";
 
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME?.trim() || "Velzon CMS";
 
