@@ -11,8 +11,12 @@
 
   --vz-font-family-primary: var(--app-font-family);
   --vz-font-family-secondary: var(--app-font-family);
+  --vz-font-sans-serif: var(--app-font-family);
+  --vz-headings-font-family: var(--app-font-family);
   --vz-body-font-family: var(--app-font-family);
   --vz-font-family-sans-serif: var(--app-font-family);
+  --bs-font-sans-serif: var(--app-font-family);
+  --bs-body-font-family: var(--app-font-family);
 }
 
 html,
