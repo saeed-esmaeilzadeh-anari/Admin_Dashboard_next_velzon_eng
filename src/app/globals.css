@@ -1,6 +1,6 @@
 /*
  * Global typography
- * Latin characters use HK Grotesk; Persian/Arabic characters fall back to IRANSansWeb.
+ * Latin/English characters use HK Grotesk; Persian/Arabic characters fall back to IRANSansWeb.
  * Other writing systems use installed Noto/system fonts as needed.
  */
 :root {
@@ -31,7 +31,6 @@ html {
 
 body {
   font-family: var(--app-font-family);
-  line-height: 1.55;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
