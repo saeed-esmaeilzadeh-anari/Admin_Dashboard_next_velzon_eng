@@ -1,12 +1,109 @@
+/*
+ * Global typography
+ * Latin/English characters use HK Grotesk; Persian/Arabic characters fall back to IRANSansWeb.
+ * Other writing systems use installed Noto/system fonts as needed.
+ */
 :root {
-  --vz-font-family-primary: var(--font-iransansweb);
-  --vz-font-family-secondary: var(--font-iransansweb);
-  --vz-body-font-family: var(--font-iransansweb);
+  --app-font-family: var(--font-hkgrotesk), var(--font-iransansweb), "Inter",
+    "Noto Sans", "Noto Sans Arabic", "Noto Sans Hebrew",
+    "Noto Sans Devanagari", "Noto Sans CJK SC", system-ui, "Segoe UI", Tahoma,
+    Arial, sans-serif;
+
+  --vz-font-family-primary: var(--app-font-family);
+  --vz-font-family-secondary: var(--app-font-family);
+  --vz-font-sans-serif: var(--app-font-family);
+  --vz-headings-font-family: var(--app-font-family);
+  --vz-body-font-family: var(--app-font-family);
+  --vz-font-family-sans-serif: var(--app-font-family);
+  --bs-font-sans-serif: var(--app-font-family);
+  --bs-body-font-family: var(--app-font-family);
+}
+
+html,
+body {
+  font-family: var(--app-font-family);
 }
 
 html {
-    @apply font-iransansweb;
-  }
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
-  font-family: var(--font-iransansweb), iransansweb;
+  font-family: var(--app-font-family);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Keep the same font stack in native form controls and common UI elements. */
+button,
+input,
+optgroup,
+select,
+textarea,
+option,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+a,
+label,
+small,
+strong,
+b,
+em,
+blockquote,
+li,
+dt,
+dd,
+th,
+td,
+summary {
+  font-family: var(--app-font-family);
+}
+
+/* Third-party components that do not always inherit the document font. */
+.dropdown-menu,
+.tooltip,
+.popover,
+.modal,
+.offcanvas,
+.toast,
+.alert,
+.form-control,
+.form-select,
+.form-label,
+.form-check-label,
+.input-group-text,
+.pagination,
+.breadcrumb,
+.nav-link,
+.card,
+.list-group,
+.select2-container,
+.choices,
+.flatpickr-calendar,
+.fc,
+.gridjs,
+.ck,
+.ck-content,
+.ql-editor,
+.apexcharts-tooltip,
+.apexcharts-legend-text {
+  font-family: var(--app-font-family);
+}
+
+/* ApexCharts writes font-family directly on SVG labels. */
+.apexcharts-svg text {
+  font-family: var(--app-font-family) !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.ql-editor.ql-blank::before {
+  font-family: var(--app-font-family);
 }

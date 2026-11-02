@@ -1,7 +1,7 @@
 import ClientProviders from "@/components/ClientProviders";
 import { Metadata } from "next";
 import React from "react";
-import { hkGrotesk, iransansweb } from '@/config/fonts';
+import { hkGrotesk, iransansweb } from "@/config/fonts";
 import "../assets/scss/themes.scss";
 // ApexCharts default styles
 import "apexcharts/dist/apexcharts.css";
@@ -9,6 +9,7 @@ import "apexcharts/dist/apexcharts.css";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import "./globals.css";
 
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME?.trim() || "Velzon CMS";
 
@@ -17,7 +18,8 @@ export const metadata: Metadata = {
     default: siteName + " | Multilingual CMS",
     template: "%s | " + siteName,
   },
-  description: "Multilingual content management with editorial workflow, media library and localized publishing.",
+  description:
+    "Multilingual content management with editorial workflow, media library and localized publishing.",
 };
 
 export default function RootLayout({
@@ -26,10 +28,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fa" dir="rtl" className={iransansweb.variable}>
-      <body
-        suppressHydrationWarning={true}
-      >
+    <html
+      lang="fa"
+      dir="rtl"
+      className={`${hkGrotesk.variable} ${iransansweb.variable}`}
+    >
+      <body suppressHydrationWarning={true}>
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
