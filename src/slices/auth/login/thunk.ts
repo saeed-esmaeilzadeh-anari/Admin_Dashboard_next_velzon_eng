@@ -1,7 +1,6 @@
-// Include both helper files with needed methods
+// Authentication requests for the Velzon dashboard.
 import { getFirebaseBackend } from "../../../helpers/firebase_helper";
 import { postJwtLogin } from "../../../helpers/fakebackend_helper";
-import backendApi from "../../../helpers/backendApi";
 import Cookies from "js-cookie";
 import {
   loginSuccess,
@@ -9,6 +8,11 @@ import {
   apiError,
   reset_login_flag,
 } from "./reducer";
+
+type LoginCredentials = {
+  email: string;
+  password: string;
+};
 
 const getAuthProvider = () => {
   const configured =
@@ -19,69 +23,150 @@ const getAuthProvider = () => {
   return configured.trim().toLowerCase() || "backend";
 };
 
-const getBackendLoginUrl = () => {
-  const baseUrl = (
-    process.env.NEXT_PUBLIC_BACKEND_API_URL?.trim() ||
-    "http://localhost:3001/api/v1"
-  ).replace(/\/+$/, "");
-  return baseUrl + "/auth/login";
+const BACKEND_LOGIN_ENDPOINT = "/backend-api/auth/login";
+
+const getLoginError = (error: unknown): string => {
+  const candidate = error as {
+    response?: { data?: { message?: unknown } };
+    message?: unknown;
+  } | null;
+
+  const responseMessage = candidate?.response?.data?.message;
+  if (Array.isArray(responseMessage)) {
+    return responseMessage.map(String).join(", ");
+  }
+  if (typeof responseMessage === "string" && responseMessage.trim()) {
+    return responseMessage;
+  }
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  if (typeof candidate?.message === "string" && candidate.message.trim()) {
+    return candidate.message;
+  }
+
+  return "Unable to sign in. Please check your connection and try again.";
 };
 
-const getLoginError = (error: any) => {
-  const status = error?.response?.status;
-  const responseMessage = error?.response?.data?.message;
-  const backendUrl = getBackendLoginUrl();
+const readResponseMessage = (payload: unknown): string | undefined => {
+  if (typeof payload === "string" && payload.trim()) {
+    return payload.trim();
+  }
 
-  if (status === 404) {
-    const details = Array.isArray(responseMessage)
-      ? responseMessage.join(", ")
-      : typeof responseMessage === "string"
-        ? responseMessage
-        : "No response body";
+  if (payload && typeof payload === "object" && "message" in payload) {
+    const message = (payload as { message?: unknown }).message;
+    if (Array.isArray(message)) {
+      return message.map(String).join(", ");
+    }
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+  }
 
-    if (details.startsWith("Cannot ")) {
-      return new Error(
-        "NestJS returned 404 for POST " + backendUrl + ". Server response: " + details
+  return undefined;
+};
+
+/**
+ * Use the same native Fetch path that is used by the browser's same-origin
+ * proxy. This avoids Axios adapter/config differences for the sign-in flow.
+ */
+const postBackendLogin = async (credentials: LoginCredentials): Promise<any> => {
+  let response: Response;
+
+  try {
+    response = await fetch(BACKEND_LOGIN_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      credentials: "same-origin",
+      cache: "no-store",
+      body: JSON.stringify(credentials),
+    });
+  } catch (error) {
+    throw new Error(
+      "Could not reach the backend login endpoint through " +
+        BACKEND_LOGIN_ENDPOINT +
+        ". " +
+        getLoginError(error)
+    );
+  }
+
+  const responseText = await response.text();
+  let payload: unknown = null;
+
+  if (responseText) {
+    try {
+      payload = JSON.parse(responseText) as unknown;
+    } catch {
+      payload = responseText;
+    }
+  }
+
+  if (!response.ok) {
+    const apiMessage = readResponseMessage(payload);
+
+    if (response.status === 401) {
+      throw new Error(apiMessage || "Invalid email or password.");
+    }
+
+    if (response.status === 404) {
+      const details =
+        apiMessage ||
+        (typeof payload === "string" && payload.trim()) ||
+        response.statusText ||
+        "No response body";
+
+      throw new Error(
+        "Backend login endpoint returned HTTP 404 for POST " +
+          (response.url || BACKEND_LOGIN_ENDPOINT) +
+          ". Response: " +
+          details
       );
     }
 
-    return new Error(
-      "The same-origin backend proxy returned HTTP 404 for POST " + backendUrl + ". Response: " + details
+    throw new Error(
+      apiMessage ||
+        "Backend login failed with HTTP " +
+          response.status +
+          " (" +
+          response.statusText +
+          ")."
     );
   }
 
-  if (!error?.response) {
-    return new Error(
-      "Cannot reach the backend API at " + backendUrl +
-      ". Check that the NestJS server is running and NEXT_PUBLIC_BACKEND_API_URL is correct. " +
-      (error?.message || "")
-    );
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("The backend returned an invalid login response.");
   }
 
-  return error;
+  return payload;
 };
 
-export const loginUser = (user: any, router: any) => async (dispatch: any) => {
+export const loginUser = (user: LoginCredentials, router: any) => async (dispatch: any) => {
   try {
     const defaultAuth = getAuthProvider();
-    let response;
+    let rawData: any;
 
     if (defaultAuth === "firebase") {
       const fireBaseBackend: any = getFirebaseBackend();
-      response = fireBaseBackend.loginUser(user.email, user.password);
+      rawData = await fireBaseBackend.loginUser(user.email, user.password);
     } else if (defaultAuth === "backend") {
-      response = backendApi
-        .post("/auth/login", { email: user.email, password: user.password })
-        .then(result => result.data);
+      rawData = await postBackendLogin({
+        email: user.email,
+        password: user.password,
+      });
     } else if (defaultAuth === "jwt" || defaultAuth === "fake") {
-      response = postJwtLogin({ email: user.email, password: user.password });
+      rawData = await postJwtLogin({
+        email: user.email,
+        password: user.password,
+      });
     } else {
       throw new Error(
         `Unsupported authentication provider "${defaultAuth}". Use backend, firebase, jwt or fake.`
       );
     }
 
-    const rawData = await response;
     const data =
       defaultAuth === "backend" && rawData?.user
         ? {
@@ -101,7 +186,8 @@ export const loginUser = (user: any, router: any) => async (dispatch: any) => {
       router.push("/dashboard");
     }
   } catch (error) {
-    dispatch(apiError(getLoginError(error)));
+    // Redux actions must contain serializable values, never Error/AxiosError objects.
+    dispatch(apiError({ message: getLoginError(error) }));
   }
 };
 
@@ -119,7 +205,7 @@ export const logoutUser = () => async (dispatch: any) => {
       dispatch(logoutUserSuccess(true));
     }
   } catch (error) {
-    dispatch(apiError(error));
+    dispatch(apiError({ message: getLoginError(error) }));
   }
 };
 
@@ -132,7 +218,9 @@ export const socialLogin =
         const fireBaseBackend: any = getFirebaseBackend();
         response = fireBaseBackend.socialLoginUser(type);
       } else {
-        throw new Error("Social login is not configured for the selected authentication provider.");
+        throw new Error(
+          "Social login is not configured for the selected authentication provider."
+        );
       }
 
       const socialData = await response;
@@ -142,7 +230,7 @@ export const socialLogin =
         history("/dashboard");
       }
     } catch (error) {
-      dispatch(apiError(error));
+      dispatch(apiError({ message: getLoginError(error) }));
     }
   };
 
@@ -150,6 +238,6 @@ export const resetLoginFlag = () => async (dispatch: any) => {
   try {
     return dispatch(reset_login_flag());
   } catch (error) {
-    dispatch(apiError(error));
+    dispatch(apiError({ message: getLoginError(error) }));
   }
 };
