@@ -17,6 +17,7 @@ Set these privately in the backend hosting platform, not in Git:
 - JWT_SECRET: unique random secret, at least 32 characters.
 - ADMIN_NAME, ADMIN_EMAIL and ADMIN_PASSWORD: dedicated administrator email and a strong seed password of at least 12 characters.
 - CORS_ORIGINS: exact frontend origin(s), comma-separated and without path segments.
+- BACKEND_API_URL: private server-side Next.js BFF target, using HTTPS in production.
 - PUBLIC_SITE_URL: canonical public website origin.
 - CMS_MEDIA_STORAGE=s3, S3_BUCKET, S3_REGION, S3_PUBLIC_BASE_URL and credentials/endpoint as needed.
 - CMS_JOB_TOKEN: unique random secret of at least 32 characters if an external scheduler will run jobs.
@@ -37,6 +38,7 @@ Never put database passwords, JWT secrets, S3 credentials or the job token in NE
 Set these values in the Next.js host and create a fresh build:
 
     NEXT_PUBLIC_DEFAULT_AUTH=backend
+    BACKEND_API_URL=https://api.example.com/api/v1
     NEXT_PUBLIC_BACKEND_API_URL=https://api.example.com/api/v1
     NEXT_PUBLIC_SITE_URL=https://www.example.com
     NEXT_PUBLIC_SITE_NAME=Example
@@ -57,7 +59,8 @@ Use separate POST requests and never expose these calls to browser code.
 
 ## 6. Mandatory smoke tests
 
-- [ ] Test health, login, logout and expired-token behavior; verify 401 clears the stale session and redirects to login, while 403 keeps the session intact.
+- [ ] Test health, login, logout and expired-token behavior through the Next.js BFF; verify the login response never exposes accessToken, velzon_session is HttpOnly/Secure/SameSite=Lax, 401 expires the cookie and redirects to login, while 403 keeps the session intact.
+- [ ] Verify the browser cannot override the backend Authorization header and cross-origin unsafe BFF requests are rejected.
 - [ ] Create Persian and English pages, add media and builder blocks, preview, submit for review, publish, edit after publication, and confirm the old live snapshot remains until republishing.
 - [ ] Verify both language URLs, SEO metadata, language alternates and sitemap.
 - [ ] Add localized main-menu items and verify RTL/LTR rendering and HTTPS-only external menu links.
