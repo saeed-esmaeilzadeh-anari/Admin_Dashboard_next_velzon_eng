@@ -27,7 +27,17 @@ Backend:
 
 Never commit secrets or place private credentials in a `NEXT_PUBLIC_*` variable.
 
-## 3. Database and storage
+## 3. Browser authentication boundary (Next.js BFF)
+
+- Set `BACKEND_API_URL` as a private server-side environment variable on the Next.js host. Point it to the NestJS API base (for example, `https://api.example.com/api/v1`). The BFF route uses it to proxy `/backend-api/*`.
+- The browser must not receive or persist the backend Bearer token. The Next.js route stores it in a host-only `velzon_session` cookie with `HttpOnly`, `SameSite=Lax`, `Path=/`, a 15-minute maximum lifetime and `Secure` in production.
+- The BFF ignores browser-supplied `Authorization` headers and derives the Bearer token only from the HttpOnly cookie. Login responses expose the user profile, not the access token.
+- Unsafe BFF requests compare a supplied `Origin` with the current application origin. Keep the frontend and BFF same-origin; do not disable this check to work around cross-origin frontend deployments.
+- A protected backend `401` expires the session cookie. A `403` is an authorization failure and must not clear a valid session.
+- Registration responses are sanitized but do not automatically create an authenticated session. The user must sign in after registration.
+- Legacy fake/JWT/Firebase template providers are separate demo paths. Do not enable fake authentication for a customer Production deployment.
+
+## 4. Database and storage
 
 1. Back up the database before schema migration and test migrations against a staging copy first.
 2. Apply production migrations using `npm run prisma:deploy`; do not use `prisma db push` for production schema changes.
@@ -35,7 +45,7 @@ Never commit secrets or place private credentials in a `NEXT_PUBLIC_*` variable.
 4. For serverless hosting, do not rely on a local ephemeral filesystem for uploaded media. Configure a persistent mounted volume or S3-compatible storage and test upload/read/delete behavior.
 5. Configure database backups/PITR and rehearse a restore to a separate database.
 
-## 4. Runtime and security boundaries
+## 5. Runtime and security boundaries
 
 - Scheduled publication and webhook retries have in-process workers and token-protected endpoints for external schedulers. On serverless or multi-instance production, configure a durable external cron/queue and set `CMS_JOB_TOKEN`; use a single-owner/lease strategy if jobs might overlap.
 - The public content renderer intentionally renders author-provided rich text/Markdown as text. Do not enable raw HTML rendering until a maintained sanitizer and a strict HTML allowlist are implemented and tested.
@@ -43,9 +53,13 @@ Never commit secrets or place private credentials in a `NEXT_PUBLIC_*` variable.
 - Configure TLS, security headers, rate limits, log retention, error monitoring, alerting, and a documented incident response.
 - If a production deployment ran an unpatched Next.js version while public, deploy the patched version before restoring traffic and review/rotate production secrets as appropriate to the exposure window.
 
-## 5. Smoke tests required after deployment
+## 6. Smoke tests required after deployment
 
-- Sign in with a seeded administrator; confirm USER cannot reach management-only routes.
+- Sign in with a seeded administrator; verify the response does not expose accessToken and Set-Cookie includes HttpOnly, Secure in Production, SameSite=Lax and the intended lifetime.
+- Verify authenticated BFF requests reach NestJS with a server-added Bearer header; verify a browser-supplied Authorization header is ignored.
+- Verify logout and protected 401 responses expire velzon_session; verify 403 leaves the session intact.
+- Confirm cross-origin unsafe BFF requests are rejected and same-origin requests work.
+- Confirm USER cannot reach management-only routes.
 - Create a page in Persian and English; verify RTL/LTR, localized slugs, SEO metadata, alternate language URLs and public sitemap.
 - Verify draft content is not accessible to anonymous callers; publish a page and confirm only its published snapshot is served.
 - Upload media, use it from a content block, confirm referenced media cannot be deleted, and verify cleanup after references are removed.
