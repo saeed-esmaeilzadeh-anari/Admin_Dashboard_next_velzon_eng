@@ -70,7 +70,7 @@ function rejectCrossOriginMutation(request: NextRequest): NextResponse | null {
 
   return NextResponse.json(
     { message: "Cross-origin requests are not allowed." },
-    { status: 403 }
+    { status: 403, headers: { "Cache-Control": "no-store, max-age=0" } }
   );
 }
 
@@ -84,7 +84,6 @@ function copyResponseHeaders(source: Headers): Headers {
   for (const name of [
     "content-type",
     "content-disposition",
-    "cache-control",
     "etag",
     "last-modified",
     "accept-ranges",
@@ -93,6 +92,10 @@ function copyResponseHeaders(source: Headers): Headers {
     const value = source.get(name);
     if (value) headers.set(name, value);
   }
+
+  // API responses may contain identity, permission or CMS data; never cache
+  // them in a browser, CDN or shared intermediary by default.
+  headers.set("cache-control", "private, no-store, max-age=0");
   return headers;
 }
 
@@ -149,7 +152,10 @@ async function sanitizeAuthenticationResponse(
   }
 
   // Never return the backend access token to browser JavaScript or Redux.
-  const response = NextResponse.json(publicPayload, { status: upstream.status });
+  const response = NextResponse.json(publicPayload, {
+    status: upstream.status,
+    headers: { "Cache-Control": "no-store, max-age=0" },
+  });
 
   if (setSessionCookie) {
     const requestedTtl =
