@@ -1,6 +1,5 @@
 // middleware.ts
 import { NextRequest, NextResponse } from "next/server";
-import { parse } from "cookie";
 
 const publicPaths = ["/auth", "/auth/login", "/auth/register"];
 const protectedPaths = [
@@ -45,7 +44,7 @@ function requestedLocale(request: NextRequest): string | undefined {
 async function resolveCmsRedirect(request: NextRequest): Promise<NextResponse | null> {
   if (request.method !== "GET" && request.method !== "HEAD") return null;
 
-  const backendBase = (process.env.NEXT_PUBLIC_BACKEND_API_URL ?? "http://localhost:3001/api/v1").replace(/\/$/, "");
+  const backendBase = (process.env.BACKEND_API_URL ?? process.env.NEXT_PUBLIC_BACKEND_API_URL ?? "http://localhost:3001/api/v1").replace(/\/$/, "");
   let resolverUrl: URL;
   try {
     resolverUrl = new URL(backendBase + "/public/cms/redirects/resolve");
@@ -97,15 +96,22 @@ export async function middleware(req: NextRequest) {
     if (cmsRedirect) return cmsRedirect;
   }
 
-  const cookies = parse(req.headers.get("cookie") || "");
-  const authUser = cookies["authUser"];
+  const authProvider = (
+    process.env.NEXT_PUBLIC_DEFAULT_AUTH ||
+    process.env.NEXT_PUBLIC_DEFAULTAUTH ||
+    "backend"
+  ).trim().toLowerCase();
+  const hasSession =
+    authProvider === "backend"
+      ? Boolean(req.cookies.get("velzon_session")?.value)
+      : Boolean(req.cookies.get("authUser")?.value);
 
   if (isAuthRoute) {
-    if (authUser) return NextResponse.redirect(new URL("/dashboard", req.url));
+    if (hasSession) return NextResponse.redirect(new URL("/dashboard", req.url));
     return NextResponse.next();
   }
 
-  if (isProtected && !authUser) {
+  if (isProtected && !hasSession) {
     return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 

@@ -7,11 +7,6 @@ const silenceDeprecations = [
   "legacy-js-api",
 ];
 
-const backendApiBaseUrl = (
-  process.env.NEXT_PUBLIC_BACKEND_API_URL?.trim() ||
-  "http://localhost:3001/api/v1"
-).replace(/\/+$/, "");
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -25,15 +20,7 @@ const nextConfig = {
     defaultLocale: "fa",
     localeDetection: false,
   },
-  // Keep browser API requests same-origin and let Next.js forward them to NestJS.
-  async rewrites() {
-    return [
-      {
-        source: "/backend-api/:path*",
-        destination: backendApiBaseUrl + "/:path*",
-      },
-    ];
-  },
+  // /backend-api/* is handled by the secure HttpOnly-cookie BFF route handler.
   webpack: config => {
     // Handle asset files like fonts and images
     config.module.rules.push({

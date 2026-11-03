@@ -42,25 +42,26 @@ jobs:
         run: npm ci --legacy-peer-deps --no-audit --no-fund
       - name: Type-check
         env:
-          NEXT_PUBLIC_DEFAULT_AUTH: fake
+          NEXT_PUBLIC_DEFAULT_AUTH: backend
           NEXT_PUBLIC_BACKEND_API_URL: http://127.0.0.1:3001/api/v1
         run: npm run type-check
       - name: Production build
         env:
-          NEXT_PUBLIC_DEFAULT_AUTH: fake
+          NEXT_PUBLIC_DEFAULT_AUTH: backend
           NEXT_PUBLIC_BACKEND_API_URL: http://127.0.0.1:3001/api/v1
         run: npm run build
       - name: Production server and backend proxy smoke test
         env:
-          NEXT_PUBLIC_DEFAULT_AUTH: fake
+          NEXT_PUBLIC_DEFAULT_AUTH: backend
           NEXT_PUBLIC_BACKEND_API_URL: http://127.0.0.1:3001/api/v1
+          BACKEND_API_URL: http://127.0.0.1:3001/api/v1
           PORT: 3100
         shell: bash
         run: |
           set -euo pipefail
 
           # A tiny local upstream verifies that Next.js forwards method, path and body.
-          node -e 'const http = require("node:http"); http.createServer((req, res) => { if (req.url === "/api/v1/health" && req.method === "GET") { res.writeHead(200, {"content-type":"application/json"}); res.end(JSON.stringify({status:"ok"})); return; } if (req.url === "/api/v1/auth/login" && req.method === "POST") { let body = ""; req.on("data", chunk => body += chunk); req.on("end", () => { res.writeHead(401, {"content-type":"application/json"}); res.end(JSON.stringify({message:"Invalid email or password.", received: JSON.parse(body)})); }); return; } res.writeHead(404, {"content-type":"application/json"}); res.end(JSON.stringify({message:"Not found"})); }).listen(3001, "127.0.0.1");' > /tmp/mock-api.log 2>&1 &
+          node -e 'const http = require("node:http"); http.createServer((req, res) => { if (req.url === "/api/v1/health" && req.method === "GET") { res.writeHead(200, {"content-type":"application/json"}); res.end(JSON.stringify({status:"ok"})); return; } if (req.url === "/api/v1/auth/login" && req.method === "POST") { let body = ""; req.on("data", chunk => body += chunk); req.on("end", () => { const credentials = JSON.parse(body); if (credentials.email === "ci-admin@example.test" && credentials.password === "valid-password") { res.writeHead(200, {"content-type":"application/json"}); res.end(JSON.stringify({accessToken:"ci-bff-test-access-token-123456789", tokenType:"Bearer", expiresIn:900, user:{id:"ci-user-1",email:credentials.email,name:"CI Admin",role:"ADMIN"}})); } else { res.writeHead(401, {"content-type":"application/json"}); res.end(JSON.stringify({message:"Invalid email or password."})); } }); return; } if (req.url === "/api/v1/auth/me" && req.method === "GET") { if (req.headers.authorization === "Bearer ci-bff-test-access-token-123456789") { res.writeHead(200, {"content-type":"application/json"}); res.end(JSON.stringify({id:"ci-user-1",email:"ci-admin@example.test",name:"CI Admin",role:"ADMIN"})); } else { res.writeHead(401, {"content-type":"application/json"}); res.end(JSON.stringify({message:"Unauthorized"})); } return; } res.writeHead(404, {"content-type":"application/json"}); res.end(JSON.stringify({message:"Not found"})); }).listen(3001, "127.0.0.1");' > /tmp/mock-api.log 2>&1 &
           api_pid=$!
 
           api_ready=0
@@ -123,4 +124,35 @@ jobs:
           fi
           grep -q 'Invalid email or password' /tmp/proxy-login.json
 
-          echo "Production pages and same-origin backend API proxy smoke tests passed."
+          # A successful login must set an HttpOnly cookie and never expose the Bearer token.
+          login_status="$(curl --silent --show-error --output /tmp/bff-login.json --dump-header /tmp/bff-login-headers.txt --write-out '%{http_code}' \
+            -X POST http://127.0.0.1:3100/backend-api/auth/login \
+            -H 'Content-Type: application/json' \
+            --data '{"email":"ci-admin@example.test","password":"valid-password"}')"
+          if [ "$login_status" != "200" ]; then
+            cat /tmp/bff-login.json
+            cat /tmp/next-start.log
+            echo "BFF login failed (HTTP $login_status)"
+            exit 1
+          fi
+          grep -Eiq '^set-cookie: velzon_session=.*httponly' /tmp/bff-login-headers.txt
+          if grep -q '"accessToken"' /tmp/bff-login.json; then
+            echo "BFF leaked the access token in the login response"
+            exit 1
+          fi
+          session_cookie="$(grep -i '^set-cookie: velzon_session=' /tmp/bff-login-headers.txt | head -n 1 | sed -E 's/^[^:]+:[[:space:]]*([^;]+).*/\1/I' | tr -d '\r')"
+          test -n "$session_cookie"
+
+          # The BFF must use the HttpOnly cookie to add Authorization server-side.
+          curl --fail --silent --show-error \
+            --cookie "$session_cookie" \
+            http://127.0.0.1:3100/backend-api/auth/me -o /tmp/bff-me.json
+          grep -q '"email":"ci-admin@example.test"' /tmp/bff-me.json
+
+          # Logout expires the server-managed session cookie.
+          curl --silent --show-error --output /tmp/bff-logout.json --dump-header /tmp/bff-logout-headers.txt \
+            -X POST http://127.0.0.1:3100/backend-api/auth/logout \
+            --cookie "$session_cookie"
+          grep -Eiq '^set-cookie: velzon_session=.*max-age=0' /tmp/bff-logout-headers.txt
+
+          echo "Production pages, same-origin proxy, HttpOnly login, authenticated API and logout smoke tests passed."

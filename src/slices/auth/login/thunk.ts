@@ -168,19 +168,20 @@ export const loginUser = (user: LoginCredentials, router: any) => async (dispatc
     }
 
     const data =
-      defaultAuth === "backend" && rawData?.user
-        ? {
-            ...rawData,
-            ...rawData.user,
-            user: rawData.user,
-            accessToken: rawData.accessToken,
-          }
+      defaultAuth === "backend"
+        ? rawData?.user && typeof rawData.user === "object"
+          ? { ...rawData.user, user: rawData.user }
+          : (() => { throw new Error("The backend returned an invalid user profile."); })()
         : rawData;
 
     if (data) {
-      Cookies.set("authUser", JSON.stringify(data), { expires: 1 });
-      if (defaultAuth === "backend" && typeof window !== "undefined") {
-        window.sessionStorage.setItem("authUser", JSON.stringify(data));
+      if (defaultAuth !== "backend") {
+        Cookies.set("authUser", JSON.stringify(data), { expires: 1 });
+      } else if (typeof window !== "undefined") {
+        // Remove legacy JavaScript-readable storage. The server owns the
+        // HttpOnly velzon_session cookie and never exposes its token to Redux.
+        window.sessionStorage.removeItem("authUser");
+        Cookies.remove("authUser");
       }
       dispatch(loginSuccess(data));
       router.push("/dashboard");
@@ -193,17 +194,28 @@ export const loginUser = (user: LoginCredentials, router: any) => async (dispatc
 
 export const logoutUser = () => async (dispatch: any) => {
   try {
+    const provider = getAuthProvider();
+    if (provider === "backend") {
+      const response = await fetch("/backend-api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) {
+        throw new Error("Could not clear the server session. Please try again.");
+      }
+    }
+
     Cookies.remove("authUser");
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem("authUser");
     }
-    const fireBaseBackend: any = getFirebaseBackend();
-    if (getAuthProvider() === "firebase") {
-      const response = fireBaseBackend.logout;
-      dispatch(logoutUserSuccess(response));
-    } else {
-      dispatch(logoutUserSuccess(true));
+    if (provider === "firebase") {
+      const fireBaseBackend: any = getFirebaseBackend();
+      await fireBaseBackend.logout();
     }
+
+    dispatch(logoutUserSuccess());
   } catch (error) {
     dispatch(apiError({ message: getLoginError(error) }));
   }

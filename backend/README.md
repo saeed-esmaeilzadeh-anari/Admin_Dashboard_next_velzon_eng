@@ -27,6 +27,7 @@ Set these values in the root Next.js environment, restart Next.js and sign in wi
 
 ```dotenv
 NEXT_PUBLIC_DEFAULT_AUTH=backend
+BACKEND_API_URL=http://localhost:3001/api/v1
 NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001/api/v1
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
@@ -36,9 +37,14 @@ The template's fake authentication remains the default until explicitly changed.
 ## Authentication and security
 
 - POST /api/v1/auth/register creates a standard USER and does not accept a client-supplied role.
-- POST /api/v1/auth/login returns a short-lived 15-minute Bearer access token.
-- GET /api/v1/auth/me returns the current authenticated user.
-- CMS management requests require a Bearer token. The server-side CMS permission guard checks action-level grants; ADMIN bypasses grants.
+- POST /api/v1/auth/login issues a short-lived 15-minute Bearer access token for the server-side session boundary.
+- The browser signs in through the same-origin Next.js route at /backend-api/auth/login. The BFF stores the access token in a host-only, HttpOnly, SameSite=Lax cookie named velzon_session and returns only the user profile to browser JavaScript.
+- Browser CMS requests use /backend-api/*; the Next.js BFF reads the HttpOnly cookie and adds the Authorization: Bearer header server-side. It ignores browser-supplied Authorization headers.
+- Unsafe BFF requests validate the Origin header when it is present. Use HTTPS in production; the cookie is Secure when NODE_ENV=production.
+- POST /backend-api/auth/logout expires the server-managed session cookie. A protected upstream 401 also clears the cookie. A 403 does not log the user out.
+- GET /api/v1/auth/me returns the current authenticated user through the BFF.
+- CMS management requests require a Bearer token at NestJS. The server-side CMS permission guard checks action-level grants; ADMIN bypasses grants.
+- Set BACKEND_API_URL as a private server-side Next.js environment variable in production. It must point to the NestJS API over HTTPS. NEXT_PUBLIC_BACKEND_API_URL is retained only as a compatibility fallback and for middleware redirect lookup; do not put credentials or secrets in it.
 - Use HTTPS and private secrets in deployment. Never commit .env files, database credentials or webhook secrets.
 - Public form submissions are throttled and schema-validated. Webhook deliveries use HMAC-SHA256 and restrict destination addresses to public HTTPS hosts.
 - Rich-text and Markdown from authors are rendered as text by the included public renderer. Do not inject raw HTML unless a reviewed allowlist sanitizer is added.
