@@ -18,30 +18,55 @@ import Image from "next/image";
 const avatar1 = "/images/users/avatar-1.jpg";
 
 const ProfileDropdown = () => {
-  const profiledropdownData = createSelector(
+  const profileData = createSelector(
     (state: any) => state.Profile,
-    user => user.user
+    profile => profile.user
   );
-  // Inside your component
-  const user = useSelector(profiledropdownData);
+  const profile = useSelector(profileData);
+
+  const authUserData = createSelector(
+    (state: any) => state.Login,
+    login => login.user
+  );
+  const authUser = useSelector(authUserData);
 
   const [userName, setUserName] = useState("Admin");
 
   useEffect(() => {
-    const authUSer: any = sessionStorage.getItem("authUser");
-    if (authUSer) {
-      const obj: any = JSON.parse(authUSer);
+    const authProvider = (
+      process.env.NEXT_PUBLIC_DEFAULT_AUTH ||
+      process.env.NEXT_PUBLIC_DEFAULTAUTH ||
+      "backend"
+    ).trim().toLowerCase();
+
+    if (authProvider === "backend") {
       setUserName(
-        process.env.NEXT_PUBLIC_DEFAULTAUTH === "fake"
-          ? obj.username === undefined
-            ? user.first_name || obj.data.first_name || "Admin" // Use || to provide a fallback
-            : "Admin"
-          : process.env.NEXT_PUBLIC_DEFAULTAUTH === "firebase"
-            ? obj.email || "Admin" // Use || to provide a fallback
+        typeof authUser?.name === "string" && authUser.name.trim()
+          ? authUser.name
+          : typeof authUser?.email === "string" && authUser.email.trim()
+            ? authUser.email
             : "Admin"
       );
+      return;
     }
-  }, [userName, user]);
+
+    // Legacy demo providers keep their original browser profile behavior.
+    try {
+      const storedUser = sessionStorage.getItem("authUser");
+      const obj = storedUser ? JSON.parse(storedUser) : null;
+      if (authProvider === "fake") {
+        setUserName(
+          obj?.username === undefined
+            ? profile?.first_name || obj?.data?.first_name || "Admin"
+            : "Admin"
+        );
+      } else if (authProvider === "firebase") {
+        setUserName(obj?.email || "Admin");
+      }
+    } catch {
+      setUserName("Admin");
+    }
+  }, [authUser, profile]);
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
