@@ -42,12 +42,12 @@ jobs:
         run: npm ci --legacy-peer-deps --no-audit --no-fund
       - name: Type-check
         env:
-          NEXT_PUBLIC_DEFAULT_AUTH: fake
+          NEXT_PUBLIC_DEFAULT_AUTH: backend
           NEXT_PUBLIC_BACKEND_API_URL: http://127.0.0.1:3001/api/v1
         run: npm run type-check
       - name: Production build
         env:
-          NEXT_PUBLIC_DEFAULT_AUTH: fake
+          NEXT_PUBLIC_DEFAULT_AUTH: backend
           NEXT_PUBLIC_BACKEND_API_URL: http://127.0.0.1:3001/api/v1
         run: npm run build
       - name: Production server and backend proxy smoke test
@@ -125,9 +125,9 @@ jobs:
           grep -q 'Invalid email or password' /tmp/proxy-login.json
 
           # A successful login must set an HttpOnly cookie and never expose the Bearer token.
-          login_status="$(curl --silent --show-error --output /tmp/bff-login.json --dump-header /tmp/bff-login-headers.txt --write-out '%{http_code}' \\
-            -X POST http://127.0.0.1:3100/backend-api/auth/login \\
-            -H 'Content-Type: application/json' \\
+          login_status="$(curl --silent --show-error --output /tmp/bff-login.json --dump-header /tmp/bff-login-headers.txt --write-out '%{http_code}' \
+            -X POST http://127.0.0.1:3100/backend-api/auth/login \
+            -H 'Content-Type: application/json' \
             --data '{"email":"ci-admin@example.test","password":"valid-password"}')"
           if [ "$login_status" != "200" ]; then
             cat /tmp/bff-login.json
@@ -140,18 +140,18 @@ jobs:
             echo "BFF leaked the access token in the login response"
             exit 1
           fi
-          session_cookie="$(grep -i '^set-cookie: velzon_session=' /tmp/bff-login-headers.txt | head -n 1 | sed -E 's/^[^:]+:[[:space:]]*([^;]+).*/\\1/I' | tr -d '\\r')"
+          session_cookie="$(grep -i '^set-cookie: velzon_session=' /tmp/bff-login-headers.txt | head -n 1 | sed -E 's/^[^:]+:[[:space:]]*([^;]+).*/\1/I' | tr -d '\r')"
           test -n "$session_cookie"
 
           # The BFF must use the HttpOnly cookie to add Authorization server-side.
-          curl --fail --silent --show-error \\
-            --cookie "$session_cookie" \\
+          curl --fail --silent --show-error \
+            --cookie "$session_cookie" \
             http://127.0.0.1:3100/backend-api/auth/me -o /tmp/bff-me.json
           grep -q '"email":"ci-admin@example.test"' /tmp/bff-me.json
 
           # Logout expires the server-managed session cookie.
-          curl --silent --show-error --output /tmp/bff-logout.json --dump-header /tmp/bff-logout-headers.txt \\
-            -X POST http://127.0.0.1:3100/backend-api/auth/logout \\
+          curl --silent --show-error --output /tmp/bff-logout.json --dump-header /tmp/bff-logout-headers.txt \
+            -X POST http://127.0.0.1:3100/backend-api/auth/logout \
             --cookie "$session_cookie"
           grep -Eiq '^set-cookie: velzon_session=.*max-age=0' /tmp/bff-logout-headers.txt
 
