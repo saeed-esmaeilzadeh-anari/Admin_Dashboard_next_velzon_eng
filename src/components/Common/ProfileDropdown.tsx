@@ -70,9 +70,9 @@ const ProfileDropdown = () => {
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const handleLogout = () => {
-    dispatch(logoutUser());
-    router.push("/auth/login");
+  const handleLogout = async () => {
+    await dispatch(logoutUser());
+    router.replace("/auth/login");
   };
   return (
     <React.Fragment>
