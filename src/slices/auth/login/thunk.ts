@@ -210,13 +210,12 @@ export const logoutUser = () => async (dispatch: any) => {
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem("authUser");
     }
-    const fireBaseBackend: any = getFirebaseBackend();
     if (provider === "firebase") {
-      const response = fireBaseBackend.logout;
-      dispatch(logoutUserSuccess(response));
-    } else {
-      dispatch(logoutUserSuccess(true));
+      const fireBaseBackend: any = getFirebaseBackend();
+      await fireBaseBackend.logout();
     }
+
+    dispatch(logoutUserSuccess());
   } catch (error) {
     dispatch(apiError({ message: getLoginError(error) }));
   }
