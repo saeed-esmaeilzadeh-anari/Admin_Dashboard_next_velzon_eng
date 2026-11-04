@@ -29,6 +29,10 @@ const LanguageDropdown = () => {
     i18n.changeLanguage(lang);
     if (typeof window !== "undefined") {
       localStorage.setItem("I18N_LANGUAGE", lang);
+      document.cookie =
+        "NEXT_LOCALE=" + encodeURIComponent(lang) +
+        "; Max-Age=31536000; Path=/; SameSite=Lax" +
+        (window.location.protocol === "https:" ? "; Secure" : "");
     }
     setSelectedLang(lang);
   };
