@@ -42,7 +42,7 @@ const Navdata = () => {
     { id: "cms-audit", label: "Audit log", icon: "ri-history-line", link: "/apps-cms/audit-logs" },
   ];
 
-  return <React.Fragment>{menuItems}</React.Fragment>;
+  return <React.Fragment>{menuItems as any}</React.Fragment>;
 };
 
 export default Navdata;
