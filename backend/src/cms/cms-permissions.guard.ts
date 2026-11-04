@@ -16,7 +16,7 @@ export class CmsPermissionsGuard implements CanActivate {
     if (!required?.length) return true;
     const user = context.switchToHttp().getRequest().user as AuthenticatedUser | undefined;
     if (!user) return false;
-    if (user.role === Role.ADMIN) return true;
+    if (user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN) return true;
     const grants = await this.prisma.cmsRolePermission.findMany({
       where: { role: user.role, permission: { is: { code: { in: required } } } },
       select: { permission: { select: { code: true } } },
