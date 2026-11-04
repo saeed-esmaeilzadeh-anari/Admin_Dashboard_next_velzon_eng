@@ -1,171 +1,95 @@
-import React, { useState, useEffect } from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { logoutUser } from "@slices/auth/login/thunk";
-import type { AppDispatch } from "@slices/store";
 import {
   UncontrolledDropdown,
   DropdownItem,
   DropdownMenu,
   DropdownToggle,
 } from "reactstrap";
-import { createSelector } from "reselect";
-import { useSelector } from "react-redux";
-import Image from "next/image";
-
-//import images
-const avatar1 = "/images/users/avatar-1.jpg";
+import { useTranslation } from "react-i18next";
+import { logoutUser } from "@slices/auth/login/thunk";
+import type { AppDispatch } from "@slices/store";
 
 const ProfileDropdown = () => {
-  const profileData = createSelector(
-    (state: any) => state.Profile,
-    profile => profile.user
-  );
-  const profile = useSelector(profileData);
-
-  const authUserData = createSelector(
-    (state: any) => state.Login,
-    login => login.user
-  );
-  const authUser = useSelector(authUserData);
-
-  const [userName, setUserName] = useState("Admin");
-
-  useEffect(() => {
-    const authProvider = (
-      process.env.NEXT_PUBLIC_DEFAULT_AUTH ||
-      process.env.NEXT_PUBLIC_DEFAULTAUTH ||
-      "backend"
-    ).trim().toLowerCase();
-
-    if (authProvider === "backend") {
-      setUserName(
-        typeof authUser?.name === "string" && authUser.name.trim()
-          ? authUser.name
-          : typeof authUser?.email === "string" && authUser.email.trim()
-            ? authUser.email
-            : "Admin"
-      );
-      return;
-    }
-
-    // Legacy demo providers keep their original browser profile behavior.
-    try {
-      const storedUser = sessionStorage.getItem("authUser");
-      const obj = storedUser ? JSON.parse(storedUser) : null;
-      if (authProvider === "fake") {
-        setUserName(
-          obj?.username === undefined
-            ? profile?.first_name || obj?.data?.first_name || "Admin"
-            : "Admin"
-        );
-      } else if (authProvider === "firebase") {
-        setUserName(obj?.email || "Admin");
-      }
-    } catch {
-      setUserName("Admin");
-    }
-  }, [authUser, profile]);
-
+  const { t } = useTranslation();
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const authUser = useSelector((state: any) => state.Login?.user);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const userName =
+    (typeof authUser?.name === "string" && authUser.name.trim()) ||
+    (typeof authUser?.email === "string" && authUser.email.trim()) ||
+    t("Administrator");
+  const canManageUsers = ["ADMIN", "SUPER_ADMIN"].includes(authUser?.role);
+
   const handleLogout = async () => {
-    await dispatch(logoutUser());
-    router.replace("/auth/login");
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      const succeeded = await dispatch(logoutUser());
+      if (succeeded) router.replace("/auth/login");
+    } finally {
+      setLoggingOut(false);
+    }
   };
+
   return (
-    <React.Fragment>
-      <UncontrolledDropdown
-        nav
-        inNavbar
-        className="ms-sm-3 header-item topbar-user"
-      >
-        <DropdownToggle tag="button" type="button" className="btn">
-          <span className="d-flex align-items-center">
-            <Image
-              className="rounded-circle header-profile-user"
-              src={avatar1}
-              alt="Header Avatar"
-              width={40}
-              height={40}
-            />
-            <span className="text-start ms-xl-2">
-              <span className="d-none d-xl-inline-block ms-1 fw-medium user-name-text">
-                {" "}
-                {userName || "Admin"}
-              </span>
-              <span className="d-none d-xl-block ms-1 fs-12 text-muted user-name-sub-text">
-                Founder
-              </span>
+    <UncontrolledDropdown nav inNavbar className="ms-sm-3 header-item topbar-user">
+      <DropdownToggle tag="button" type="button" className="btn">
+        <span className="d-flex align-items-center">
+          <span
+            className="rounded-circle header-profile-user bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center fw-semibold"
+            style={{ width: 40, height: 40 }}
+            aria-hidden="true"
+          >
+            {userName.slice(0, 1).toUpperCase()}
+          </span>
+          <span className="text-start ms-xl-2">
+            <span className="d-none d-xl-inline-block ms-1 fw-medium user-name-text">
+              {userName}
+            </span>
+            <span className="d-none d-xl-block ms-1 fs-12 text-muted user-name-sub-text">
+              {t(authUser?.role ?? "User")}
             </span>
           </span>
-        </DropdownToggle>
-        <DropdownMenu className="dropdown-menu-end">
-          <h6 className="dropdown-header">Welcome {userName}!</h6>
+        </span>
+      </DropdownToggle>
+
+      <DropdownMenu className="dropdown-menu-end">
+        <h6 className="dropdown-header">{t("Welcome")}, {userName}</h6>
+        <DropdownItem className="p-0">
+          <Link href="/apps-cms" className="dropdown-item">
+            <i className="mdi mdi-view-dashboard-outline text-muted fs-16 align-middle me-1" />
+            <span className="align-middle">{t("CMS Overview")}</span>
+          </Link>
+        </DropdownItem>
+        {canManageUsers && (
           <DropdownItem className="p-0">
-            <Link href="/profile" className="dropdown-item">
-              <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
-              <span className="align-middle">Profile</span>
+            <Link href="/apps-cms/users" className="dropdown-item">
+              <i className="mdi mdi-account-cog-outline text-muted fs-16 align-middle me-1" />
+              <span className="align-middle">{t("User management")}</span>
             </Link>
           </DropdownItem>
-          <DropdownItem className="p-0">
-            <Link href="/apps-chat" className="dropdown-item">
-              <i className="mdi mdi-message-text-outline text-muted fs-16 align-middle me-1"></i>{" "}
-              <span className="align-middle">Messages</span>
-            </Link>
-          </DropdownItem>
-          <DropdownItem className="p-0">
-            <Link href={"#"} className="dropdown-item">
-              <i className="mdi mdi-calendar-check-outline text-muted fs-16 align-middle me-1"></i>{" "}
-              <span className="align-middle">Taskboard</span>
-            </Link>
-          </DropdownItem>
-          <DropdownItem className="p-0">
-            <Link href="/pages-faqs" className="dropdown-item">
-              <i className="mdi mdi-lifebuoy text-muted fs-16 align-middle me-1"></i>{" "}
-              <span className="align-middle">Help</span>
-            </Link>
-          </DropdownItem>
-          <div className="dropdown-divider"></div>
-          <DropdownItem className="p-0">
-            <Link href="/pages-profile" className="dropdown-item">
-              <i className="mdi mdi-wallet text-muted fs-16 align-middle me-1"></i>{" "}
-              <span className="align-middle">
-                Balance : <b>$5971.67</b>
-              </span>
-            </Link>
-          </DropdownItem>
-          <DropdownItem className="p-0">
-            <Link href="/pages-profile-settings" className="dropdown-item">
-              <span className="badge bg-success-subtle text-success mt-1 float-end">
-                New
-              </span>
-              <i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i>{" "}
-              <span className="align-middle">Settings</span>
-            </Link>
-          </DropdownItem>
-          <DropdownItem className="p-0">
-            <Link href="/auth-lockscreen-basic" className="dropdown-item">
-              <i className="mdi mdi-lock text-muted fs-16 align-middle me-1"></i>{" "}
-              <span className="align-middle">Lock screen</span>
-            </Link>
-          </DropdownItem>
-          <DropdownItem tag="div" className="p-0">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="dropdown-item"
-            >
-              <i className="mdi mdi-logout text-muted fs-16 align-middle me-1" />{" "}
-              <span className="align-middle" data-key="t-logout">
-                Logout
-              </span>
-            </button>
-          </DropdownItem>
-        </DropdownMenu>
-      </UncontrolledDropdown>
-    </React.Fragment>
+        )}
+        <div className="dropdown-divider" />
+        <DropdownItem tag="div" className="p-0">
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            disabled={loggingOut}
+            className="dropdown-item"
+          >
+            <i className="mdi mdi-logout text-muted fs-16 align-middle me-1" />
+            <span className="align-middle">{loggingOut ? t("Signing out") : t("Logout")}</span>
+          </button>
+        </DropdownItem>
+      </DropdownMenu>
+    </UncontrolledDropdown>
   );
 };
 
