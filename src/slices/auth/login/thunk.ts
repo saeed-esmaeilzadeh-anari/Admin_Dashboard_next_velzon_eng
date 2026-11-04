@@ -184,7 +184,7 @@ export const loginUser = (user: LoginCredentials, router: any) => async (dispatc
         Cookies.remove("authUser");
       }
       dispatch(loginSuccess(data));
-      router.push("/dashboard");
+      router.push("/apps-cms");
     }
   } catch (error) {
     // Redux actions must contain serializable values, never Error/AxiosError objects.
@@ -216,8 +216,10 @@ export const logoutUser = () => async (dispatch: any) => {
     }
 
     dispatch(logoutUserSuccess());
+    return true;
   } catch (error) {
     dispatch(apiError({ message: getLoginError(error) }));
+    return false;
   }
 };
 
