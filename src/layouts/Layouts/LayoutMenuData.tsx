@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 const Navdata = () => {
   const [cmsOpen, setCmsOpen] = useState(true);
@@ -42,7 +42,7 @@ const Navdata = () => {
     { id: "cms-audit", label: "Audit log", icon: "ri-history-line", link: "/apps-cms/audit-logs" },
   ];
 
-  return <React.Fragment>{menuItems as any}</React.Fragment>;
+  return menuItems as any;
 };
 
 export default Navdata;
