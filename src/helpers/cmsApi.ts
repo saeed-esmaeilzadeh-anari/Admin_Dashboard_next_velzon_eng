@@ -85,7 +85,24 @@ export type CmsAuditLog = {
 };
 export type CmsWebhook = { id: string; name: string; endpointUrl: string; events: string[]; isActive: boolean; createdAt: string; _count?: { deliveries: number } };
 export type CmsWebhookDelivery = { id: string; eventKey: string; status: "PENDING" | "PROCESSING" | "SUCCESS" | "FAILED"; attempts: number; responseStatus?: number | null; lastError?: string | null; nextAttemptAt: string; deliveredAt?: string | null; createdAt: string };
-export type CmsPermissionState = { code: string; name: string; description: string; grantedRoles: Array<"ADMIN" | "MANAGER" | "USER"> };
+export type CmsRole =
+  | "SUPER_ADMIN"
+  | "ADMIN"
+  | "MANAGER"
+  | "CONTENT_MANAGER"
+  | "EDITOR"
+  | "AUTHOR"
+  | "REVIEWER"
+  | "MEDIA_MANAGER"
+  | "ANALYST"
+  | "READ_ONLY"
+  | "USER";
+export type CmsPermissionState = {
+  code: string;
+  name: string;
+  description: string;
+  grantedRoles: CmsRole[];
+};
 
 export type CmsPublicContent = {
   id: string; type: { key: string; name: string };
@@ -314,10 +331,10 @@ export const cmsApi = {
   async auditLogs(params: { page?: number; limit?: number; action?: string; entity?: string; search?: string } = {}): Promise<CmsPage<CmsAuditLog>> {
     return (await backendApi.get<CmsPage<CmsAuditLog>>("/cms/audit-logs", { params })).data;
   },
-  async permissions(): Promise<{ catalog: CmsPermissionState[]; roles: Array<{ role: "ADMIN" | "MANAGER" | "USER"; permissionCodes: string[] }> }> {
+  async permissions(): Promise<{ catalog: CmsPermissionState[]; roles: Array<{ role: CmsRole; permissionCodes: string[] }> }> {
     return (await backendApi.get("/cms/permissions")).data;
   },
-  async updateRolePermissions(role: "MANAGER" | "USER", permissionCodes: string[]): Promise<{ role: string; permissionCodes: string[] }> {
+  async updateRolePermissions(role: Exclude<CmsRole, "SUPER_ADMIN" | "ADMIN">, permissionCodes: string[]): Promise<{ role: CmsRole; permissionCodes: string[] }> {
     return (await backendApi.put("/cms/permissions/roles", { role, permissionCodes })).data;
   },
 };
