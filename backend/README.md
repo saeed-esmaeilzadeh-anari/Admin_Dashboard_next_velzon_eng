@@ -32,7 +32,7 @@ NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001/api/v1
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-The template's fake authentication remains the default until explicitly changed.
+The root `.env.example` selects the real backend provider. Fake/Firebase/JWT providers belong to the retained template/demo code and should not be used for customer Production deployments.
 
 ## Authentication and security
 
@@ -43,7 +43,10 @@ The template's fake authentication remains the default until explicitly changed.
 - Unsafe BFF requests validate the Origin header when it is present. Use HTTPS in production; the cookie is Secure when NODE_ENV=production.
 - POST /backend-api/auth/logout expires the server-managed session cookie. A protected upstream 401 also clears the cookie. A 403 does not log the user out.
 - GET /api/v1/auth/me returns the current authenticated user through the BFF.
-- CMS management requests require a Bearer token at NestJS. The server-side CMS permission guard checks action-level grants; ADMIN bypasses grants.
+- CMS management requests require a Bearer token at NestJS. The server-side CMS permission guard checks action-level grants; ADMIN and SUPER_ADMIN have administrator-level access.
+- Predefined roles are SUPER_ADMIN, ADMIN, MANAGER, CONTENT_MANAGER, EDITOR, AUTHOR, REVIEWER, MEDIA_MANAGER, ANALYST, READ_ONLY and USER. Non-administrator grants are configurable in the CMS permission matrix.
+- Login and registration have explicit rate limits. Password inputs longer than 72 UTF-8 bytes are rejected to avoid bcrypt truncation.
+- The user management API currently supports paginated listing and updates to name, role and active state. Invitation/create-user, recovery, email verification and session revocation are not implemented.
 - Set BACKEND_API_URL as a private server-side Next.js environment variable in production. It must point to the NestJS API over HTTPS. NEXT_PUBLIC_BACKEND_API_URL is retained only as a compatibility fallback and for middleware redirect lookup; do not put credentials or secrets in it.
 - Use HTTPS and private secrets in deployment. Never commit .env files, database credentials or webhook secrets.
 - Public form submissions are throttled and schema-validated. Webhook deliveries use HMAC-SHA256 and restrict destination addresses to public HTTPS hosts.
