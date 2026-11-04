@@ -6,6 +6,7 @@ import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min, Mi
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
+import { AuthenticatedUser, CurrentUser } from "../common/decorators/current-user.decorator";
 import { UsersService } from "./users.service";
 
 class ListUsersQuery {
@@ -22,7 +23,7 @@ class UpdateUserDto {
 @ApiTags("users")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN)
+@Roles(Role.ADMIN, Role.SUPER_ADMIN)
 @Controller("users")
 export class UsersController {
   constructor(private readonly users: UsersService) {}
@@ -33,7 +34,11 @@ export class UsersController {
   }
 
   @Patch(":id")
-  update(@Param("id", new ParseUUIDPipe()) id: string, @Body() dto: UpdateUserDto) {
-    return this.users.update(id, dto);
+  update(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ) {
+    return this.users.update(id, dto, actor.id);
   }
 }
