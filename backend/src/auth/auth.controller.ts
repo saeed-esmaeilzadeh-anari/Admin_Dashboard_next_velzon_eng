@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import { AuthenticatedUser, CurrentUser } from "../common/decorators/current-user.decorator";
 import { AuthService } from "./auth.service";
 import { JwtAuthGuard } from "./jwt-auth.guard";
@@ -12,11 +13,15 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post("register")
-  @ApiOperation({ summary: "Register a standard user account" })
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @ApiOperation({ summary: "Register a standard user account (rate limited)" })
   register(@Body() dto: RegisterDto) { return this.auth.register(dto); }
 
   @Post("login")
-  @ApiOperation({ summary: "Authenticate with email and password" })
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @ApiOperation({ summary: "Authenticate with email and password (rate limited)" })
   login(@Body() dto: LoginDto) { return this.auth.login(dto); }
 
   @Get("me")
