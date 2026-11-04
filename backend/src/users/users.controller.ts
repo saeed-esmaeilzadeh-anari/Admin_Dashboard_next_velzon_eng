@@ -39,6 +39,6 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
     @CurrentUser() actor: AuthenticatedUser,
   ) {
-    return this.users.update(id, dto, actor.id);
+    return this.users.update(id, dto, { id: actor.id, role: actor.role });
   }
 }
