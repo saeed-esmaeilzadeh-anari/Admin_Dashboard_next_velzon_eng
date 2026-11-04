@@ -2,11 +2,33 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const publicPaths = ["/auth", "/auth/login", "/auth/register"];
-const protectedPaths = [
+const protectedPaths = ["/apps-cms"];
+
+// Template/demo routes are intentionally retained in the repository but excluded
+// from the commercial CMS navigation and routed back to the real CMS dashboard.
+const legacyTemplatePaths = [
+  "/advance-ui", "/apps-api-key", "/apps-calendar", "/apps-calendar-month-grid",
+  "/apps-chat", "/apps-crm-companies", "/apps-crm-contacts", "/apps-crm-deals",
+  "/apps-crm-leads", "/apps-crypto-buy-sell", "/apps-crypto-ico", "/apps-crypto-kyc",
+  "/apps-crypto-orders", "/apps-crypto-transactions", "/apps-crypto-wallet",
+  "/apps-ecommerce-add-product", "/apps-ecommerce-cart", "/apps-ecommerce-checkout",
+  "/apps-ecommerce-customers", "/apps-ecommerce-order-details", "/apps-ecommerce-orders",
+  "/apps-ecommerce-product-details", "/apps-ecommerce-products",
+  "/apps-ecommerce-seller-details", "/apps-ecommerce-sellers", "/apps-email-basic",
+  "/apps-email-ecommerce", "/apps-file-manager", "/apps-invoices-create",
+  "/apps-invoices-details", "/apps-invoices-list", "/apps-job-application",
+  "/apps-job-candidate-grid", "/apps-job-candidate-lists", "/apps-job-categories",
+  "/apps-job-companies-lists", "/apps-job-details", "/apps-job-grid-lists",
+  "/apps-job-lists", "/apps-job-new", "/apps-job-statistics", "/apps-mailbox",
+  "/apps-nft-auction", "/apps-nft-collections", "/apps-nft-create",
+  "/apps-nft-creators", "/apps-nft-explore", "/apps-nft-item-details",
+  "/apps-nft-marketplace", "/apps-nft-ranking", "/apps-nft-wallet",
+  "/apps-projects-create", "/apps-projects-list", "/apps-projects-overview",
+  "/apps-tasks-details", "/apps-tasks-kanban", "/apps-tasks-list-view",
+  "/apps-tickets-details", "/apps-tickets-list", "/apps-todo", "/charts",
   "/dashboard", "/dashboard-analytics", "/dashboard-blog", "/dashboard-crm",
-  "/dashboard-job", "/dashboard-nft", "/dashboard-projects", "/apps-cms",
-  "/profile", "/profile-settings", "/starter", "/terms-condition", "/privacy-policy",
-  "/search-results", "/gallery", "/pricing", "/faqs", "/timeline", "/team",
+  "/dashboard-crypto", "/dashboard-job", "/dashboard-nft", "/dashboard-projects",
+  "/forms", "/icons", "/maps-google", "/pages", "/profile", "/tables", "/ui", "/widgets",
 ];
 
 function matchesPath(pathname: string, route: string): boolean {
@@ -87,10 +109,20 @@ async function resolveCmsRedirect(request: NextRequest): Promise<NextResponse | 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Redirects are resolved before page routing, but never override authentication routes
-  // or protected administration screens. Lookup failures fall through to normal routing.
+  // Demo/template routes remain in source control for future modules, but the
+  // commercial CMS release exposes only the real CMS administration area.
+  const isLegacyTemplateRoute = legacyTemplatePaths.some(route =>
+    matchesPath(pathname, route)
+  );
+  if (isLegacyTemplateRoute) {
+    const destination = new URL("/apps-cms", req.url);
+    destination.search = req.nextUrl.search;
+    return NextResponse.redirect(destination, 307);
+  }
+
   const isProtected = protectedPaths.some(route => matchesPath(pathname, route));
   const isAuthRoute = publicPaths.some(route => matchesPath(pathname, route));
+
   if (!isProtected && !isAuthRoute) {
     const cmsRedirect = await resolveCmsRedirect(req);
     if (cmsRedirect) return cmsRedirect;
@@ -107,12 +139,17 @@ export async function middleware(req: NextRequest) {
       : Boolean(req.cookies.get("authUser")?.value);
 
   if (isAuthRoute) {
-    if (hasSession) return NextResponse.redirect(new URL("/dashboard", req.url));
+    if (hasSession) return NextResponse.redirect(new URL("/apps-cms", req.url));
     return NextResponse.next();
   }
 
   if (isProtected && !hasSession) {
-    return NextResponse.redirect(new URL("/auth/login", req.url));
+    const loginUrl = new URL("/auth/login", req.url);
+    const returnTo = pathname + req.nextUrl.search;
+    if (returnTo !== "/auth/login") {
+      loginUrl.searchParams.set("returnTo", returnTo);
+    }
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
