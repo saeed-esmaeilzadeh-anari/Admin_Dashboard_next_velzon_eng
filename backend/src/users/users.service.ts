@@ -58,7 +58,7 @@ export class UsersService {
   async update(
     id: string,
     patch: { role?: Role; isActive?: boolean; name?: string },
-    actorId: string
+    actor: { id: string; role: Role }
   ) {
     if (!Object.keys(patch).length) {
       throw new ConflictException("At least one user field must be provided.");
@@ -72,6 +72,13 @@ export class UsersService {
         });
         if (!current) throw new NotFoundException("User not found.");
 
+        if (
+          actor.role === Role.ADMIN &&
+          (current.role === Role.SUPER_ADMIN || patch.role === Role.SUPER_ADMIN)
+        ) {
+          throw new ForbiddenException("Only a SUPER_ADMIN can manage SUPER_ADMIN accounts.");
+        }
+
         const remainsPrivilegedAdmin =
           patch.role === undefined || privilegedAdminRoles.includes(patch.role);
         const removesAdminAccess =
@@ -80,7 +87,7 @@ export class UsersService {
           (patch.isActive === false || !remainsPrivilegedAdmin);
 
         if (removesAdminAccess) {
-          if (id === actorId) {
+          if (id === actor.id) {
             throw new ForbiddenException(
               "You cannot deactivate or demote your own administrator account."
             );
