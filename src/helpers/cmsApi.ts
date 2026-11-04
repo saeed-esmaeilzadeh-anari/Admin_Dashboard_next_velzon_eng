@@ -97,6 +97,19 @@ export type CmsRole =
   | "ANALYST"
   | "READ_ONLY"
   | "USER";
+export type CmsUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: CmsRole;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+export type CmsUserPage = {
+  data: CmsUser[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
+};
 export type CmsPermissionState = {
   code: string;
   name: string;
@@ -330,6 +343,12 @@ export const cmsApi = {
   },
   async auditLogs(params: { page?: number; limit?: number; action?: string; entity?: string; search?: string } = {}): Promise<CmsPage<CmsAuditLog>> {
     return (await backendApi.get<CmsPage<CmsAuditLog>>("/cms/audit-logs", { params })).data;
+  },
+  async users(params: { page?: number; limit?: number; search?: string } = {}): Promise<CmsUserPage> {
+    return (await backendApi.get<CmsUserPage>("/users", { params })).data;
+  },
+  async updateUser(id: string, input: Partial<Pick<CmsUser, "name" | "role" | "isActive">>): Promise<CmsUser> {
+    return (await backendApi.patch<CmsUser>(`/users/${encodeURIComponent(id)}`, input)).data;
   },
   async permissions(): Promise<{ catalog: CmsPermissionState[]; roles: Array<{ role: CmsRole; permissionCodes: string[] }> }> {
     return (await backendApi.get("/cms/permissions")).data;
