@@ -695,5 +695,17 @@
   "Page builder blocks": "Page builder blocks",
   "Languages": "Languages",
   "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.",
-  "Content entries": "Content entries"
+  "Content entries": "Content entries",
+  "SUPER_ADMIN": "Super Administrator",
+  "ADMIN": "Administrator",
+  "MANAGER": "Manager",
+  "CONTENT_MANAGER": "Content Manager",
+  "EDITOR": "Editor",
+  "AUTHOR": "Author",
+  "REVIEWER": "Reviewer",
+  "MEDIA_MANAGER": "Media Manager",
+  "ANALYST": "Analyst",
+  "READ_ONLY": "Read Only",
+  "USER": "User",
+  "Configure role-level CMS grants. Administrator roles always retain all permissions.": "Configure role-level CMS grants. Administrator roles always retain all permissions."
 }
