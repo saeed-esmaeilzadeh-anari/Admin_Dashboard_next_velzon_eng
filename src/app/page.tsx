@@ -3,13 +3,7 @@ import { redirect } from "next/navigation";
 
 export default async function Home() {
   const cookieStore = await cookies();
-  const authUser = cookieStore.get("authUser");
+  const session = cookieStore.get("velzon_session");
 
-  // If user is authenticated, redirect to dashboard
-  if (authUser) {
-    redirect("/dashboard");
-  }
-
-  // If user is not authenticated, redirect to login
-  redirect("/auth/login");
+  redirect(session ? "/apps-cms" : "/auth/login");
 }
