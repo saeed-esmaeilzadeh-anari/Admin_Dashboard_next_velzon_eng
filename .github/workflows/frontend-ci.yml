@@ -91,7 +91,7 @@ jobs:
 
           ready=0
           for attempt in $(seq 1 45); do
-            if curl --fail --silent http://127.0.0.1:3100/apps-todo -o /dev/null; then
+            if curl --fail --silent http://127.0.0.1:3100/auth/login -o /dev/null; then
               ready=1
               break
             fi
@@ -104,11 +104,35 @@ jobs:
 
           if [ "$ready" -ne 1 ]; then
             cat /tmp/next-start.log
-            echo "Production server did not successfully render /apps-todo"
+            echo "Production server did not successfully render /auth/login"
             exit 1
           fi
 
-          curl --fail --silent --show-error http://127.0.0.1:3100/charts/apex-bar -o /dev/null
+          # CMS is the only administration area in the commercial release.
+          legacy_status="$(curl --silent --show-error --output /tmp/legacy-route.html --dump-header /tmp/legacy-route-headers.txt --write-out '%{http_code}' http://127.0.0.1:3100/apps-todo)"
+          if [ "$legacy_status" != "307" ]; then
+            cat /tmp/legacy-route-headers.txt
+            echo "Legacy demo route was not redirected to the CMS (HTTP $legacy_status)"
+            exit 1
+          fi
+          grep -Eiq '^location: http://127\.0\.0\.1:3100/apps-cms' /tmp/legacy-route-headers.txt
+
+          dashboard_status="$(curl --silent --show-error --output /tmp/dashboard-route.html --dump-header /tmp/dashboard-route-headers.txt --write-out '%{http_code}' http://127.0.0.1:3100/dashboard)"
+          if [ "$dashboard_status" != "307" ]; then
+            cat /tmp/dashboard-route-headers.txt
+            echo "Template dashboard was not redirected to CMS (HTTP $dashboard_status)"
+            exit 1
+          fi
+          grep -Eiq '^location: http://127\.0\.0\.1:3100/apps-cms' /tmp/dashboard-route-headers.txt
+
+          unauth_cms_status="$(curl --silent --show-error --output /tmp/unauth-cms.html --dump-header /tmp/unauth-cms-headers.txt --write-out '%{http_code}' http://127.0.0.1:3100/apps-cms)"
+          if [ "$unauth_cms_status" != "307" ]; then
+            cat /tmp/unauth-cms-headers.txt
+            echo "CMS admin route was not protected (HTTP $unauth_cms_status)"
+            exit 1
+          fi
+          grep -Eiq '^location: http://127\.0\.0\.1:3100/auth/login' /tmp/unauth-cms-headers.txt
+
           curl --fail --silent --show-error http://127.0.0.1:3100/backend-api/health -o /tmp/proxy-health.json
           grep -q '"status":"ok"' /tmp/proxy-health.json
 
@@ -143,6 +167,17 @@ jobs:
           session_cookie="$(grep -i '^set-cookie: velzon_session=' /tmp/bff-login-headers.txt | head -n 1 | sed -E 's/^[^:]+:[[:space:]]*([^;]+).*/\1/I' | tr -d '\r')"
           test -n "$session_cookie"
 
+          # A valid session cookie must allow the actual CMS dashboard to render.
+          cms_status="$(curl --silent --show-error --output /tmp/cms-page.html --write-out '%{http_code}' \
+            --cookie "$session_cookie" \
+            http://127.0.0.1:3100/apps-cms)"
+          if [ "$cms_status" != "200" ]; then
+            cat /tmp/cms-page.html
+            cat /tmp/next-start.log
+            echo "Authenticated CMS dashboard did not render (HTTP $cms_status)"
+            exit 1
+          fi
+
           # The BFF must use the HttpOnly cookie to add Authorization server-side.
           curl --fail --silent --show-error \
             --cookie "$session_cookie" \
@@ -155,4 +190,4 @@ jobs:
             --cookie "$session_cookie"
           grep -Eiq '^set-cookie: velzon_session=.*max-age=0' /tmp/bff-logout-headers.txt
 
-          echo "Production pages, same-origin proxy, HttpOnly login, authenticated API and logout smoke tests passed."
+          echo "CMS-only navigation redirects, protected CMS page, same-origin proxy, HttpOnly login, authenticated API and logout smoke tests passed."
