@@ -695,5 +695,17 @@
   "Page builder blocks": "بلوک‌های صفحه‌ساز",
   "Languages": "زبان‌ها",
   "Media and page builder fields are supported. Generic relation and repeater fields are not supported yet.": "فیلدهای رسانه و صفحه‌ساز پشتیبانی می‌شوند؛ فیلدهای عمومی رابطه و تکرارشونده هنوز پشتیبانی نمی‌شوند.",
-  "Content entries": "تعداد محتواها"
+  "Content entries": "تعداد محتواها",
+  "SUPER_ADMIN": "مدیر ارشد سامانه",
+  "ADMIN": "مدیر سامانه",
+  "MANAGER": "مدیر",
+  "CONTENT_MANAGER": "مدیر محتوا",
+  "EDITOR": "ویراستار",
+  "AUTHOR": "نویسنده",
+  "REVIEWER": "بازبین",
+  "MEDIA_MANAGER": "مدیر رسانه",
+  "ANALYST": "تحلیلگر",
+  "READ_ONLY": "فقط مشاهده",
+  "USER": "کاربر",
+  "Configure role-level CMS grants. Administrator roles always retain all permissions.": "مجوزهای هر نقش را در سامانه مدیریت کنید. نقش‌های مدیر سامانه همیشه تمام مجوزها را دارند."
 }
