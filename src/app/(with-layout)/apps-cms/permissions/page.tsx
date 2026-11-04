@@ -10,8 +10,9 @@ function getError(error:unknown):string{const value=error as {response?:{data?:{
 export default function CmsPermissionsPage(){
  const {t,i18n}=useTranslation();
  const [catalog,setCatalog]=useState<CmsPermissionState[]>([]);
- const editableRoles: CmsRole[] = ["MANAGER", "CONTENT_MANAGER", "EDITOR", "AUTHOR", "REVIEWER", "MEDIA_MANAGER", "ANALYST", "READ_ONLY", "USER"];
- const [role,setRole]=useState<CmsRole>("MANAGER");
+ type EditableCmsRole = Exclude<CmsRole, "SUPER_ADMIN" | "ADMIN">;
+ const editableRoles: EditableCmsRole[] = ["MANAGER", "CONTENT_MANAGER", "EDITOR", "AUTHOR", "REVIEWER", "MEDIA_MANAGER", "ANALYST", "READ_ONLY", "USER"];
+ const [role,setRole]=useState<EditableCmsRole>("MANAGER");
  const [grants,setGrants]=useState<string[]>([]);
  const [loading,setLoading]=useState(true);
  const [saving,setSaving]=useState(false);
@@ -25,7 +26,7 @@ export default function CmsPermissionsPage(){
   finally{setLoading(false);}
  },[role]);
  useEffect(()=>{void load();},[load]);
- const changeRole=(next:CmsRole)=>{setRole(next);setNotice("");};
+ const changeRole=(next:EditableCmsRole)=>{setRole(next);setNotice("");};
  const toggle=(code:string,checked:boolean)=>setGrants(current=>checked?[...new Set([...current,code])]:current.filter(value=>value!==code));
  const save=async()=>{
   setSaving(true);setError("");setNotice("");
@@ -39,7 +40,7 @@ export default function CmsPermissionsPage(){
  return <div className="page-content" dir={["fa","ar"].includes(i18n.language.split("-")[0])?"rtl":"ltr"}><Container fluid>
   <Row className="align-items-center mb-4"><Col><h4 className="mb-1">{t("CMS role permissions")}</h4><p className="text-muted mb-0">{t("Configure role-level CMS grants. Administrator roles always retain all permissions.")}</p></Col><Col xs="auto"><Link href="/apps-cms/content" className="btn btn-light">{t("Back to content")}</Link></Col></Row>
   {error&&<Alert color="danger" toggle={()=>setError("")}>{error}</Alert>}{notice&&<Alert color="success" toggle={()=>setNotice("")}>{notice}</Alert>}
-  <Card><CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2"><h5 className="card-title mb-0">{t("Permission matrix")}</h5><div className="d-flex gap-2 align-items-center"><Label className="mb-0">{t("Role")}</Label><Input type="select" style={{minWidth:190}} value={role} onChange={event=>changeRole(event.target.value as CmsRole)}>{editableRoles.map(item=><option key={item} value={item}>{t(item)}</option>)}</Input><Button color="light" onClick={()=>void load()} disabled={loading}><i className="ri-refresh-line"/></Button></div></CardHeader><CardBody>
+  <Card><CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2"><h5 className="card-title mb-0">{t("Permission matrix")}</h5><div className="d-flex gap-2 align-items-center"><Label className="mb-0">{t("Role")}</Label><Input type="select" style={{minWidth:190}} value={role} onChange={event=>changeRole(event.target.value as EditableCmsRole)}>{editableRoles.map(item=><option key={item} value={item}>{t(item)}</option>)}</Input><Button color="light" onClick={()=>void load()} disabled={loading}><i className="ri-refresh-line"/></Button></div></CardHeader><CardBody>
    {loading&&<div className="text-center py-4"><Spinner/></div>}
    {!loading&&<><div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3"><div className="text-muted small">{t("Granted permissions")}: <strong>{grants.length}</strong> / {catalog.length}</div><div className="d-flex gap-2"><Button color="light" size="sm" onClick={()=>setGrants(catalog.map(item=>item.code))}>{t("Select all")}</Button><Button color="light" size="sm" onClick={()=>setGrants([])}>{t("Clear all")}</Button><Button color="primary" disabled={!dirty||saving} onClick={()=>void save()}>{saving?<Spinner size="sm" className="me-2"/>:null}{t("Save permissions")}</Button></div></div>
    {[...grouped.entries()].map(([group,permissions])=><div className="border rounded mb-3" key={group}><div className="bg-light-subtle p-3 d-flex justify-content-between"><strong>{t(group)}</strong><small className="text-muted">{permissions.filter(item=>grants.includes(item.code)).length} / {permissions.length}</small></div><div className="table-responsive"><Table responsive className="align-middle mb-0"><thead><tr><th style={{width:60}}>{t("Allow")}</th><th>{t("Permission")}</th><th>{t("Code")}</th><th>{t("Description")}</th></tr></thead><tbody>
