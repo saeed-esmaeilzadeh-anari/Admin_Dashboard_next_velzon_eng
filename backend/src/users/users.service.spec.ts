@@ -35,7 +35,7 @@ describe("UsersService", () => {
     });
 
     await expect(
-      service.update("admin-1", { role: Role.EDITOR }, "admin-1")
+      service.update("admin-1", { role: Role.EDITOR }, { id: "admin-1", role: Role.ADMIN })
     ).rejects.toBeInstanceOf(ForbiddenException);
 
     expect(tx.user.count).not.toHaveBeenCalled();
@@ -51,7 +51,7 @@ describe("UsersService", () => {
     tx.user.count.mockResolvedValue(1);
 
     await expect(
-      service.update("admin-1", { role: Role.EDITOR }, "admin-2")
+      service.update("admin-1", { role: Role.EDITOR }, { id: "admin-2", role: Role.ADMIN })
     ).rejects.toBeInstanceOf(ConflictException);
 
     expect(tx.user.update).not.toHaveBeenCalled();
@@ -71,7 +71,7 @@ describe("UsersService", () => {
     });
 
     await expect(
-      service.update("admin-1", { role: Role.EDITOR }, "admin-2")
+      service.update("admin-1", { role: Role.EDITOR }, { id: "admin-2", role: Role.ADMIN })
     ).resolves.toMatchObject({ id: "admin-1", role: Role.EDITOR });
 
     expect(tx.user.count).toHaveBeenCalledWith({
@@ -80,7 +80,7 @@ describe("UsersService", () => {
   });
 
   it("rejects an empty update", async () => {
-    await expect(service.update("user-1", {}, "admin-1")).rejects.toBeInstanceOf(
+    await expect(service.update("user-1", {}, { id: "admin-1", role: Role.ADMIN })).rejects.toBeInstanceOf(
       ConflictException
     );
     expect(prisma.$transaction).not.toHaveBeenCalled();
@@ -90,7 +90,7 @@ describe("UsersService", () => {
     tx.user.findUnique.mockResolvedValue(null);
 
     await expect(
-      service.update("missing", { name: "Renamed User" }, "admin-1")
+      service.update("missing", { name: "Renamed User" }, { id: "admin-1", role: Role.ADMIN })
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -102,7 +102,7 @@ describe("UsersService", () => {
     });
     tx.user.update.mockResolvedValue({ id: "user-1" });
 
-    await service.update("user-1", { name: "Renamed User" }, "admin-1");
+    await service.update("user-1", { name: "Renamed User" }, { id: "admin-1", role: Role.ADMIN });
 
     expect(prisma.$transaction).toHaveBeenCalledWith(
       expect.any(Function),
