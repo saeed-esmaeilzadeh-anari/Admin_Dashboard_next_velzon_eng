@@ -44,7 +44,7 @@ const resources = {
 };
 
 // Determine initial language setting only in browser
-let language = "en";
+let language = "fa";
 if (typeof window !== "undefined") {
   const storedLang = localStorage.getItem("I18N_LANGUAGE");
   if (storedLang) {
