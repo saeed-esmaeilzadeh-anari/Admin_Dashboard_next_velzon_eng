@@ -103,21 +103,58 @@ async function main() {
       create: definition,
     }));
   }
-  const adminGrantCount = await prisma.cmsRolePermission.count({ where: { role: Role.ADMIN } });
-  if (adminGrantCount === 0) {
-    await prisma.cmsRolePermission.createMany({ data: seededPermissions.map(permission => ({ role: Role.ADMIN, permissionId: permission.id })) });
-  }
-  const managerGrantCount = await prisma.cmsRolePermission.count({ where: { role: Role.MANAGER } });
-  if (managerGrantCount === 0) {
-    const managerCodes = new Set([
+  const allPermissionCodes = permissionDefinitions.map(permission => permission.code);
+  const roleGrantDefaults: Partial<Record<Role, string[]>> = {
+    [Role.SUPER_ADMIN]: allPermissionCodes,
+    [Role.ADMIN]: allPermissionCodes,
+    [Role.MANAGER]: [
       "cms.content.read", "cms.content.create", "cms.content.edit", "cms.content.submit",
       "cms.content.review", "cms.media.read", "cms.media.upload", "cms.taxonomy.manage",
       "cms.menus.manage", "cms.redirects.manage", "cms.forms.manage",
-      "cms.forms.submissions.read", "cms.forms.submissions.manage"
-    ]);
-    await prisma.cmsRolePermission.createMany({
-      data: seededPermissions.filter(permission => managerCodes.has(permission.code)).map(permission => ({ role: Role.MANAGER, permissionId: permission.id })),
-    });
+      "cms.forms.submissions.read", "cms.forms.submissions.manage",
+    ],
+    [Role.CONTENT_MANAGER]: [
+      "cms.content.read", "cms.content.create", "cms.content.edit", "cms.content.submit",
+      "cms.content.review", "cms.content.publish", "cms.content.archive", "cms.media.read",
+      "cms.media.upload", "cms.taxonomy.manage", "cms.menus.manage", "cms.redirects.manage",
+      "cms.forms.manage", "cms.forms.submissions.read", "cms.forms.submissions.manage",
+    ],
+    [Role.EDITOR]: [
+      "cms.content.read", "cms.content.create", "cms.content.edit", "cms.content.submit",
+      "cms.media.read", "cms.media.upload",
+    ],
+    [Role.AUTHOR]: [
+      "cms.content.read", "cms.content.create", "cms.content.edit", "cms.content.submit",
+      "cms.media.read",
+    ],
+    [Role.REVIEWER]: [
+      "cms.content.read", "cms.content.review", "cms.media.read",
+    ],
+    [Role.MEDIA_MANAGER]: [
+      "cms.media.read", "cms.media.upload", "cms.media.delete",
+    ],
+    [Role.ANALYST]: [
+      "cms.content.read", "cms.audit.read",
+    ],
+    [Role.READ_ONLY]: [
+      "cms.content.read", "cms.media.read",
+    ],
+  };
+
+  // Seed grants only for roles that have never been configured. Subsequent seed
+  // runs must not overwrite permission changes made in the administration UI.
+  for (const [roleName, codes] of Object.entries(roleGrantDefaults)) {
+    const role = roleName as Role;
+    const existingGrantCount = await prisma.cmsRolePermission.count({ where: { role } });
+    if (existingGrantCount > 0) continue;
+
+    const allowedCodes = new Set(codes);
+    const grantable = seededPermissions.filter(permission => allowedCodes.has(permission.code));
+    if (grantable.length) {
+      await prisma.cmsRolePermission.createMany({
+        data: grantable.map(permission => ({ role, permissionId: permission.id })),
+      });
+    }
   }
 
   await prisma.category.upsert({ where: { slug: "general" }, update: {}, create: { name: "General", slug: "general" } });
