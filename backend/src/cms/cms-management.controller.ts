@@ -113,8 +113,8 @@ export class CmsManagementController {
     });
   }
 
-  @Get("permissions") @Roles(Role.ADMIN) @CmsPermissions("cms.permissions.manage")
+  @Get("permissions") @Roles(Role.ADMIN, Role.SUPER_ADMIN) @CmsPermissions("cms.permissions.manage")
   listPermissions() { return this.cms.listPermissions(); }
-  @Put("permissions/roles") @Roles(Role.ADMIN) @CmsPermissions("cms.permissions.manage")
+  @Put("permissions/roles") @Roles(Role.ADMIN, Role.SUPER_ADMIN) @CmsPermissions("cms.permissions.manage")
   updateRolePermissions(@Body() dto: UpdateRolePermissionsDto) { return this.cms.updateRolePermissions(dto); }
 }
