@@ -463,7 +463,9 @@ export class CmsManagementService implements OnModuleInit {
     };
   }
   async updateRolePermissions(dto: UpdateRolePermissionsDto) {
-    if (dto.role === Role.ADMIN) throw new BadRequestException("ADMIN always retains all CMS permissions.");
+    if (dto.role === Role.ADMIN || dto.role === Role.SUPER_ADMIN) {
+      throw new BadRequestException("Administrator roles always retain all CMS permissions.");
+    }
     const requested = [...new Set(dto.permissionCodes)];
     const valid = await this.prisma.cmsPermission.findMany({ where: { code: { in: requested } }, select: { id: true, code: true } });
     if (valid.length !== requested.length) throw new BadRequestException("One or more permission codes are not recognized.");
@@ -479,32 +481,15 @@ export class CmsManagementService implements OnModuleInit {
   }
 
   async ensureDefaultPermissions() {
+    // Ensure the permission catalogue exists without re-granting permissions
+    // that an administrator intentionally removed from a role.
     for (const [code, name, description] of permissionCatalog) {
       await this.prisma.cmsPermission.upsert({
-        where: { code }, update: { name, description },
+        where: { code },
+        update: { name, description },
         create: { code, name, description },
       });
     }
-    const permissions = await this.prisma.cmsPermission.findMany({ select: { id: true, code: true } });
-    const managerCodes = new Set([
-      "cms.content.read", "cms.content.create", "cms.content.edit", "cms.content.submit",
-      "cms.content.review", "cms.media.read", "cms.media.upload", "cms.taxonomy.manage",
-      "cms.menus.manage", "cms.redirects.manage", "cms.forms.manage", "cms.forms.submissions.read",
-      "cms.forms.submissions.manage",
-    ]);
-    await this.prisma.$transaction(async tx => {
-      for (const permission of permissions) {
-        await tx.cmsRolePermission.upsert({
-          where: { role_permissionId: { role: Role.ADMIN, permissionId: permission.id } },
-          update: {},
-          create: { role: Role.ADMIN, permissionId: permission.id },
-        });
-        const managerWhere = { role_permissionId: { role: Role.MANAGER, permissionId: permission.id } };
-        if (managerCodes.has(permission.code)) {
-          await tx.cmsRolePermission.upsert({ where: managerWhere, update: {}, create: { role: Role.MANAGER, permissionId: permission.id } });
-        }
-      }
-    });
   }
 
   private async validateTermParent(taxonomyId: string, parentId: string | null, hierarchical: boolean, currentTermId?: string) {
