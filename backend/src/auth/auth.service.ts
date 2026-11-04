@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Role } from "@prisma/client";
 import * as bcrypt from "bcrypt";
@@ -11,6 +11,9 @@ export class AuthService {
   constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService) {}
 
   async register(dto: RegisterDto) {
+    if (Buffer.byteLength(dto.password, "utf8") > 72) {
+      throw new BadRequestException("Password must not exceed 72 UTF-8 bytes when bcrypt is used.");
+    }
     const email = dto.email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({ where: { email }, select: { id: true } });
     if (existing) throw new ConflictException("An account with this email already exists.");
@@ -25,6 +28,9 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
+    if (Buffer.byteLength(dto.password, "utf8") > 72) {
+      throw new UnauthorizedException("Invalid email or password.");
+    }
     const email = dto.email.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.isActive || !(await bcrypt.compare(dto.password, user.passwordHash))) {
