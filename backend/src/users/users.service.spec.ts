@@ -94,6 +94,43 @@ describe("UsersService", () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
+  it("does not allow an ADMIN to change a SUPER_ADMIN account", async () => {
+    tx.user.findUnique.mockResolvedValue({
+      id: "root-admin",
+      role: Role.SUPER_ADMIN,
+      isActive: true,
+    });
+
+    await expect(
+      service.update(
+        "root-admin",
+        { isActive: false },
+        { id: "admin-1", role: Role.ADMIN }
+      )
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(tx.user.update).not.toHaveBeenCalled();
+  });
+
+  it("does not allow the last active administrator to be deactivated", async () => {
+    tx.user.findUnique.mockResolvedValue({
+      id: "admin-1",
+      role: Role.ADMIN,
+      isActive: true,
+    });
+    tx.user.count.mockResolvedValue(1);
+
+    await expect(
+      service.update(
+        "admin-1",
+        { isActive: false },
+        { id: "admin-2", role: Role.SUPER_ADMIN }
+      )
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(tx.user.update).not.toHaveBeenCalled();
+  });
+
   it("uses a serializable transaction for administrator changes", async () => {
     tx.user.findUnique.mockResolvedValue({
       id: "user-1",
