@@ -7,7 +7,7 @@ const protectedPaths = ["/apps-cms"];
 // Template/demo routes are intentionally retained in the repository but excluded
 // from the commercial CMS navigation and routed back to the real CMS dashboard.
 const legacyTemplatePaths = [
-  "/advance-ui", "/apps-api-key", "/apps-calendar", "/apps-calendar-month-grid",
+  "/about", "/advance-ui", "/apps-calendar-month-grid", "/apps-api-key", "/apps-calendar", "/apps-calendar-month-grid",
   "/apps-chat", "/apps-crm-companies", "/apps-crm-contacts", "/apps-crm-deals",
   "/apps-crm-leads", "/apps-crypto-buy-sell", "/apps-crypto-ico", "/apps-crypto-kyc",
   "/apps-crypto-orders", "/apps-crypto-transactions", "/apps-crypto-wallet",
@@ -27,7 +27,8 @@ const legacyTemplatePaths = [
   "/apps-tasks-details", "/apps-tasks-kanban", "/apps-tasks-list-view",
   "/apps-tickets-details", "/apps-tickets-list", "/apps-todo", "/charts",
   "/dashboard", "/dashboard-analytics", "/dashboard-blog", "/dashboard-crm",
-  "/dashboard-crypto", "/dashboard-job", "/dashboard-nft", "/dashboard-projects",
+  "/dashboard-crypto", "/dashboard-ecommerce", "/dashboard-job", "/dashboard-nft", "/dashboard-projects",
+  "/authinner", "/job-landing", "/landing", "/nft-landing", "/pricing",
   "/forms", "/icons", "/maps-google", "/pages", "/profile", "/tables", "/ui", "/widgets",
 ];
 
