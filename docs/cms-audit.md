@@ -1,3 +1,5 @@
+> **Current-state note (2026-11-04):** This document is retained as an earlier engineering snapshot. For the current product scope, verified implementation inventory, role model, deployment requirements and open release gates, use [Enterprise CMS Audit](enterprise-cms-audit.md), [Implementation Status](enterprise-cms-implementation-status.md), [Architecture](enterprise-cms-architecture.md), [Security](enterprise-cms-security.md) and [Deployment](enterprise-cms-deployment.md). Where this historical note differs from those current documents, the current documents take precedence.
+
 # CMS Implementation Audit
 
 This is a status ledger for the current feature branch. Items described as implemented refer to code/UI present on the branch; they are not a substitute for successful CI, live database migration, or deployed end-to-end testing.
