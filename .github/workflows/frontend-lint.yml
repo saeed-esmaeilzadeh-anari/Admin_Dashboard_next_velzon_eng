@@ -6,6 +6,9 @@ on:
     paths:
       - "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
       - "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
+      - "src/app/(with-layout)/apps-cms/content/[id]/preview/page.tsx"
+      - "src/app/(with-layout)/apps-cms/content/new/page.tsx"
+      - "src/app/(with-layout)/apps-cms/content/page.tsx"
       - "src/app/(with-layout)/apps-cms/users/page.tsx"
       - ".github/workflows/frontend-lint.yml"
       - "package.json"
@@ -17,6 +20,9 @@ on:
     paths:
       - "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
       - "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
+      - "src/app/(with-layout)/apps-cms/content/[id]/preview/page.tsx"
+      - "src/app/(with-layout)/apps-cms/content/new/page.tsx"
+      - "src/app/(with-layout)/apps-cms/content/page.tsx"
       - "src/app/(with-layout)/apps-cms/users/page.tsx"
       - ".github/workflows/frontend-lint.yml"
       - "package.json"
