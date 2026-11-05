@@ -61,6 +61,15 @@ jobs:
         run: npx prisma migrate status
       - name: Seed locales, content types, permissions and test administrator
         run: npm run prisma:seed
+      - name: Seed optional bilingual portfolio demo content
+        env:
+          DEMO_SEED_ENABLED: "true"
+          NODE_ENV: test
+        run: npm run prisma:seed:demo
+      - name: Verify idempotent portfolio demo data and published snapshots
+        run: |
+          DEMO_SEED_ENABLED=true NODE_ENV=test npm run prisma:seed:demo
+          npm run test:db-smoke:demo
       - name: Smoke-test migrated database and seed invariants
         run: npm run test:db-smoke
       - name: Type-check
