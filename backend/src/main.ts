@@ -12,6 +12,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: false,
   });
+  app.enableShutdownHooks();
   app.useStaticAssets(resolve(process.env.UPLOAD_DIR ?? "uploads"), {
     prefix: "/uploads/",
   });
@@ -24,12 +25,12 @@ async function bootstrap() {
   app.useGlobalFilters(new PrismaExceptionFilter());
   app.enableCors({
     origin: (origin, callback) => {
-      // درخواست‌های بدون Origin مانند بعضی درخواست‌های Postman
+      // Requests without Origin (for example Postman) are supported.
       if (!origin) {
         return callback(null, true);
       }
 
-      // اجازه به localhost با هر پورتی در محیط توسعه
+      // Allow localhost on arbitrary ports only outside production.
       const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
         origin
       );

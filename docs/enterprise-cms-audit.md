@@ -3,7 +3,7 @@
 Audit date: 2026-11-05
 Repository: `saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng`
 Default branch baseline: `main@5ef8f23a390342703fec773a42d3be39ba4bec5b`
-Working branch: `feat/enterprise-cms-production-v2`
+Original implementation branch: `feat/enterprise-cms-production-v2`; subsequent quality PR #17 is merged into main. Portfolio hardening is tracked separately in `feat/portfolio-readiness-hardening`.
 
 ## 1. Repository and technology baseline
 
@@ -103,6 +103,10 @@ The backend suite contains unit specs for CMS services, media references, permis
 - In backend auth mode, the navigation presents the CMS product surface rather than the full template/demo catalogue.
 - Rewrote the root README with actual package versions, working local setup commands and explicit release limitations.
 
-## 7. Release decision
+## 7. Post-audit hardening increment
+
+The follow-up branch `feat/portfolio-readiness-hardening` adds per-route login/registration throttling, production-safe default registration policy, liveness/readiness health probes and graceful shutdown hooks. It adds corresponding unit tests and HTTP runtime checks to Backend CI. These changes are pending CI verification and review on the exact branch head.
+
+## 8. Release decision
 
 **Not Production Ready.** The branch must pass both CI workflows on its exact final HEAD. The remaining high-priority security, authorization, account lifecycle, operational recovery, browser E2E, accessibility, performance and staging gates must be completed and evidenced before commercial launch. No production deployment or merge is performed by this branch.
