@@ -60,11 +60,11 @@ jobs:
             "src/components/ClientProviders.tsx" \
             "src/components/Cms/PageBuilderField.tsx" \
             "src/components/Cms/PagePreview.tsx" \
-            "src/components/Cms/PublicCmsHeader.tsx" \\
-            "src/components/Cms/RelationField.tsx" \\
-            "src/components/Cms/RepeaterField.tsx" \\
-            "src/components/Common/ProfileDropdown.tsx" \\
-            "src/helpers/backendApi.ts" \\
+            "src/components/Cms/PublicCmsHeader.tsx" \
+            "src/components/Cms/RelationField.tsx" \
+            "src/components/Cms/RepeaterField.tsx" \
+            "src/components/Common/ProfileDropdown.tsx" \
+            "src/helpers/backendApi.ts" \
             "src/helpers/cmsApi.ts"
       - name: Lint maintained CMS and lint-debt files
         shell: bash
@@ -88,11 +88,11 @@ jobs:
             "src/components/ClientProviders.tsx" \
             "src/components/Cms/PageBuilderField.tsx" \
             "src/components/Cms/PagePreview.tsx" \
-            "src/components/Cms/PublicCmsHeader.tsx" \\
-            "src/components/Cms/RelationField.tsx" \\
-            "src/components/Cms/RepeaterField.tsx" \\
-            "src/components/Common/ProfileDropdown.tsx" \\
-            "src/helpers/backendApi.ts" \\
+            "src/components/Cms/PublicCmsHeader.tsx" \
+            "src/components/Cms/RelationField.tsx" \
+            "src/components/Cms/RepeaterField.tsx" \
+            "src/components/Common/ProfileDropdown.tsx" \
+            "src/helpers/backendApi.ts" \
             "src/helpers/cmsApi.ts"
       - name: Run full frontend lint
         run: npm run lint
