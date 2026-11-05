@@ -59,7 +59,7 @@ jobs:
           NEXT_PUBLIC_DEFAULT_AUTH: backend
           NEXT_PUBLIC_BACKEND_API_URL: http://127.0.0.1:3001/api/v1
           BACKEND_API_URL: http://127.0.0.1:3001/api/v1
-          E2E_BASE_URL: http://127.0.0.1:3100
+          E2E_BASE_URL: http://localhost:3100
           PORT: 3100
         shell: bash
         run: |
