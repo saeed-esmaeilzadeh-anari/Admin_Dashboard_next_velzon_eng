@@ -1,6 +1,12 @@
 "use client";
 
-import React, { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import Link from "next/link";
 import {
   Alert,
@@ -19,11 +25,7 @@ import {
   Table,
 } from "reactstrap";
 import { useTranslation } from "react-i18next";
-import {
-  CmsAdminUser,
-  CmsAdminUserRole,
-  cmsApi,
-} from "@/helpers/cmsApi";
+import { CmsAdminUser, CmsAdminUserRole, cmsApi } from "@/helpers/cmsApi";
 
 type UserDraft = {
   name: string;
@@ -39,7 +41,7 @@ function getErrorMessage(error: unknown): string {
   const message = value?.response?.data?.message ?? value?.message;
   return Array.isArray(message)
     ? message.join(", ")
-    : message ?? "Unable to complete the user-management request.";
+    : (message ?? "Unable to complete the user-management request.");
 }
 
 function toDraft(user: CmsAdminUser): UserDraft {
@@ -64,11 +66,17 @@ export default function CmsUsersPage() {
     setLoading(true);
     setError("");
     try {
-      const result = await cmsApi.users({ page, limit: 20, ...(search ? { search } : {}) });
+      const result = await cmsApi.users({
+        page,
+        limit: 20,
+        ...(search ? { search } : {}),
+      });
       setUsers(result.data);
       setTotal(result.meta.total);
       setTotalPages(result.meta.totalPages);
-      setDrafts(Object.fromEntries(result.data.map(user => [user.id, toDraft(user)])));
+      setDrafts(
+        Object.fromEntries(result.data.map(user => [user.id, toDraft(user)]))
+      );
     } catch (cause) {
       setError(getErrorMessage(cause));
     } finally {
@@ -158,7 +166,9 @@ export default function CmsUsersPage() {
           <Col>
             <h4 className="mb-1">{t("User management")}</h4>
             <p className="text-muted mb-0">
-              {t("Manage installation users, role assignments and account activation")}
+              {t(
+                "Manage installation users, role assignments and account activation"
+              )}
             </p>
           </Col>
           <Col xs="auto">
@@ -188,7 +198,11 @@ export default function CmsUsersPage() {
                 {t("User listing and updates are restricted to administrators")}
               </small>
             </div>
-            <Button color="light" onClick={() => void load()} disabled={loading || Boolean(savingId)}>
+            <Button
+              color="light"
+              onClick={() => void load()}
+              disabled={loading || Boolean(savingId)}
+            >
               <i className="ri-refresh-line me-1" />
               {t("Refresh")}
             </Button>
@@ -197,7 +211,9 @@ export default function CmsUsersPage() {
             <Form onSubmit={submitSearch} className="mb-3">
               <Row className="g-2 align-items-end">
                 <Col md={6} lg={5}>
-                  <Label htmlFor="cms-user-search">{t("Search by name or email")}</Label>
+                  <Label htmlFor="cms-user-search">
+                    {t("Search by name or email")}
+                  </Label>
                   <Input
                     id="cms-user-search"
                     value={query}
@@ -230,10 +246,13 @@ export default function CmsUsersPage() {
 
             <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
               <span className="text-muted small">
-                {t("Total users")}: <strong>{total.toLocaleString(i18n.language)}</strong>
+                {t("Total users")}:{" "}
+                <strong>{total.toLocaleString(i18n.language)}</strong>
               </span>
               <span className="text-muted small">
-                {t("Only ADMIN, MANAGER and USER roles are supported by the current backend")}
+                {t(
+                  "Only ADMIN, MANAGER and USER roles are supported by the current backend"
+                )}
               </span>
             </div>
 
@@ -273,10 +292,16 @@ export default function CmsUsersPage() {
                             <Input
                               aria-label={t("Name")}
                               value={draft.name}
-                              onChange={event => changeDraft(user.id, { name: event.target.value })}
+                              onChange={event =>
+                                changeDraft(user.id, {
+                                  name: event.target.value,
+                                })
+                              }
                               invalid={draft.name.trim().length < 2}
                             />
-                            <small className="text-muted d-block mt-1">{user.email}</small>
+                            <small className="text-muted d-block mt-1">
+                              {user.email}
+                            </small>
                           </td>
                           <td style={{ minWidth: 150 }}>
                             <Input
@@ -284,11 +309,17 @@ export default function CmsUsersPage() {
                               aria-label={t("Role")}
                               value={draft.role}
                               onChange={event =>
-                                changeDraft(user.id, { role: event.target.value as CmsAdminUserRole })
+                                changeDraft(user.id, {
+                                  role: event.target.value as CmsAdminUserRole,
+                                })
                               }
                             >
-                              <option value="ADMIN">{roleLabel("ADMIN")}</option>
-                              <option value="MANAGER">{roleLabel("MANAGER")}</option>
+                              <option value="ADMIN">
+                                {roleLabel("ADMIN")}
+                              </option>
+                              <option value="MANAGER">
+                                {roleLabel("MANAGER")}
+                              </option>
                               <option value="USER">{roleLabel("USER")}</option>
                             </Input>
                           </td>
@@ -298,24 +329,37 @@ export default function CmsUsersPage() {
                                 type="checkbox"
                                 checked={draft.isActive}
                                 onChange={event =>
-                                  changeDraft(user.id, { isActive: event.target.checked })
+                                  changeDraft(user.id, {
+                                    isActive: event.target.checked,
+                                  })
                                 }
                                 aria-label={t("Account active")}
                               />
-                              <Badge color={draft.isActive ? "success" : "secondary"}>
+                              <Badge
+                                color={
+                                  draft.isActive ? "success" : "secondary"
+                                }
+                              >
                                 {draft.isActive ? t("Active") : t("Inactive")}
                               </Badge>
                             </div>
                           </td>
-                          <td className="text-muted small" style={{ minWidth: 150 }}>
-                            {new Date(user.createdAt).toLocaleDateString(i18n.language)}
+                          <td
+                            className="text-muted small"
+                            style={{ minWidth: 150 }}
+                          >
+                            {new Date(user.createdAt).toLocaleDateString(
+                              i18n.language
+                            )}
                           </td>
                           <td className="text-end" style={{ minWidth: 150 }}>
                             <div className="d-flex justify-content-end gap-1">
                               <Button
                                 color="primary"
                                 size="sm"
-                                disabled={!dirty || busy || draft.name.trim().length < 2}
+                                disabled={
+                                  !dirty || busy || draft.name.trim().length < 2
+                                }
                                 onClick={() => void saveUser(user)}
                               >
                                 {busy ? <Spinner size="sm" /> : t("Save")}
@@ -363,11 +407,15 @@ export default function CmsUsersPage() {
         </Card>
 
         <Alert color="info" className="mt-3">
-          {t("User invitation, password recovery, email verification and MFA are not available in this release.")}
+          {t(
+            "User invitation, password recovery, email verification and MFA are not available in this release."
+          )}
         </Alert>
         {hasChanges && (
           <Alert color="warning" className="mt-3">
-            {t("You have unsaved user changes. Save each edited row before leaving this page.")}
+            {t(
+              "You have unsaved user changes. Save each edited row before leaving this page."
+            )}
           </Alert>
         )}
       </Container>
