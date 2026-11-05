@@ -278,14 +278,14 @@ Existing detailed references: [CMS architecture](docs/cms-architecture.md), [CMS
 
 ## Known limitations — do not market as completed
 
-- No refresh-token rotation or server-side session revocation; the current access token expires after 15 minutes.
+- Each 15-minute access token is bound to a PostgreSQL session and authenticated logout revokes that session. Refresh-token rotation and cross-device session management are not implemented.
 - Password reset, email verification, MFA and account recovery are not implemented in the current backend foundation.
 - User management currently exposes administrator-only listing and updates; it is not a complete invitation, lifecycle and session-management product.
 - Content owner/team-level authorization and reviewer assignment are not fully implemented.
 - The page builder is a limited block editor, not a freeform visual builder.
 - Public forms have server-side schema validation and throttling, but a complete configurable CAPTCHA/honeypot and privacy/retention workflow is not established.
 - Webhook execution has retry records and destination checks; durable queue semantics, multi-instance coordination and full operational observability still need deployment-level verification.
-- CMS audit entries currently record request-level activity; comprehensive field-level before/after history, actor IP/request correlation and coverage of failed security events remain incomplete.
+- CMS audit entries record request-level outcomes, request IDs, client IP and HTTP status for authenticated CMS controller requests. Field-level before/after diffs, immutable retention and authentication failures outside those controllers remain incomplete.
 - Legacy template modules outside the CMS are not all migrated away from fake/demo data.
 - Frontend component/E2E, accessibility, browser matrix, load/soak and penetration testing are not complete.
 - Automated production backup, media backup, restore rehearsal and disaster-recovery objectives are not delivered by this codebase.
