@@ -23,7 +23,11 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --no-audit --no-fund
       - name: Format all CMS route and component TSX files
-        run: npx prettier --write "src/app/(with-layout)/apps-cms/**/*.tsx"
+        shell: bash
+        run: |
+          set -euo pipefail
+          find "src/app/(with-layout)/apps-cms" -type f -name '*.tsx' -print0 |
+            xargs -0 -r npx prettier --write
       - name: Commit formatting changes with fast-forward safety
         shell: bash
         run: |
