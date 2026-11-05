@@ -55,7 +55,7 @@ describe("AuthService public registration policy", () => {
       role: Role.USER,
       createdAt,
     });
-    jest.spyOn(bcrypt, "hash").mockResolvedValue("test-password-hash");
+    jest.spyOn(bcrypt, "hash").mockResolvedValue("test-password-hash" as never);
 
     const result = await service.register({
       name: " Portfolio User ",
