@@ -33,15 +33,21 @@ type UserDraft = {
   isActive: boolean;
 };
 
-function getErrorMessage(error: unknown): string {
+function getErrorMessage(
+  error: unknown,
+  translate: (key: string) => string
+): string {
   const value = error as {
     response?: { data?: { message?: string | string[] } };
     message?: string;
   };
   const message = value?.response?.data?.message ?? value?.message;
-  return Array.isArray(message)
-    ? message.join(", ")
-    : (message ?? "Unable to complete the user-management request.");
+  if (Array.isArray(message)) {
+    return message.map(item => translate(item)).join(", ");
+  }
+  return translate(
+    message ?? "Unable to complete the user-management request."
+  );
 }
 
 function toDraft(user: CmsAdminUser): UserDraft {
@@ -78,7 +84,7 @@ export default function CmsUsersPage() {
         Object.fromEntries(result.data.map(user => [user.id, toDraft(user)]))
       );
     } catch (cause) {
-      setError(getErrorMessage(cause));
+      setError(getErrorMessage(cause, t));
     } finally {
       setLoading(false);
     }
@@ -140,7 +146,7 @@ export default function CmsUsersPage() {
       setNotice(t("User updated successfully"));
       await load();
     } catch (cause) {
-      setError(getErrorMessage(cause));
+      setError(getErrorMessage(cause, t));
     } finally {
       setSavingId("");
     }
