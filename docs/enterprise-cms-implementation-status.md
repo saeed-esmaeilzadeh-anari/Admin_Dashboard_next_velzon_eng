@@ -5,7 +5,7 @@ Repository: `saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng`
 Baseline: `main@5ef8f23a390342703fec773a42d3be39ba4bec5b`
 Merged implementation branch: `feat/enterprise-cms-production-v2`
 Main merge: PR #16, merged 2026-11-05 07:11:42 UTC as `83fe58acb1a767603cc7c97b5adca8f063a8fb79`
-Current follow-up branch: `chore/cms-post-merge-validation`
+Post-merge quality PR #17 was merged into `main` on 2026-11-05 as `30230c55c51dbe3835beb95ea914242fef50014d`. The next isolated hardening branch is `feat/portfolio-readiness-hardening`.
 
 ## Product boundary
 
@@ -125,8 +125,17 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 - Frontend CI passed on commit `2d3c11a06b54c2e37a732810a61551523ed40351`: Type Check, Production Build and production-server/BFF/public-CMS smoke tests all succeeded. The smoke test verified a rendered published article, BFF health, rejected and successful login, HttpOnly session cookie without token leakage, authenticated `/auth/me` and logout cookie expiry. [Run 41988863489](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41988863489).
 - CI uses a disposable/mock upstream for Frontend BFF/public rendering and PostgreSQL 16 for Backend migrations/tests. It does not validate a real customer database, media storage bucket or production network.
 - No full browser E2E suite, staging deployment, external penetration test or production restore rehearsal is claimed.
-- The follow-up PR #17 (`chore/cms-post-merge-validation`) is still draft and unmerged; no production deployment has been performed.
+- PR #17 (`chore/cms-post-merge-validation`) was merged into `main` as `30230c55c51dbe3835beb95ea914242fef50014d`. The portfolio-readiness hardening branch is separate and has not been merged. No production deployment has been performed.
 
+
+## Portfolio-readiness hardening in progress (branch: `feat/portfolio-readiness-hardening`)
+
+- [x] Apply endpoint-specific throttling to login (5 requests/minute) and public registration (3 requests/minute).
+- [x] Disable public registration by default in production unless `PUBLIC_REGISTRATION_ENABLED=true` is explicitly set; keep local development enabled by default.
+- [x] Add separate liveness and PostgreSQL readiness endpoints while retaining the original `/health` route.
+- [x] Enable NestJS graceful shutdown hooks.
+- [x] Add unit tests for production registration policy and health probe semantics.
+- [x] Extend backend CI with HTTP-level checks for login/registration throttling and health probes. The result must be reviewed on the exact hardening branch head before these checks are marked passed.
 
 ## Remaining release blockers
 
@@ -139,7 +148,7 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 7. Durable webhook/job queue semantics, multi-instance locking, retry idempotency and alerting need deployment validation.
 8. Audit log needs detailed before/after metadata, actor IP/request IDs and coverage of sensitive/rejected security events.
 9. Existing legacy template screens outside the CMS remain partly fake/demo-backed and must not be sold as working CMS modules.
-10. S3 object storage, TLS, secrets manager, rate limits, monitoring, database backups, media backups and restore procedures need customer staging verification.
+10. S3 object storage, TLS, secrets manager, shared multi-instance rate-limit storage, monitoring, database backups, media backups and restore procedures need customer staging verification.
 11. Frontend component/E2E tests, accessibility checks, browser compatibility, performance/load/soak and external penetration testing remain open.
 12. Confirm applicable Velzon/template/font/icon/image licensing and redistribution terms before commercial distribution.
 
