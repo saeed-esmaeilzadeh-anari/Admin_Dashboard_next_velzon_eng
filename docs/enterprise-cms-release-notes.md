@@ -14,6 +14,8 @@ Release state: development; not approved for production.
 - Added unit tests for administrator lockout prevention and ordinary user updates.
 - Extended webhook SSRF destination filtering and test coverage for reserved IPv4/IPv6 ranges.
 - Limited the backend-auth product navigation to CMS overview, CMS administration and profile; legacy template/demo screens remain in the repository but are not presented in the CMS primary navigation.
+- Added a database-backed administrator User Management page with server-side search, pagination, name/role/activation editing and links to role permissions.
+- Added self-lockout and last-active-administrator safeguards in the backend, covered by unit tests.
 - Rewrote the root README with the actual dependency versions, local setup instructions, architecture and known limitations.
 - Added enterprise CMS audit, architecture, security, deployment, backup/restore, administrator, user, API, testing and release documentation.
 
