@@ -47,7 +47,7 @@ jobs:
       - name: Install pinned Playwright browser test runner
         run: |
           npm install --no-save --package-lock=false --legacy-peer-deps @playwright/test@1.64.1
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - name: Type-check
         env:
           NEXT_PUBLIC_DEFAULT_AUTH: backend
