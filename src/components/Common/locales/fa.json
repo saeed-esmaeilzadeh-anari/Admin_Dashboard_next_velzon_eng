@@ -715,5 +715,7 @@
   "Reset": "بازنشانی",
   "of": "از",
   "User invitation, password recovery, email verification and MFA are not available in this release.": "دعوت کاربر، بازیابی رمز عبور، تأیید ایمیل و ورود چندمرحله‌ای (MFA) در این نسخه موجود نیست.",
-  "You have unsaved user changes. Save each edited row before leaving this page.": "تغییرات ذخیره‌نشده دارید. پیش از ترک صفحه، تغییرات هر ردیف را ذخیره کنید."
+  "You have unsaved user changes. Save each edited row before leaving this page.": "تغییرات ذخیره‌نشده دارید. پیش از ترک صفحه، تغییرات هر ردیف را ذخیره کنید.",
+  "Deactivate this user account?": "این حساب کاربری غیرفعال شود؟",
+  "Change this administrator's role?": "نقش این مدیر تغییر کند؟"
 }
