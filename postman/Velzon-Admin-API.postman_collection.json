@@ -155,6 +155,10 @@
     {
       "key": "formKey",
       "value": "contact"
+    },
+    {
+      "key": "revokedAccessToken",
+      "value": ""
     }
   ],
   "item": [
@@ -211,14 +215,14 @@
     },
     {
       "name": "01 - Authentication",
-      "description": "Run Login before protected requests. Access token is stored in the selected Postman environment.",
+      "description": "Register a standard account, then sign in explicitly. Login stores the short-lived access token. Logout revokes the server-side session; run the revoked-token check afterward.",
       "item": [
         {
           "name": "Register standard USER",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/auth/register",
-            "description": "Creates a USER role only. Password must contain 12-72 characters. Never accepts a client-supplied role.",
+            "description": "Creates a USER role only and returns a user profile without signing the user in. Password must contain 12-72 characters. Never accepts a client-supplied role.",
             "auth": {
               "type": "noauth"
             },
@@ -245,7 +249,13 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                  "pm.test('Registration creates an account without issuing a session', function () {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  const payload = pm.response.json();",
+                  "  pm.expect(payload.user).to.be.an('object');",
+                  "  pm.expect(payload).not.to.have.property('accessToken');",
+                  "  pm.expect(payload.user.role).to.equal('USER');",
+                  "});"
                 ]
               }
             }
@@ -305,6 +315,82 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('HTTP response is successful', function () { pm.expect(pm.response.code).to.be.within(200, 299); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout (revokes current server session)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/logout",
+            "description": "Revokes only the current authenticated session. Run after Login and before the revoked-token check.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ]
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Current session was revoked', function () {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "  const payload = pm.response.json();",
+                  "  pm.expect(payload.success).to.equal(true);",
+                  "});",
+                  "const token = pm.environment.get('accessToken') || pm.collectionVariables.get('accessToken');",
+                  "if (token) pm.environment.set('revokedAccessToken', token);",
+                  "pm.environment.unset('accessToken');",
+                  "pm.collectionVariables.unset('accessToken');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify revoked token is rejected",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me",
+            "description": "Security check: the token saved by the Logout request must no longer authenticate.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{revokedAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Revoked session cannot authenticate', function () {",
+                  "  pm.expect(pm.response.code).to.equal(401);",
+                  "});"
                 ]
               }
             }
