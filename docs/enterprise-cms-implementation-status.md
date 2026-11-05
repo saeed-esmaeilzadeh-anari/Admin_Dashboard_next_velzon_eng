@@ -134,6 +134,7 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 - [x] Disable public registration by default in production unless `PUBLIC_REGISTRATION_ENABLED=true` is explicitly set; keep local development enabled by default.
 - [x] Add separate liveness and PostgreSQL readiness endpoints while retaining the original `/health` route.
 - [x] Enable NestJS graceful shutdown hooks.
+- [x] Add generated request correlation IDs and response `X-Request-Id` headers for authenticated CMS controller requests; audit both successful and failed requests with status/IP metadata without recording request bodies.
 - [x] Add unit tests for production registration policy and health probe semantics.
 - [x] Extend backend CI with HTTP-level checks for login/registration throttling and health probes. The result must be reviewed on the exact hardening branch head before these checks are marked passed.
 
@@ -146,7 +147,7 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 5. Dynamic field types, conditional form behavior, revision concurrency and page-builder blocks need broader DB-backed E2E tests.
 6. Public forms need a complete anti-spam/privacy/retention strategy beyond current schema validation and throttling.
 7. Durable webhook/job queue semantics, multi-instance locking, retry idempotency and alerting need deployment validation.
-8. Audit log needs detailed before/after metadata, actor IP/request IDs and coverage of sensitive/rejected security events.
+8. Audit log still needs detailed before/after field diffs, full coverage of auth/authorization failures outside the audited CMS controllers, and a retention/immutability policy.
 9. Existing legacy template screens outside the CMS remain partly fake/demo-backed and must not be sold as working CMS modules.
 10. S3 object storage, TLS, secrets manager, shared multi-instance rate-limit storage, monitoring, database backups, media backups and restore procedures need customer staging verification.
 11. Frontend component/E2E tests, accessibility checks, browser compatibility, performance/load/soak and external penetration testing remain open.
