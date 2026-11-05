@@ -129,6 +129,20 @@ export type CmsAuditLog = {
 export type CmsWebhook = { id: string; name: string; endpointUrl: string; events: string[]; isActive: boolean; createdAt: string; _count?: { deliveries: number } };
 export type CmsWebhookDelivery = { id: string; eventKey: string; status: "PENDING" | "PROCESSING" | "SUCCESS" | "FAILED"; attempts: number; responseStatus?: number | null; lastError?: string | null; nextAttemptAt: string; deliveredAt?: string | null; createdAt: string };
 export type CmsPermissionState = { code: string; name: string; description: string; grantedRoles: Array<"ADMIN" | "MANAGER" | "USER"> };
+export type CmsAdminUserRole = "ADMIN" | "MANAGER" | "USER";
+export type CmsAdminUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: CmsAdminUserRole;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+export type CmsAdminUsersPage = {
+  data: CmsAdminUser[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
+};
 
 export type CmsPublicContent = {
   id: string; type: { key: string; name: string };
@@ -366,5 +380,11 @@ export const cmsApi = {
   },
   async updateRolePermissions(role: "MANAGER" | "USER", permissionCodes: string[]): Promise<{ role: string; permissionCodes: string[] }> {
     return (await backendApi.put("/cms/permissions/roles", { role, permissionCodes })).data;
+  },
+  async users(params: { page?: number; limit?: number; search?: string } = {}): Promise<CmsAdminUsersPage> {
+    return (await backendApi.get<CmsAdminUsersPage>("/users", { params })).data;
+  },
+  async updateUser(id: string, input: { name?: string; role?: CmsAdminUserRole; isActive?: boolean }): Promise<Pick<CmsAdminUser, "id" | "name" | "email" | "role" | "isActive" | "updatedAt">> {
+    return (await backendApi.patch<Pick<CmsAdminUser, "id" | "name" | "email" | "role" | "isActive" | "updatedAt">>(`/users/${encodeURIComponent(id)}`, input)).data;
   },
 };
