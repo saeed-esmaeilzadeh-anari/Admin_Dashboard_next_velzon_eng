@@ -65,7 +65,13 @@ jobs:
             "src/components/Cms/RepeaterField.tsx" \
             "src/components/Common/ProfileDropdown.tsx" \
             "src/helpers/backendApi.ts" \
-            "src/helpers/cmsApi.ts"
+            "src/helpers/cmsApi.ts" \
+            "src/layouts/Layouts/LayoutMenuData.tsx" \
+            "src/slices/auth/authSlice.ts" \
+            "src/slices/auth/login/thunk.ts" \
+            "src/slices/auth/register/thunk.ts" \
+            "src/slices/settings/settingsSlice.ts" \
+            "src/slices/users/usersSlice.ts"
       - name: Lint maintained CMS and lint-debt files
         shell: bash
         run: |
@@ -93,6 +99,12 @@ jobs:
             "src/components/Cms/RepeaterField.tsx" \
             "src/components/Common/ProfileDropdown.tsx" \
             "src/helpers/backendApi.ts" \
-            "src/helpers/cmsApi.ts"
+            "src/helpers/cmsApi.ts" \
+            "src/layouts/Layouts/LayoutMenuData.tsx" \
+            "src/slices/auth/authSlice.ts" \
+            "src/slices/auth/login/thunk.ts" \
+            "src/slices/auth/register/thunk.ts" \
+            "src/slices/settings/settingsSlice.ts" \
+            "src/slices/users/usersSlice.ts"
       - name: Run full frontend lint
         run: npm run lint
