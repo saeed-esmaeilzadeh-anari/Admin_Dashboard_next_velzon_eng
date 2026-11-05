@@ -43,12 +43,11 @@ To run the browser suite locally against an already running Next.js server and b
 
 ```powershell
 npm install --no-save --package-lock=false --legacy-peer-deps @playwright/test@1.64.1
-npx playwright install chromium
 $env:E2E_BASE_URL = "http://localhost:3000"
 npx playwright test
 ```
 
-The CI job installs the same pinned runner and Chromium. Use a disposable test environment: browser tests create a test account and sign in/out through the configured backend.
+The CI job installs the same pinned runner and uses the GitHub runner's preinstalled Chrome. For a local run, install Google Chrome first. Use a disposable test environment: browser tests create a test account and sign in/out through the configured backend.
 
 Backend from `backend/`:
 
