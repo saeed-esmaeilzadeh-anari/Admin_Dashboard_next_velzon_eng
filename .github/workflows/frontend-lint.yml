@@ -1,9 +1,11 @@
-name: CMS Frontend Lint
+name: CMS Frontend Quality
 
 on:
   push:
-    branches: [feat/enterprise-cms-production-v2]
+    branches: [chore/cms-post-merge-validation]
     paths:
+      - "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
+      - "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
       - "src/app/(with-layout)/apps-cms/users/page.tsx"
       - ".github/workflows/frontend-lint.yml"
       - "package.json"
@@ -13,6 +15,8 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
+      - "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
       - "src/app/(with-layout)/apps-cms/users/page.tsx"
       - ".github/workflows/frontend-lint.yml"
       - "package.json"
@@ -21,11 +25,11 @@ on:
       - "tsconfig.json"
 
 concurrency:
-  group: cms-ui-lint-${{ github.ref }}
+  group: cms-ui-quality-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  lint:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,8 +41,17 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --no-audit --no-fund
-      - name: Lint the new CMS user-management page
-        run: npx eslint "src/app/(with-layout)/apps-cms/users/page.tsx"
-      - name: Audit full frontend lint debt (non-blocking)
-        continue-on-error: true
+      - name: Verify formatting of maintained CMS pages
+        run: >-
+          npx prettier --check
+          "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
+          "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
+          "src/app/(with-layout)/apps-cms/users/page.tsx"
+      - name: Lint maintained CMS pages
+        run: >-
+          npx eslint
+          "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
+          "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
+          "src/app/(with-layout)/apps-cms/users/page.tsx"
+      - name: Run full frontend lint
         run: npm run lint
