@@ -7,12 +7,18 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.PUBLIC_SITE_URL;
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? process.env.PUBLIC_SITE_URL;
   if (!siteUrl) return [];
   let base: URL;
   try {
     base = new URL(siteUrl);
-    if (!["http:", "https:"].includes(base.protocol) || base.username || base.password) return [];
+    if (
+      !["http:", "https:"].includes(base.protocol) ||
+      base.username ||
+      base.password
+    )
+      return [];
   } catch {
     return [];
   }
@@ -26,7 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         languages: Object.fromEntries(
           record.alternates
             .filter(item => item.slug)
-            .map(item => [item.localeCode, new URL(item.href, base).toString()]),
+            .map(item => [item.localeCode, new URL(item.href, base).toString()])
         ),
       },
     }));

@@ -8,7 +8,10 @@ import dynamic from "next/dynamic";
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
   loading: () => (
-    <div className="d-flex align-items-center justify-content-center" style={{ minHeight: 180 }}>
+    <div
+      className="d-flex align-items-center justify-content-center"
+      style={{ minHeight: 180 }}
+    >
       <span className="text-muted">Loading chart...</span>
     </div>
   ),

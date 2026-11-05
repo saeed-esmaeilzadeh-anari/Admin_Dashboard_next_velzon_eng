@@ -53,9 +53,18 @@ const Register = () => {
       confirm_password: "",
     },
     validationSchema: Yup.object({
-      email: Yup.string().email("Please enter a valid email").required("Please Enter Your Email"),
-      first_name: Yup.string().trim().min(2, "Name must contain at least 2 characters").max(100, "Name is too long").required("Please Enter Your Username"),
-      password: Yup.string().min(12, "Password must contain at least 12 characters").max(72, "Password is too long").required("Please Enter Your Password"),
+      email: Yup.string()
+        .email("Please enter a valid email")
+        .required("Please Enter Your Email"),
+      first_name: Yup.string()
+        .trim()
+        .min(2, "Name must contain at least 2 characters")
+        .max(100, "Name is too long")
+        .required("Please Enter Your Username"),
+      password: Yup.string()
+        .min(12, "Password must contain at least 12 characters")
+        .max(72, "Password is too long")
+        .required("Please Enter Your Password"),
       confirm_password: Yup.string()
         .oneOf([Yup.ref("password"), ""])
         .required("Confirm Password is required"),
@@ -152,7 +161,8 @@ const Register = () => {
 
                         {error ? (
                           <Alert color="danger">
-                            {registrationError || "Registration failed. Please check your information and try again."}
+                            {registrationError ||
+                              "Registration failed. Please check your information and try again."}
                           </Alert>
                         ) : null}
 

@@ -13,14 +13,21 @@ export default function ClientProviders({
 }) {
   useEffect(() => {
     const applyDirection = (language?: string) => {
-      const activeLanguage = language || i18n.resolvedLanguage || i18n.language || "en";
+      const activeLanguage =
+        language || i18n.resolvedLanguage || i18n.language || "en";
       const baseLanguage = activeLanguage.toLowerCase().split("-")[0];
       document.documentElement.lang = activeLanguage;
-      document.documentElement.dir = ["ar", "fa", "he", "ur"].includes(baseLanguage) ? "rtl" : "ltr";
+      document.documentElement.dir = ["ar", "fa", "he", "ur"].includes(
+        baseLanguage
+      )
+        ? "rtl"
+        : "ltr";
     };
     applyDirection();
     i18n.on("languageChanged", applyDirection);
-    return () => { i18n.off("languageChanged", applyDirection); };
+    return () => {
+      i18n.off("languageChanged", applyDirection);
+    };
   }, []);
   return (
     <FakeBackendProvider>

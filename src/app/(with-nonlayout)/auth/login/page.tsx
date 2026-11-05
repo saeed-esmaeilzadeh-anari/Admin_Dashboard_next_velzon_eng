@@ -31,11 +31,14 @@ import Image from "next/image";
 const Login = () => {
   const dispatch: any = useDispatch();
   const router = useRouter();
-  const authProvider = (
-    process.env.NEXT_PUBLIC_DEFAULT_AUTH ||
-    process.env.NEXT_PUBLIC_DEFAULTAUTH ||
-    "backend"
-  ).trim().toLowerCase() || "backend";
+  const authProvider =
+    (
+      process.env.NEXT_PUBLIC_DEFAULT_AUTH ||
+      process.env.NEXT_PUBLIC_DEFAULTAUTH ||
+      "backend"
+    )
+      .trim()
+      .toLowerCase() || "backend";
   const isFirebaseAuth = authProvider === "firebase";
 
   const selectLayoutState = (state: any) => state;
@@ -54,7 +57,7 @@ const Login = () => {
   useEffect(() => {
     if (user && user) {
       const updatedUserData = isFirebaseAuth
-        ? user.multiFactor?.user?.email ?? user.email
+        ? (user.multiFactor?.user?.email ?? user.email)
         : user.email;
 
       const updatedUserPassword = isFirebaseAuth ? "" : user.confirm_password;
