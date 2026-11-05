@@ -12,6 +12,11 @@ function createHarness(values: Record<string, string | undefined>) {
       findUnique: jest.fn(),
       create: jest.fn(),
     },
+    authSession: {
+      create: jest.fn().mockResolvedValue({ id: "session-1" }),
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+    },
   } as unknown as PrismaService;
   const jwt = {
     signAsync: jest.fn().mockResolvedValue("signed-test-token"),
@@ -41,7 +46,7 @@ describe("AuthService public registration policy", () => {
     expect(prisma.user.create).not.toHaveBeenCalled();
   });
 
-  it("honors an explicit production opt-in", async () => {
+  it("creates an account without silently establishing an authenticated session", async () => {
     const { service, prisma, jwt } = createHarness({
       NODE_ENV: "production",
       PUBLIC_REGISTRATION_ENABLED: "true",
@@ -82,22 +87,22 @@ describe("AuthService public registration policy", () => {
       bcrypt.compare("strong-password-123", createInput.data.passwordHash)
     ).resolves.toBe(true);
 
-    expect(jwt.signAsync).toHaveBeenCalledWith({
-      sub: "user-1",
-      email: "user@example.test",
-      role: Role.USER,
+    expect(result).toEqual({
+      user: {
+        id: "user-1",
+        email: "user@example.test",
+        name: "Portfolio User",
+        role: Role.USER,
+        createdAt,
+      },
     });
-    expect(result).toMatchObject({
-      accessToken: "signed-test-token",
-      user: { id: "user-1", email: "user@example.test", role: Role.USER },
-    });
+    expect(prisma.authSession.create).not.toHaveBeenCalled();
+    expect(jwt.signAsync).not.toHaveBeenCalled();
   });
 
   it("keeps local development registration enabled when no override is set", async () => {
     const { service, prisma } = createHarness({ NODE_ENV: "development" });
-    prisma.user.findUnique = jest.fn().mockResolvedValue({
-      id: "existing-user",
-    });
+    prisma.user.findUnique = jest.fn().mockResolvedValue({ id: "existing-user" });
 
     await expect(
       service.register({
@@ -125,5 +130,66 @@ describe("AuthService public registration policy", () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
 
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe("AuthService persisted access sessions", () => {
+  it("creates a database session and binds its ID into the JWT", async () => {
+    const { service, prisma, jwt } = createHarness({ NODE_ENV: "production" });
+    const passwordHash = await bcrypt.hash("strong-password-123", 4);
+    prisma.user.findUnique = jest.fn().mockResolvedValue({
+      id: "user-1",
+      email: "user@example.test",
+      name: "Portfolio User",
+      role: Role.ADMIN,
+      isActive: true,
+      passwordHash,
+    });
+
+    const result = await service.login({
+      email: " USER@example.test ",
+      password: "strong-password-123",
+    });
+
+    expect(prisma.authSession.deleteMany).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        OR: [
+          { expiresAt: { lte: expect.any(Date) } },
+          { revokedAt: { not: null } },
+        ],
+      },
+    });
+    const sessionInput = (prisma.authSession.create as jest.Mock).mock.calls[0][0] as {
+      data: { userId: string; expiresAt: Date };
+    };
+    expect(sessionInput.data.userId).toBe("user-1");
+    expect(sessionInput.data.expiresAt.getTime()).toBeGreaterThan(Date.now());
+    expect(sessionInput.data.expiresAt.getTime()).toBeLessThanOrEqual(
+      Date.now() + 15 * 60 * 1000 + 1000
+    );
+    expect(jwt.signAsync).toHaveBeenCalledWith({
+      sub: "user-1",
+      email: "user@example.test",
+      role: Role.ADMIN,
+      sid: "session-1",
+    });
+    expect(result).toMatchObject({
+      accessToken: "signed-test-token",
+      expiresIn: 900,
+      user: { id: "user-1", email: "user@example.test", role: Role.ADMIN },
+    });
+  });
+
+  it("revokes only the current user's matching session", async () => {
+    const { service, prisma } = createHarness({ NODE_ENV: "production" });
+
+    await expect(service.logout("user-1", "session-1")).resolves.toEqual({
+      success: true,
+    });
+    expect(prisma.authSession.updateMany).toHaveBeenCalledWith({
+      where: { id: "session-1", userId: "user-1", revokedAt: null },
+      data: { revokedAt: expect.any(Date) },
+    });
   });
 });
