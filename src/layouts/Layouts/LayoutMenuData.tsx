@@ -1486,6 +1486,37 @@ const Navdata = () => {
       ],
     },
   ];
+  const authProvider = (
+    process.env.NEXT_PUBLIC_DEFAULT_AUTH ||
+    process.env.NEXT_PUBLIC_DEFAULTAUTH ||
+    "backend"
+  ).trim().toLowerCase();
+
+  if (authProvider === "backend") {
+    // Customer installations expose the CMS product surface, not the full
+    // Velzon demo/template catalogue. Demo modules remain in the repository
+    // for future optional modules but are not presented as shipped features.
+    const cmsItem = menuItems.find((item: any) => item.id === "cms");
+    const productMenu = [
+      { label: "Menu", isHeader: true },
+      {
+        id: "cms-dashboard",
+        label: "Dashboard",
+        icon: "ri-dashboard-2-line",
+        link: "/apps-cms",
+      },
+      ...(cmsItem ? [cmsItem] : []),
+      {
+        id: "account-profile",
+        label: "Profile",
+        icon: "ri-user-3-line",
+        link: "/profile",
+      },
+    ];
+
+    return <React.Fragment>{productMenu}</React.Fragment>;
+  }
+
   return <React.Fragment>{menuItems}</React.Fragment>;
 };
 export default Navdata;
