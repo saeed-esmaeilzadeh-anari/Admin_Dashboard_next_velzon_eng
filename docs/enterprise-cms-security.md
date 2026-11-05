@@ -45,7 +45,7 @@ NestJS remains authoritative for JWT signature/expiry, active account and route 
 1. No refresh-token rotation, persistent session revocation or device/session management.
 2. Password reset, email verification, MFA and account recovery are not implemented.
 3. Content ownership, reviewer assignment and team-level authorization are not implemented; current grants are role-wide.
-4. Audit records are request-level. They do not yet provide complete before/after field diffs, request ID/IP correlation or a full trail of rejected/failed security events.
+4. CMS request audit records now include generated request ID, reported client IP, outcome and HTTP status, and record both success and failure for authenticated CMS-controller requests. They still do not provide complete before/after field diffs, cover every authentication/authorization rejection outside those controllers, or guarantee immutable retention.
 5. Webhook secrets are stored as application data; encryption-at-rest/key rotation and secret reveal/rotation UX require separate design.
 6. Authentication and public-form throttling use in-process storage in the current configuration. Multiple API replicas require a shared throttler store and trusted proxy/IP tracking; a configurable CAPTCHA/honeypot and retention/privacy workflow are also incomplete.
 7. No completed external penetration test, dependency audit sign-off, XSS/CSRF/IDOR test suite or threat-model sign-off is recorded.
