@@ -30,11 +30,24 @@ export class AuthController {
     return this.auth.login(dto);
   }
 
+  @Post("logout")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Revoke the current server-side session" })
+  logout(@CurrentUser() user: AuthenticatedUser) {
+    return this.auth.logout(user.id, user.sessionId);
+  }
+
   @Get("me")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Return the currently authenticated user" })
   me(@CurrentUser() user: AuthenticatedUser) {
-    return user;
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    };
   }
 }
