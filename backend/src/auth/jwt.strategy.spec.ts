@@ -47,7 +47,10 @@ describe("JwtStrategy persisted session validation", () => {
     const { strategy } = createStrategy();
 
     await expect(strategy.validate(payload)).resolves.toEqual({
-      ...user,
+      id: "user-1",
+      email: "user@example.test",
+      name: "Portfolio User",
+      role: Role.ADMIN,
       sessionId: "session-1",
     });
   });
