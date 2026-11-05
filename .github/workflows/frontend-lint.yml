@@ -59,7 +59,7 @@ jobs:
             "src/app/sitemap.ts" \
             "src/components/ClientProviders.tsx" \
             "src/components/Cms/PageBuilderField.tsx" \
-            "src/components/Cms/PagePreview.tsx" \
+            "src/components/Cms/PagePreview.tsx"
       - name: Lint maintained CMS and lint-debt files
         shell: bash
         run: |
@@ -81,6 +81,6 @@ jobs:
             "src/app/sitemap.ts" \
             "src/components/ClientProviders.tsx" \
             "src/components/Cms/PageBuilderField.tsx" \
-            "src/components/Cms/PagePreview.tsx" \
+            "src/components/Cms/PagePreview.tsx"
       - name: Run full frontend lint
         run: npm run lint
