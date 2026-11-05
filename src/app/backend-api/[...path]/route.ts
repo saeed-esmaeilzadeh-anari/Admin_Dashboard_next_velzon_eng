@@ -179,7 +179,7 @@ async function sanitizeAuthenticationResponse(
         : SESSION_TTL_SECONDS;
     const maxAge = Math.max(1, Math.min(SESSION_TTL_SECONDS, requestedTtl));
 
-    response.cookies.set(SESSION_COOKIE, accessToken, {
+    response.cookies.set(SESSION_COOKIE, accessToken as string, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
