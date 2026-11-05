@@ -341,7 +341,9 @@ export default function CmsUsersPage() {
                                 }
                                 aria-label={t("Account active")}
                               />
-                              <Badge color={draft.isActive ? "success" : "secondary"}>
+                              <Badge
+                                color={draft.isActive ? "success" : "secondary"}
+                              >
                                 {draft.isActive ? t("Active") : t("Inactive")}
                               </Badge>
                             </div>
