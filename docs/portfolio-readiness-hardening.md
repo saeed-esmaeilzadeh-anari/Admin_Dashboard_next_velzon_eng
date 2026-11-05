@@ -9,6 +9,15 @@ This document records the first post-audit hardening increment for the portfolio
 - Health endpoints: `GET /api/v1/health/live` is a process liveness check; `GET /api/v1/health/ready` verifies PostgreSQL connectivity. The existing `GET /api/v1/health` remains a backward-compatible database readiness check.
 - Graceful shutdown hooks are enabled so NestJS lifecycle hooks, including Prisma disconnect, can run on termination.
 
+## Persisted authentication sessions
+
+- Each successful login persists an `AuthSession` row in PostgreSQL and binds its UUID into the JWT through the `sid` claim.
+- The JWT strategy verifies that the session belongs to the user, has not been revoked and has not expired on every authenticated request.
+- `POST /api/v1/auth/logout` revokes only the current session. The Next.js BFF forwards the HttpOnly cookie token to that endpoint and then clears the cookie.
+- Public registration creates an account and returns a profile only. It does not silently create a login session; the user signs in explicitly.
+- The additive migration is `20261105090000_auth_sessions`; existing user and CMS records are not modified. Existing JWTs without a `sid` must be replaced by a new sign-in after deployment.
+- Expired/revoked sessions are pruned for the signing-in user at their next login. A scheduled global cleanup, refresh-token rotation and multi-device session management UI are not included.
+
 ## Security and deployment notes
 
 The built-in Nest throttler storage is process-local. It protects a single API process and is useful as a baseline control, but does not provide a shared quota across multiple API replicas or serverless instances. Before horizontal scaling, configure a shared throttler storage backend (for example Redis) and validate proxy/IP tracking so all requests from a client are identified consistently.
