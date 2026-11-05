@@ -70,7 +70,9 @@ const readResponseMessage = (payload: unknown): string | undefined => {
  * Use the same native Fetch path that is used by the browser's same-origin
  * proxy. This avoids Axios adapter/config differences for the sign-in flow.
  */
-const postBackendLogin = async (credentials: LoginCredentials): Promise<any> => {
+const postBackendLogin = async (
+  credentials: LoginCredentials
+): Promise<any> => {
   let response: Response;
 
   try {
@@ -143,54 +145,59 @@ const postBackendLogin = async (credentials: LoginCredentials): Promise<any> => 
   return payload;
 };
 
-export const loginUser = (user: LoginCredentials, router: any) => async (dispatch: any) => {
-  try {
-    const defaultAuth = getAuthProvider();
-    let rawData: any;
+export const loginUser =
+  (user: LoginCredentials, router: any) => async (dispatch: any) => {
+    try {
+      const defaultAuth = getAuthProvider();
+      let rawData: any;
 
-    if (defaultAuth === "firebase") {
-      const fireBaseBackend: any = getFirebaseBackend();
-      rawData = await fireBaseBackend.loginUser(user.email, user.password);
-    } else if (defaultAuth === "backend") {
-      rawData = await postBackendLogin({
-        email: user.email,
-        password: user.password,
-      });
-    } else if (defaultAuth === "jwt" || defaultAuth === "fake") {
-      rawData = await postJwtLogin({
-        email: user.email,
-        password: user.password,
-      });
-    } else {
-      throw new Error(
-        `Unsupported authentication provider "${defaultAuth}". Use backend, firebase, jwt or fake.`
-      );
-    }
-
-    const data =
-      defaultAuth === "backend"
-        ? rawData?.user && typeof rawData.user === "object"
-          ? { ...rawData.user, user: rawData.user }
-          : (() => { throw new Error("The backend returned an invalid user profile."); })()
-        : rawData;
-
-    if (data) {
-      if (defaultAuth !== "backend") {
-        Cookies.set("authUser", JSON.stringify(data), { expires: 1 });
-      } else if (typeof window !== "undefined") {
-        // Remove legacy JavaScript-readable storage. The server owns the
-        // HttpOnly velzon_session cookie and never exposes its token to Redux.
-        window.sessionStorage.removeItem("authUser");
-        Cookies.remove("authUser");
+      if (defaultAuth === "firebase") {
+        const fireBaseBackend: any = getFirebaseBackend();
+        rawData = await fireBaseBackend.loginUser(user.email, user.password);
+      } else if (defaultAuth === "backend") {
+        rawData = await postBackendLogin({
+          email: user.email,
+          password: user.password,
+        });
+      } else if (defaultAuth === "jwt" || defaultAuth === "fake") {
+        rawData = await postJwtLogin({
+          email: user.email,
+          password: user.password,
+        });
+      } else {
+        throw new Error(
+          `Unsupported authentication provider "${defaultAuth}". Use backend, firebase, jwt or fake.`
+        );
       }
-      dispatch(loginSuccess(data));
-      router.push("/dashboard");
+
+      const data =
+        defaultAuth === "backend"
+          ? rawData?.user && typeof rawData.user === "object"
+            ? { ...rawData.user, user: rawData.user }
+            : (() => {
+                throw new Error(
+                  "The backend returned an invalid user profile."
+                );
+              })()
+          : rawData;
+
+      if (data) {
+        if (defaultAuth !== "backend") {
+          Cookies.set("authUser", JSON.stringify(data), { expires: 1 });
+        } else if (typeof window !== "undefined") {
+          // Remove legacy JavaScript-readable storage. The server owns the
+          // HttpOnly velzon_session cookie and never exposes its token to Redux.
+          window.sessionStorage.removeItem("authUser");
+          Cookies.remove("authUser");
+        }
+        dispatch(loginSuccess(data));
+        router.push("/dashboard");
+      }
+    } catch (error) {
+      // Redux actions must contain serializable values, never Error/AxiosError objects.
+      dispatch(apiError({ message: getLoginError(error) }));
     }
-  } catch (error) {
-    // Redux actions must contain serializable values, never Error/AxiosError objects.
-    dispatch(apiError({ message: getLoginError(error) }));
-  }
-};
+  };
 
 export const logoutUser = () => async (dispatch: any) => {
   try {
@@ -202,7 +209,9 @@ export const logoutUser = () => async (dispatch: any) => {
         headers: { Accept: "application/json" },
       });
       if (!response.ok) {
-        throw new Error("Could not clear the server session. Please try again.");
+        throw new Error(
+          "Could not clear the server session. Please try again."
+        );
       }
     }
 
