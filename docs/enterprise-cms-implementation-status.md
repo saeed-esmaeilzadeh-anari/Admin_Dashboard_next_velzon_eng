@@ -116,11 +116,13 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 ## CI evidence and exactness
 
 - Backend CI passed on the merged `main` commit `83fe58acb1a767603cc7c97b5adca8f063a8fb79`: Prisma validation, PostgreSQL 16 migrations, seed/database smoke, TypeScript, Jest, Nest build, runtime/auth smoke and watch-mode smoke. [Main Backend CI run 41985508363](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41985508363).
-- The merge's Frontend CI run `41985508374` is the exact-code check for the main merge. Its type-check passed; production build and server/BFF/public CMS smoke were still running at the time this document was refreshed. [Main Frontend CI run 41985508374](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41985508374).
+- The merge's Frontend CI run `41985508374` passed on the exact main merge commit, including type-check, production build and production server/BFF/public CMS smoke. [Main Frontend CI run 41985508374](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41985508374).
 - Earlier Frontend CI passed at `41969946337`, including type-check, production build, published CMS server rendering, BFF health/login/session/authenticated-me/logout smoke. The formatted code is also covered by the post-merge main Frontend CI run above.
 - The earlier full lint audit found exactly 160 Prettier violations, all in the two pages formatted in Phase 7. The new blocking full-lint workflow will provide the follow-up clean result once its PR check completes.
 - CI uses a disposable/mock upstream for Frontend BFF/public rendering and PostgreSQL 16 for Backend migrations/tests. It does not validate a real customer database, media storage bucket or production network.
 - No full browser E2E suite, staging deployment, external penetration test or production restore rehearsal is claimed.
+- The follow-up quality branch `chore/cms-post-merge-validation` adds blocking Prettier, targeted CMS ESLint and full frontend lint checks. The quality workflow run `41985772188` is in progress for the exact workflow/source commit `b494544b36907e6841aef363638fce5e096c81c1`; its result is recorded in the pull request once complete.
+
 
 ## Remaining release blockers
 
