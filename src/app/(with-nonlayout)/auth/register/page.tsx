@@ -99,8 +99,9 @@ const Register = () => {
     }
   }, [dispatch, success, error, router]);
 
-  document.title =
-    "Basic SignUp | Velzon - Next.js TypeScript Admin & Dashboard Template";
+  useEffect(() => {
+    document.title = "Create account | Velzon CMS";
+  }, []);
 
   return (
     <React.Fragment>
@@ -277,13 +278,8 @@ const Register = () => {
 
                         <div className="mb-4">
                           <p className="mb-0 fs-12 text-muted fst-italic">
-                            By registering you agree to the Velzon
-                            <Link
-                              href="#"
-                              className="text-primary text-decoration-underline fst-normal fw-medium"
-                            >
-                              Terms of Use
-                            </Link>
+                            Registration creates your account. Sign in after
+                            registration to start a new authenticated session.
                           </p>
                         </div>
 
@@ -304,40 +300,6 @@ const Register = () => {
                           </Button>
                         </div>
 
-                        <div className="mt-4 text-center">
-                          <div className="signin-other-title">
-                            <h5 className="fs-13 mb-4 title text-muted">
-                              Create account with
-                            </h5>
-                          </div>
-
-                          <div>
-                            <button
-                              type="button"
-                              className="btn btn-primary btn-icon waves-effect waves-light"
-                            >
-                              <i className="ri-facebook-fill fs-16"></i>
-                            </button>{" "}
-                            <button
-                              type="button"
-                              className="btn btn-danger btn-icon waves-effect waves-light"
-                            >
-                              <i className="ri-google-fill fs-16"></i>
-                            </button>{" "}
-                            <button
-                              type="button"
-                              className="btn btn-dark btn-icon waves-effect waves-light"
-                            >
-                              <i className="ri-github-fill fs-16"></i>
-                            </button>{" "}
-                            <button
-                              type="button"
-                              className="btn btn-info btn-icon waves-effect waves-light"
-                            >
-                              <i className="ri-twitter-fill fs-16"></i>
-                            </button>
-                          </div>
-                        </div>
                       </Form>
                     </div>
                   </CardBody>
