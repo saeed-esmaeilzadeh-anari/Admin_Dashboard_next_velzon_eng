@@ -39,3 +39,6 @@ jobs:
         run: npm ci --legacy-peer-deps --no-audit --no-fund
       - name: Lint the new CMS user-management page
         run: npx eslint "src/app/(with-layout)/apps-cms/users/page.tsx"
+      - name: Audit full frontend lint debt (non-blocking)
+        continue-on-error: true
+        run: npm run lint
