@@ -40,6 +40,10 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Install pinned Playwright browser test runner
+        run: |
+          npm install --no-save --package-lock=false --legacy-peer-deps @playwright/test@1.64.1
+          npx playwright install --with-deps chromium
       - name: Type-check
         env:
           NEXT_PUBLIC_DEFAULT_AUTH: backend
@@ -55,6 +59,7 @@ jobs:
           NEXT_PUBLIC_DEFAULT_AUTH: backend
           NEXT_PUBLIC_BACKEND_API_URL: http://127.0.0.1:3001/api/v1
           BACKEND_API_URL: http://127.0.0.1:3001/api/v1
+          E2E_BASE_URL: http://127.0.0.1:3100
           PORT: 3100
         shell: bash
         run: |
@@ -178,3 +183,6 @@ jobs:
           grep -q '"sessionRevoked":true' /tmp/bff-logout.json
 
           echo "Production pages, server-rendered public CMS content, same-origin proxy, HttpOnly login, authenticated API and logout smoke tests passed."
+
+          # Browser-driven journeys use the real Next.js production server and the disposable upstream.
+          npx playwright test
