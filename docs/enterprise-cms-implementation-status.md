@@ -165,4 +165,4 @@ A feature may be marked Production Ready only after:
 - deployment/rollback and incident procedures are documented;
 - licensing is reviewed.
 
-The implementation was merged to `main` via PR #16. The follow-up quality/cleanup changes in `chore/cms-post-merge-validation` are not merged. No production deployment has been performed.
+The implementation was merged via PR #16, and the follow-up quality changes in PR #17 were merged into `main` at `30230c55c51dbe3835beb95ea914242fef50014d`. The portfolio-readiness hardening branch (`feat/portfolio-readiness-hardening`) remains separate and has not been merged. No production deployment has been performed.
