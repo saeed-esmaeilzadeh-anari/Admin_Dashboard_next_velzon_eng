@@ -5,14 +5,7 @@ on:
   push:
     branches: [chore/cms-post-merge-validation]
     paths:
-      - "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
-      - "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
-      - "src/app/(with-layout)/apps-cms/content/[id]/preview/page.tsx"
-      - "src/app/(with-layout)/apps-cms/content/new/page.tsx"
-      - "src/app/(with-layout)/apps-cms/content/page.tsx"
-      - "src/app/(with-layout)/apps-cms/content-types/page.tsx"
-      - "src/app/(with-layout)/apps-cms/forms/page.tsx"
-      - "src/app/(with-layout)/apps-cms/users/page.tsx"
+      - "src/app/(with-layout)/apps-cms/**/*.tsx"
       - ".github/workflows/frontend-lint.yml"
       - "package.json"
       - "package-lock.json"
@@ -21,14 +14,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
-      - "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
-      - "src/app/(with-layout)/apps-cms/content/[id]/preview/page.tsx"
-      - "src/app/(with-layout)/apps-cms/content/new/page.tsx"
-      - "src/app/(with-layout)/apps-cms/content/page.tsx"
-      - "src/app/(with-layout)/apps-cms/content-types/page.tsx"
-      - "src/app/(with-layout)/apps-cms/forms/page.tsx"
-      - "src/app/(with-layout)/apps-cms/users/page.tsx"
+      - "src/app/(with-layout)/apps-cms/**/*.tsx"
       - ".github/workflows/frontend-lint.yml"
       - "package.json"
       - "package-lock.json"
@@ -54,25 +40,9 @@ jobs:
         run: npm ci --legacy-peer-deps --no-audit --no-fund
       - name: Verify formatting of maintained CMS pages
         run: >-
-          npx prettier --check
-          "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
-          "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
-          "src/app/(with-layout)/apps-cms/content/[id]/preview/page.tsx"
-          "src/app/(with-layout)/apps-cms/content/new/page.tsx"
-          "src/app/(with-layout)/apps-cms/content/page.tsx"
-          "src/app/(with-layout)/apps-cms/content-types/page.tsx"
-          "src/app/(with-layout)/apps-cms/forms/page.tsx"
-          "src/app/(with-layout)/apps-cms/users/page.tsx"
+          npx prettier --check "src/app/(with-layout)/apps-cms/**/*.tsx"
       - name: Lint maintained CMS pages
         run: >-
-          npx eslint
-          "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
-          "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
-          "src/app/(with-layout)/apps-cms/content/[id]/preview/page.tsx"
-          "src/app/(with-layout)/apps-cms/content/new/page.tsx"
-          "src/app/(with-layout)/apps-cms/content/page.tsx"
-          "src/app/(with-layout)/apps-cms/content-types/page.tsx"
-          "src/app/(with-layout)/apps-cms/forms/page.tsx"
-          "src/app/(with-layout)/apps-cms/users/page.tsx"
+          npx eslint "src/app/(with-layout)/apps-cms/**/*.tsx"
       - name: Run full frontend lint
         run: npm run lint
