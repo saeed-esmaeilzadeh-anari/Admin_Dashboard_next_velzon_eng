@@ -243,7 +243,7 @@ Install uses `npm ci --legacy-peer-deps` because the current template dependency
 
 ## CI workflows
 
-- **Frontend CMS CI** installs dependencies, runs TypeScript checking and the production build, then starts Next.js with a local mock upstream to exercise the same-origin BFF. The workflow is being extended with a published-content server-rendering smoke test.
+- **Frontend CMS CI** installs dependencies, runs TypeScript checking and the production build, then starts Next.js with a disposable local upstream to exercise BFF authentication/session behavior and a published-content Server Component rendering smoke test.
 - **Backend CI** validates/generates Prisma, applies all migrations to a PostgreSQL 16 service, seeds test data, runs database smoke checks, TypeScript, Jest and the NestJS build/runtime smoke tests.
 - **CMS Scheduled Jobs** calls the authenticated publication and webhook dispatcher endpoints on a five-minute schedule. GitHub-hosted scheduled execution can be delayed; it is not a precise real-time scheduler.
 
