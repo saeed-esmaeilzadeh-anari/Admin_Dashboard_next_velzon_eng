@@ -31,6 +31,7 @@ The repository contains real PostgreSQL/Prisma models, NestJS endpoints and Next
 - Taxonomies, terms, localized navigation menus and safe redirect resolution.
 - Public published-content rendering, metadata, language alternates and XML sitemap output.
 - Form definitions, server-side submission validation, submission review and throttling.
+- Login and registration endpoint throttling (5/minute and 3/minute respectively); public registration is disabled by default in production unless explicitly enabled.
 - HMAC-signed outbound webhook delivery, retry records and destination-address checks.
 - CMS role-permission grants and audit records.
 - JSON import/export with per-record results. Media binaries are not embedded in export packages.
@@ -128,6 +129,7 @@ DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/velzon_admin?sc
 JWT_SECRET="REPLACE_WITH_A_RANDOM_SECRET_AT_LEAST_32_CHARACTERS"
 PORT=3001
 NODE_ENV=development
+PUBLIC_REGISTRATION_ENABLED=true
 CORS_ORIGINS="http://localhost:3000"
 ADMIN_NAME="Dashboard Administrator"
 ADMIN_EMAIL="admin@example.com"
@@ -207,7 +209,9 @@ The bucket/public URL and access policy must be validated in a staging environme
 - Swagger UI: `http://localhost:3001/docs`
 - OpenAPI JSON: `http://localhost:3001/docs-json`
 - Base API prefix: `/api/v1`
-- Health: `GET /api/v1/health`
+- Liveness: `GET /api/v1/health/live` (process only)
+- Readiness: `GET /api/v1/health/ready` (PostgreSQL connectivity)
+- Backward-compatible health: `GET /api/v1/health` (database readiness)
 - Postman collection: [postman/Velzon-Admin-API.postman_collection.json](postman/Velzon-Admin-API.postman_collection.json)
 - Postman environment: [postman/Velzon-Local.postman_environment.json](postman/Velzon-Local.postman_environment.json)
 - Postman setup: [postman/README.md](postman/README.md)
@@ -245,7 +249,7 @@ Install uses `npm ci --legacy-peer-deps` because the current template dependency
 ## CI workflows
 
 - **Frontend CMS CI** installs dependencies, runs TypeScript checking and the production build, then starts Next.js with a disposable local upstream to exercise BFF authentication/session behavior and a published-content Server Component rendering smoke test.
-- **Backend CI** validates/generates Prisma, applies all migrations to a PostgreSQL 16 service, seeds test data, runs database smoke checks, TypeScript, Jest and the NestJS build/runtime smoke tests.
+- **Backend CI** validates/generates Prisma, applies all migrations to a PostgreSQL 16 service, seeds test data, runs database smoke checks, TypeScript, Jest, NestJS build/runtime smoke tests, health probes and HTTP-level authentication throttling checks.
 - **CMS Frontend Lint** runs ESLint with the repository's Prettier rule on the newly added CMS User Management page. This is a targeted check, not a full-repository lint pass.
 - **CMS Scheduled Jobs** calls the authenticated publication and webhook dispatcher endpoints on a five-minute schedule. GitHub-hosted scheduled execution can be delayed; it is not a precise real-time scheduler.
 
@@ -261,6 +265,7 @@ The dashboard has existing i18next dictionaries for Persian, English and additio
 - [Repository audit and findings](docs/enterprise-cms-audit.md)
 - [Implementation status](docs/enterprise-cms-implementation-status.md)
 - [Security model and limitations](docs/enterprise-cms-security.md)
+- [Portfolio readiness hardening](docs/portfolio-readiness-hardening.md)
 - [Deployment runbook](docs/enterprise-cms-deployment.md)
 - [Backup and restore runbook](docs/enterprise-cms-backup-restore.md)
 - [Administrator guide](docs/enterprise-cms-admin-guide.md)
