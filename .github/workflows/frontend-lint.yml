@@ -1,4 +1,4 @@
-# Blocking source formatting, ESLint and full frontend lint for this release candidate.
+# Blocking source formatting, ESLint and full frontend lint for CMS release candidate.
 name: CMS Frontend Quality
 
 on:
