@@ -278,7 +278,7 @@ Existing detailed references: [CMS architecture](docs/cms-architecture.md), [CMS
 
 ## Known limitations — do not market as completed
 
-- Each 15-minute access token is bound to a PostgreSQL session and authenticated logout revokes that session. Refresh-token rotation and cross-device session management are not implemented.
+- Each 15-minute access token is bound to a PostgreSQL session and authenticated logout revokes that session. Refresh-token rotation and cross-device session management are not implemented. Expired and revoked sessions are also pruned daily at 03:00 UTC.
 - Password reset, email verification, MFA and account recovery are not implemented in the current backend foundation.
 - User management currently exposes administrator-only listing and updates; it is not a complete invitation, lifecycle and session-management product.
 - Content owner/team-level authorization and reviewer assignment are not fully implemented.
