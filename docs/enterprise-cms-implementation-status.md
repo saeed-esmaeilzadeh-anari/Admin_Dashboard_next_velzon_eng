@@ -98,7 +98,7 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 - [x] Added the user-management route to the CMS commercial navigation.
 - [x] Added targeted ESLint/Prettier workflow; it passed on the page source commit `5505a6d294812a76c989e45af71f5f6dc1498f05`. [Run 41969946277](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41969946277).
 - [x] Frontend Type Check, Production Build and production-server smoke tests all passed on the user-page source commit `5505a6d294812a76c989e45af71f5f6dc1498f05`. The smoke job verified the app page, public CMS Server Component rendering, BFF health proxy, rejected/successful login, HttpOnly cookie and token non-disclosure, authenticated `/auth/me`, and logout cookie expiry. [Frontend CI run 41969946337](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41969946337).
-- [x] Full frontend lint audit was executed as a non-blocking step. It found 160 Prettier errors in two existing CMS pages: `apps-cms/audit-logs/page.tsx` and `apps-cms/content/[id]/page.tsx`. Those are tracked as legacy CMS formatting debt, not reported as a full-repository lint pass. [Audit run 41970063536](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41970063536).
+- [x] The initial full frontend lint audit found 160 Prettier violations in the audit-log and content-editor routes. This historical debt was corrected, then full lint exposed additional legacy formatting debt in CMS route pages, public CMS components/helpers, chart/demo screens and shared Redux slices. All reported formatting issues were normalized with the repository-locked Prettier version; the final blocking full-repository lint now passes on the source snapshot recorded in the CI section below.
 
 ### Phase 5 — Product navigation and documentation
 
@@ -109,19 +109,23 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 
 ### Phase 7 — Formatting debt closure and post-merge quality
 
-- [x] Applied the repository-locked Prettier version to `apps-cms/audit-logs/page.tsx` and `apps-cms/content/[id]/page.tsx`; this resolves the 160 formatting violations reported by the earlier lint audit.
-- [x] The isolated formatter job completed successfully on the feature branch. Its temporary workflow was removed from the follow-up branch after formatting.
-- [x] Added a blocking CMS frontend quality workflow covering Prettier, targeted ESLint and the full frontend lint command. This follow-up is validated through the review PR, not merged yet.
+- [x] Applied the repository-locked Prettier version to all TSX routes under `src/app/(with-layout)/apps-cms`, including audit logs, content list/editor/preview/create, content types, forms, media, locales, menus, permissions, redirects, taxonomies, webhooks and import/export.
+- [x] Formatted every additional source file reported by full lint in public CMS components, CMS API helpers, BFF/public routes, chart/demo routes and shared Redux/menu state files. Formatting-only changes preserve existing behavior.
+- [x] Removed file-wide `@ts-nocheck` from three ApexCharts demo pages and fixed invalid JSX type-cast syntax; the frontend type-check passed after these changes.
+- [x] Removed all one-time formatter workflows after their jobs completed successfully. No temporary formatter helper remains in the follow-up branch.
+- [x] Added a blocking quality workflow: Prettier check for all CMS TSX plus reported frontend lint-debt files, targeted ESLint for those sources, and repository-wide `npm run lint`.
+- [x] The exact full quality workflow completed successfully: formatting checks, targeted lint and full frontend lint all passed on source commit `6dba6aacd643758913232cd57f1e5d41eff548af`. [Run 41988772990](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41988772990).
 
 ## CI evidence and exactness
 
 - Backend CI passed on the merged `main` commit `83fe58acb1a767603cc7c97b5adca8f063a8fb79`: Prisma validation, PostgreSQL 16 migrations, seed/database smoke, TypeScript, Jest, Nest build, runtime/auth smoke and watch-mode smoke. [Main Backend CI run 41985508363](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41985508363).
 - The merge's Frontend CI run `41985508374` passed on the exact main merge commit, including type-check, production build and production server/BFF/public CMS smoke. [Main Frontend CI run 41985508374](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41985508374).
 - Earlier Frontend CI passed at `41969946337`, including type-check, production build, published CMS server rendering, BFF health/login/session/authenticated-me/logout smoke. The formatted code is also covered by the post-merge main Frontend CI run above.
-- The earlier full lint audit found exactly 160 Prettier violations, all in the two pages formatted in Phase 7. The new blocking full-lint workflow will provide the follow-up clean result once its PR check completes.
+- The final blocking quality workflow passed Prettier checks for all CMS TSX and the additional lint-debt files, ESLint for all of those selected files, and full repository `npm run lint` on commit `6dba6aacd643758913232cd57f1e5d41eff548af`. [Run 41988772990](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41988772990).
+- Frontend CI on commit `2d3c11a06b54c2e37a732810a61551523ed40351` passed Type Check; production build was still running when this status text was updated. The workflow was explicitly enabled for the follow-up branch so build and production-server/BFF/public-CMS smoke tests can run there. [Run 41988863489](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41988863489).
 - CI uses a disposable/mock upstream for Frontend BFF/public rendering and PostgreSQL 16 for Backend migrations/tests. It does not validate a real customer database, media storage bucket or production network.
 - No full browser E2E suite, staging deployment, external penetration test or production restore rehearsal is claimed.
-- The follow-up quality branch `chore/cms-post-merge-validation` adds blocking Prettier, targeted CMS ESLint and full frontend lint checks. The quality workflow run `41985772188` is in progress for the exact workflow/source commit `b494544b36907e6841aef363638fce5e096c81c1`; its result is recorded in the pull request once complete.
+- The follow-up PR #17 (`chore/cms-post-merge-validation`) is still draft and unmerged; no production deployment has been performed.
 
 
 ## Remaining release blockers
