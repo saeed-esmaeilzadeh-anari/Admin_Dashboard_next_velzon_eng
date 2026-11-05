@@ -55,7 +55,6 @@ describe("AuthService public registration policy", () => {
       role: Role.USER,
       createdAt,
     });
-    jest.spyOn(bcrypt, "hash").mockResolvedValue("test-password-hash" as never);
 
     const result = await service.register({
       name: " Portfolio User ",
@@ -72,11 +71,17 @@ describe("AuthService public registration policy", () => {
         data: expect.objectContaining({
           name: "Portfolio User",
           email: "user@example.test",
-          passwordHash: "test-password-hash",
           role: Role.USER,
         }),
       })
     );
+    const createInput = (prisma.user.create as jest.Mock).mock.calls[0][0] as {
+      data: { passwordHash: string };
+    };
+    await expect(
+      bcrypt.compare("strong-password-123", createInput.data.passwordHash)
+    ).resolves.toBe(true);
+
     expect(jwt.signAsync).toHaveBeenCalledWith({
       sub: "user-1",
       email: "user@example.test",
