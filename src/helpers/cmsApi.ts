@@ -19,7 +19,7 @@ async function publicCmsGet<T>(path: string): Promise<T> {
   const normalizedBase = configuredBase.endsWith("/")
     ? configuredBase
     : configuredBase + "/";
-  const target = new URL(path.replace(/^\\/+/, ""), normalizedBase);
+  const target = new URL(path.split("/").filter(Boolean).join("/"), normalizedBase);
   const response = await fetch(target, {
     method: "GET",
     headers: { Accept: "application/json" },
