@@ -7,7 +7,7 @@ on:
       - ".github/workflows/format-cms-pages.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   format:
@@ -27,12 +27,18 @@ jobs:
           npx prettier --write
           "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
           "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
-      - name: Upload formatted sources for review
-        uses: actions/upload-artifact@v4
-        with:
-          name: formatted-cms-pages
-          path: |
-            src/app/(with-layout)/apps-cms/audit-logs/page.tsx
-            src/app/(with-layout)/apps-cms/content/
-          if-no-files-found: error
-          retention-days: 1
+      - name: Commit formatted pages to the feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- \
+            "src/app/(with-layout)/apps-cms/audit-logs/page.tsx" \
+            "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
+          if git diff --cached --quiet; then
+            echo "The selected CMS pages are already formatted."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "style(cms): format legacy audit and content editor pages"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
