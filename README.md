@@ -247,12 +247,11 @@ To run the browser E2E suite locally, install its pinned runner and Chromium:
 
 ```powershell
 npm install --no-save --package-lock=false --legacy-peer-deps @playwright/test@1.64.1
-npx playwright install chromium
 $env:E2E_BASE_URL = "http://localhost:3000"
 npx playwright test
 ```
 
-The browser suite expects the Next.js application and a disposable backend to be running.
+The browser suite expects Google Chrome, the Next.js application and a disposable backend to be available.
 
 | Command | Purpose |
 |---|---|
