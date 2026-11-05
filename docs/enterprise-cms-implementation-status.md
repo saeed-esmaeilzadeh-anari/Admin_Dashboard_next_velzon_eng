@@ -4,7 +4,7 @@ Last updated: 2026-11-05
 Repository: `saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng`
 Baseline: `main@5ef8f23a390342703fec773a42d3be39ba4bec5b`
 Working branch: `feat/enterprise-cms-production-v2`
-Current branch HEAD at this update: `161fd883284a39007a4c5db6dc792ba221086267`
+Last verified branch HEAD before this status update: `2ad0430c7daf2df3648e1a2e2d1738d06405e9fd`
 
 ## Product boundary
 
@@ -16,7 +16,7 @@ The current release target is one independently installed CMS for one customer o
 
 - Main branch at the start of this increment: `5ef8f23a390342703fec773a42d3be39ba4bec5b`.
 - This branch was created directly from that exact main commit.
-- Latest comparison at this update: 20 commits ahead of `main`, 0 commits behind.
+- Latest comparison at this update: 48 commits ahead of `main`, 0 commits behind.
 - No changes were made to `main`, no production deployment was performed and no real secrets/customer data were added.
 - Current application stack: Next.js 15.5.28, React 19.2.7, TypeScript, Bootstrap 5.3.6, Redux Toolkit, i18next; NestJS 10, Prisma 6.12.0 and PostgreSQL 16 in CI.
 
@@ -37,7 +37,7 @@ The current release target is one independently installed CMS for one customer o
 | Public forms/submissions | Partially implemented | Server schema validation and throttling exist; CAPTCHA/honeypot, retention and privacy workflow incomplete |
 | Webhooks | Partially implemented | HMAC, HTTPS, DNS pinning, retries and reserved-IP filtering exist; durable queue/multi-instance operations need validation |
 | CMS permissions | Partially implemented | Role-wide action grants and ADMIN bypass; content owner/team/reviewer scoping missing |
-| User administration | Partially implemented | ADMIN-only listing/updates; last-admin and self-lockout safeguards added and unit-tested; invitations/recovery/session management missing |
+| User administration | Partially implemented | ADMIN-only UI/API for search, server pagination, name/role/activation updates; destructive confirmations and fa/en translations; self-lockout/last-admin safeguards unit-tested; invitations/recovery/session management missing |
 | Audit log | Partially implemented | Request-level CMS audit events; full before/after field history, IP/request correlation and rejected-event coverage incomplete |
 | Import/export | Partially implemented | Bounded versioned JSON with per-record results; media binaries excluded |
 | UI localization | Partially implemented | Existing i18next dictionaries include Persian/English and template languages; full route/state translation coverage incomplete |
@@ -85,6 +85,18 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 - [x] Extended destination classification to reject 192.88.99.0/24, ORCHIDv2 IPv6 and 3fff::/20 documentation space.
 - [x] Added unit cases for those reserved ranges.
 - [x] Included these tests in the successful Backend CI run above.
+
+### Phase 6 — User administration UI and targeted quality checks
+
+- [x] Added typed frontend API contracts for `GET /users` and `PATCH /users/:id`.
+- [x] Added `/apps-cms/users` with API-backed search, server pagination, name/role/activation editing, refresh, loading, empty, error and success states.
+- [x] Restricts UI choices to the actual current Prisma roles: ADMIN, MANAGER and USER.
+- [x] Added confirmations for deactivation and administrator demotion.
+- [x] Added Persian and English labels and administrator safety/error messages.
+- [x] Added the user-management route to the CMS commercial navigation.
+- [x] Added targeted ESLint/Prettier workflow; it passed on the page source commit `5505a6d294812a76c989e45af71f5f6dc1498f05`. [Run 41969946277](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41969946277).
+- [x] Frontend Type Check passed on the user-page source commit in [Frontend CI run 41969946337](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41969946337); Production Build and server smoke were still running at the time of this update.
+- [x] Full frontend lint audit was executed as a non-blocking step. It found 160 Prettier errors in two existing CMS pages: `apps-cms/audit-logs/page.tsx` and `apps-cms/content/[id]/page.tsx`. Those are tracked as legacy CMS formatting debt, not reported as a full-repository lint pass. [Audit run 41970063536](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41970063536).
 
 ### Phase 5 — Product navigation and documentation
 
