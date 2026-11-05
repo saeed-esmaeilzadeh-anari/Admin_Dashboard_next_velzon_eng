@@ -785,6 +785,7 @@ const Navdata = () => {
         { id: "cms-forms", label: "Forms and Submissions", link: "/apps-cms/forms", parentId: "cms" },
         { id: "cms-webhooks", label: "Webhooks", link: "/apps-cms/webhooks", parentId: "cms" },
         { id: "cms-import-export", label: "Import / Export", link: "/apps-cms/import-export", parentId: "cms" },
+        { id: "cms-users", label: "User Management", link: "/apps-cms/users", parentId: "cms" },
         { id: "cms-permissions", label: "CMS Permissions", link: "/apps-cms/permissions", parentId: "cms" },
         { id: "cms-audit", label: "CMS Audit Log", link: "/apps-cms/audit-logs", parentId: "cms" },
       ],
