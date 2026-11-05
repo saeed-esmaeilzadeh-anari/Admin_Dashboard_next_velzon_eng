@@ -1,4 +1,4 @@
-# Enterprise CMS Repository Audit
+| User management | ADMIN-only database-backed list/search/pagination and user edit page for name/role/activation; backend protects self-lockout and last active ADMIN | Invitations, new-user creation, recovery, MFA and session lifecycle not implemented |nterprise CMS Repository Audit
 
 Audit date: 2026-11-05
 Repository: `saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng`
