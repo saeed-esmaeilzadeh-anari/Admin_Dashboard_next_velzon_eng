@@ -168,7 +168,7 @@ const Register = () => {
                         ) : null}
 
                         <div className="mb-3">
-                          <Label htmlFor="useremail" className="form-label">
+                          <Label htmlFor="email" className="form-label">
                             Email <span className="text-danger">*</span>
                           </Label>
                           <Input
@@ -199,8 +199,10 @@ const Register = () => {
                             Username <span className="text-danger">*</span>
                           </Label>
                           <Input
+                            id="username"
                             name="first_name"
                             type="text"
+                            autoComplete="name"
                             placeholder="Enter username"
                             onChange={validation.handleChange}
                             onBlur={validation.handleBlur}
@@ -225,8 +227,10 @@ const Register = () => {
                             Password <span className="text-danger">*</span>
                           </Label>
                           <Input
+                            id="userpassword"
                             name="password"
                             type="password"
+                            autoComplete="new-password"
                             placeholder="Enter Password"
                             onChange={validation.handleChange}
                             onBlur={validation.handleBlur}
@@ -255,8 +259,10 @@ const Register = () => {
                             <span className="text-danger">*</span>
                           </Label>
                           <Input
+                            id="confirmPassword"
                             name="confirm_password"
                             type="password"
+                            autoComplete="new-password"
                             placeholder="Confirm Password"
                             onChange={validation.handleChange}
                             onBlur={validation.handleBlur}
