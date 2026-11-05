@@ -1,5 +1,48 @@
 import backendApi from "@/helpers/backendApi";
 
+/**
+ * Public CMS reads are also executed from Next.js Server Components and
+ * generateMetadata(). The browser-only Axios client uses a relative
+ * "/backend-api" base URL, which is not a valid absolute URL in Node.js.
+ * Keep browser reads same-origin through the BFF, but use the private
+ * server-side backend URL for server-rendered public content.
+ */
+async function publicCmsGet<T>(path: string): Promise<T> {
+  if (typeof window !== "undefined") {
+    return (await backendApi.get<T>(path)).data;
+  }
+
+  const configuredBase =
+    process.env.BACKEND_API_URL?.trim() ||
+    process.env.NEXT_PUBLIC_BACKEND_API_URL?.trim() ||
+    "http://localhost:3001/api/v1";
+  const normalizedBase = configuredBase.endsWith("/")
+    ? configuredBase
+    : configuredBase + "/";
+  const target = new URL(path.replace(/^\\/+/, ""), normalizedBase);
+  const response = await fetch(target, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    const message =
+      typeof payload?.message === "string"
+        ? payload.message
+        : "The public CMS API request failed.";
+    const error = new Error(message) as Error & {
+      response?: { status: number; data: unknown };
+    };
+    error.response = { status: response.status, data: payload };
+    throw error;
+  }
+
+  return (await response.json()) as T;
+}
+
 export type CmsStatus = "DRAFT" | "IN_REVIEW" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
 export type CmsFieldType = "TEXT" | "TEXTAREA" | "RICH_TEXT" | "MARKDOWN" | "INTEGER" | "DECIMAL" | "BOOLEAN" | "DATE" | "DATETIME" | "SELECT" | "MULTISELECT" | "EMAIL" | "URL" | "JSON" | "MEDIA" | "MEDIA_MULTIPLE" | "RELATION" | "RELATION_MULTIPLE" | "REPEATER";
 export type CmsLocale = {
@@ -294,13 +337,17 @@ export const cmsApi = {
     return (await backendApi.post<CmsWebhookDelivery>(`/cms/webhooks/${id}/deliveries/${deliveryId}/retry`)).data;
   },
   async publicMenu(key: string, localeCode: string): Promise<CmsPublicMenu> {
-    return (await backendApi.get<CmsPublicMenu>(`/public/cms/menus/${encodeURIComponent(key)}/${encodeURIComponent(localeCode)}`)).data;
+    return publicCmsGet<CmsPublicMenu>(
+      `/public/cms/menus/${encodeURIComponent(key)}/${encodeURIComponent(localeCode)}`
+    );
   },
   async publicContents(typeKey: string, localeCode: string, params: { page?: number; limit?: number } = {}): Promise<CmsPage<CmsPublicContent>> {
     return (await backendApi.get<CmsPage<CmsPublicContent>>(`/public/cms/${encodeURIComponent(typeKey)}/${encodeURIComponent(localeCode)}`, { params })).data;
   },
   async publicContent(typeKey: string, localeCode: string, slug: string): Promise<CmsPublicContent> {
-    return (await backendApi.get<CmsPublicContent>(`/public/cms/${encodeURIComponent(typeKey)}/${encodeURIComponent(localeCode)}/${encodeURIComponent(slug)}`)).data;
+    return publicCmsGet<CmsPublicContent>(
+      `/public/cms/${encodeURIComponent(typeKey)}/${encodeURIComponent(localeCode)}/${encodeURIComponent(slug)}`
+    );
   },
   async publicSitemap(): Promise<CmsSitemapEntry[]> {
     return (await backendApi.get<CmsSitemapEntry[]>("/public/cms/sitemap")).data;
