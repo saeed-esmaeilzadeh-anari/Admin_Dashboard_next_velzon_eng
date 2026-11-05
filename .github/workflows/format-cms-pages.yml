@@ -33,6 +33,6 @@ jobs:
           name: formatted-cms-pages
           path: |
             src/app/(with-layout)/apps-cms/audit-logs/page.tsx
-            src/app/(with-layout)/apps-cms/content/[id]/page.tsx
+            src/app/(with-layout)/apps-cms/content/
           if-no-files-found: error
           retention-days: 1
