@@ -39,6 +39,14 @@ The following groups are implemented under `/api/v1`:
 
 Administrative CMS controllers require JWT authentication and action-level CMS permission grants. ADMIN is explicitly allowed by the CMS permission guard. The route summary is not a substitute for Swagger DTO definitions.
 
+## Administrator user management
+
+The UsersController is protected by `JwtAuthGuard`, `RolesGuard` and `@Roles(Role.ADMIN)`:
+- `GET /api/v1/users?page=1&limit=20&search=`: returns a server-paginated user list and `meta`.
+- `PATCH /api/v1/users/:id`: updates supported `name`, `role` or `isActive` fields.
+
+The current Prisma roles are `ADMIN`, `MANAGER` and `USER`. The update service prevents an administrator from changing their own role/deactivating their own account and prevents removal of the final active ADMIN. These checks run inside a serializable transaction. There is no user invite/create, password reset, email verification or MFA endpoint in this release.
+
 ## Public routes
 
 - `GET /public/cms/sitemap`
