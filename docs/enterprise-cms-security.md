@@ -16,6 +16,8 @@ NestJS remains authoritative for JWT signature/expiry, active account and route 
 ## Backend controls present
 
 - Password hashes use bcrypt.
+- Login is limited to 5 requests per minute and public registration to 3 requests per minute per tracked client.
+- Public registration is disabled by default when `NODE_ENV=production`; enabling it requires `PUBLIC_REGISTRATION_ENABLED=true`.
 - JWT has a 15-minute expiry; user active status is rechecked by JWT strategy.
 - DTO ValidationPipe uses whitelist, forbidNonWhitelisted and transformation.
 - CMS permission guard maps role grants to action codes.
@@ -27,6 +29,8 @@ NestJS remains authoritative for JWT signature/expiry, active account and route 
 - Webhooks require HTTPS DNS hostnames, validate DNS results against reserved/private ranges, pin lookup results for the TLS request and use HMAC-SHA256 signatures.
 - Internal scheduler endpoints require a private `CMS_JOB_TOKEN` and compare token bytes with timing-safe comparison.
 - Helmet and CORS allowlisting are configured in the backend bootstrap.
+- Separate liveness (`/api/v1/health/live`) and PostgreSQL readiness (`/api/v1/health/ready`) probes are available; the legacy `/api/v1/health` remains a readiness check.
+- NestJS graceful shutdown hooks are enabled so application lifecycle hooks can close Prisma connections.
 
 ## Additional hardening in this branch
 
@@ -43,7 +47,7 @@ NestJS remains authoritative for JWT signature/expiry, active account and route 
 3. Content ownership, reviewer assignment and team-level authorization are not implemented; current grants are role-wide.
 4. Audit records are request-level. They do not yet provide complete before/after field diffs, request ID/IP correlation or a full trail of rejected/failed security events.
 5. Webhook secrets are stored as application data; encryption-at-rest/key rotation and secret reveal/rotation UX require separate design.
-6. Public-form throttling is process-local unless the deployment is configured with a shared limiter; a configurable CAPTCHA/honeypot and retention/privacy workflow are not complete.
+6. Authentication and public-form throttling use in-process storage in the current configuration. Multiple API replicas require a shared throttler store and trusted proxy/IP tracking; a configurable CAPTCHA/honeypot and retention/privacy workflow are also incomplete.
 7. No completed external penetration test, dependency audit sign-off, XSS/CSRF/IDOR test suite or threat-model sign-off is recorded.
 8. No customer-specific TLS, reverse-proxy trust, CORS, storage bucket ACL or secrets-manager configuration has been verified.
 
