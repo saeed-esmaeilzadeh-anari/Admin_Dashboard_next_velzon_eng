@@ -222,6 +222,17 @@ The Postman collection calls the NestJS API directly with a Bearer token. This i
 
 ### Frontend (repository root)
 
+To run the browser E2E suite locally, install its pinned runner and Chromium:
+
+```powershell
+npm install --no-save --package-lock=false --legacy-peer-deps @playwright/test@1.64.1
+npx playwright install chromium
+$env:E2E_BASE_URL = "http://localhost:3000"
+npx playwright test
+```
+
+The browser suite expects the Next.js application and a disposable backend to be running.
+
 | Command | Purpose |
 |---|---|
 | `npm run dev` | Start Next.js development server |
@@ -248,7 +259,7 @@ Install uses `npm ci --legacy-peer-deps` because the current template dependency
 
 ## CI workflows
 
-- **Frontend CMS CI** installs dependencies, runs TypeScript checking and the production build, then starts Next.js with a disposable local upstream to exercise BFF authentication/session behavior and a published-content Server Component rendering smoke test.
+- **Frontend CMS CI** installs dependencies, runs TypeScript checking and the production build, then starts Next.js with a disposable local upstream. It exercises BFF authentication/session behavior, published-content Server Component rendering and Playwright Chromium browser journeys for signup, HttpOnly login, authenticated requests, logout, failed login and public CMS rendering.
 - **Backend CI** validates/generates Prisma, applies all migrations to a PostgreSQL 16 service, seeds test data, runs database smoke checks, TypeScript, Jest, NestJS build/runtime smoke tests, health probes and HTTP-level authentication throttling checks.
 - **CMS Frontend Lint** runs ESLint with the repository's Prettier rule on the newly added CMS User Management page. This is a targeted check, not a full-repository lint pass.
 - **CMS Scheduled Jobs** calls the authenticated publication and webhook dispatcher endpoints on a five-minute schedule. GitHub-hosted scheduled execution can be delayed; it is not a precise real-time scheduler.
@@ -287,7 +298,7 @@ Existing detailed references: [CMS architecture](docs/cms-architecture.md), [CMS
 - Webhook execution has retry records and destination checks; durable queue semantics, multi-instance coordination and full operational observability still need deployment-level verification.
 - CMS audit entries record request-level outcomes, request IDs, client IP and HTTP status for authenticated CMS controller requests. Field-level before/after diffs, immutable retention and authentication failures outside those controllers remain incomplete.
 - Legacy template modules outside the CMS are not all migrated away from fake/demo data.
-- Frontend component/E2E, accessibility, browser matrix, load/soak and penetration testing are not complete.
+- Focused Playwright Chromium E2E coverage exists for core portfolio journeys. Component-level visual regression, cross-browser/device matrix, accessibility, load/soak and external penetration testing remain incomplete.
 - Automated production backup, media backup, restore rehearsal and disaster-recovery objectives are not delivered by this codebase.
 - No staging deployment or customer production infrastructure is provisioned by this repository update.
 
