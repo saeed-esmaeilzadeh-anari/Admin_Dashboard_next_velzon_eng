@@ -128,7 +128,66 @@ jobs:
             -H "Authorization: Bearer $access_token" \
             | jq -e --arg email "$ADMIN_EMAIL" '.email == $email and (has("sessionId") | not)' >/dev/null
 
-          logout_status="$(curl --silent --show-error -o /tmp/velzon-logout.json -w '%{http_code}' \
+          # Exercise the real CMS workflow against the migrated PostgreSQL database.
+          content_type_status="$(curl --silent --show-error -o /tmp/velzon-content-type.json -w '%{http_code}' \
+            -X POST http://127.0.0.1:3101/api/v1/cms/content-types \
+            -H "Authorization: Bearer $access_token" -H 'Content-Type: application/json' \
+            --data '{"key":"ci_portfolio_article","name":"CI Portfolio Article","fields":[{"key":"body","label":"Body","type":"RICH_TEXT","isRequired":true,"isLocalized":true,"sortOrder":10}]}')"
+          if [ "$content_type_status" != "201" ]; then
+            cat /tmp/velzon-content-type.json
+            echo "CMS content type creation failed (HTTP $content_type_status)"
+            exit 1
+          fi
+
+          content_status="$(curl --silent --show-error -o /tmp/velzon-content.json -w '%{http_code}' \
+            -X POST http://127.0.0.1:3101/api/v1/cms/contents \
+            -H "Authorization: Bearer $access_token" -H 'Content-Type: application/json' \
+            --data '{"typeKey":"ci_portfolio_article","localeCode":"fa-IR","title":"CI Portfolio Article","slug":"ci-portfolio-article","excerpt":"Real PostgreSQL-backed CMS integration test","fields":{"body":"CI integration content"}}')"
+          if [ "$content_status" != "201" ]; then
+            cat /tmp/velzon-content.json
+            echo "CMS content creation failed (HTTP $content_status)"
+            exit 1
+          fi
+          content_id="$(jq -er '.id' /tmp/velzon-content.json)"
+
+          draft_public_status="$(curl --silent --show-error -o /tmp/velzon-draft-public.json -w '%{http_code}' \
+            http://127.0.0.1:3101/api/v1/public/cms/ci_portfolio_article/fa-IR/ci-portfolio-article)"
+          if [ "$draft_public_status" != "404" ]; then
+            cat /tmp/velzon-draft-public.json
+            echo "A draft content item must not be publicly accessible (received HTTP $draft_public_status)"
+            exit 1
+          fi
+
+          submit_status="$(curl --silent --show-error -o /tmp/velzon-submit.json -w '%{http_code}' \
+            -X POST "http://127.0.0.1:3101/api/v1/cms/contents/$content_id/translations/fa-IR/submit" \
+            -H "Authorization: Bearer $access_token")"
+          if [ "$submit_status" != "201" ]; then
+            cat /tmp/velzon-submit.json
+            echo "CMS submission for review failed (HTTP $submit_status)"
+            exit 1
+          fi
+
+          publish_status="$(curl --silent --show-error -o /tmp/velzon-publish.json -w '%{http_code}' \
+            -X POST "http://127.0.0.1:3101/api/v1/cms/contents/$content_id/translations/fa-IR/publish" \
+            -H "Authorization: Bearer $access_token")"
+          if [ "$publish_status" != "201" ]; then
+            cat /tmp/velzon-publish.json
+            echo "CMS publication failed (HTTP $publish_status)"
+            exit 1
+          fi
+
+          public_status="$(curl --silent --show-error -o /tmp/velzon-public-content.json -w '%{http_code}' \
+            http://127.0.0.1:3101/api/v1/public/cms/ci_portfolio_article/fa-IR/ci-portfolio-article)"
+          if [ "$public_status" != "200" ]; then
+            cat /tmp/velzon-public-content.json
+            echo "Published CMS content was not publicly available (HTTP $public_status)"
+            exit 1
+          fi
+          jq -e '.title == "CI Portfolio Article" and .fields.body == "CI integration content"' /tmp/velzon-public-content.json >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:3101/api/v1/public/cms/sitemap.xml -o /tmp/velzon-sitemap.xml
+          grep -q 'ci-portfolio-article' /tmp/velzon-sitemap.xml
+
+                    logout_status="$(curl --silent --show-error -o /tmp/velzon-logout.json -w '%{http_code}' \
             -X POST http://127.0.0.1:3101/api/v1/auth/logout \
             -H "Authorization: Bearer $access_token")"
           if [ "$logout_status" != "201" ]; then
@@ -192,7 +251,7 @@ jobs:
             exit 1
           fi
 
-          echo "Liveness/readiness, JWT login, persisted session revocation, safe /me profile, registration contract, and auth throttling passed."
+          echo "Health/readiness, JWT session revocation, real PostgreSQL CMS type/content/review/publish/public-render/sitemap flow, safe registration, and auth throttling passed."
       - name: Development watch-mode runtime smoke test
         env:
           PORT: 3102
