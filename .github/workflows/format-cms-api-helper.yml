@@ -1,0 +1,37 @@
+name: Normalize CMS API Helper Formatting
+
+on:
+  push:
+    branches: [chore/cms-post-merge-validation]
+    paths:
+      - ".github/workflows/format-cms-api-helper.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Format API helper
+        run: npx prettier --write src/helpers/cmsApi.ts
+      - name: Commit formatting safely
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- src/helpers/cmsApi.ts
+          if git diff --cached --quiet; then
+            echo "cmsApi.ts is already formatted."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "style(cms): normalize API helper formatting"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
