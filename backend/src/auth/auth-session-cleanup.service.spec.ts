@@ -15,11 +15,13 @@ describe("AuthSessionCleanupService", () => {
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     jest.restoreAllMocks();
   });
 
   it("deletes expired and revoked sessions using a single bounded cleanup query", async () => {
     jest.useFakeTimers().setSystemTime(new Date("2026-11-05T03:00:00.000Z"));
+    deleteMany.mockResolvedValue({ count: 4 });
     const service = new AuthSessionCleanupService(prisma);
 
     await expect(service.cleanupExpiredSessions()).resolves.toBe(4);
@@ -32,7 +34,6 @@ describe("AuthSessionCleanupService", () => {
         ],
       },
     });
-    jest.useRealTimers();
   });
 
   it("does not log when there are no stale sessions", async () => {
