@@ -1,5 +1,5 @@
 name: Backend CI
-# Revalidate the synchronized CMS branch and database migration chain.
+# Revalidate the CMS API, PostgreSQL migration chain and runtime security controls.
 concurrency:
   group: cms-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -41,6 +41,7 @@ jobs:
       ADMIN_EMAIL: ci-admin@example.test
       ADMIN_PASSWORD: ci-only-admin-password-strong-enough
       PUBLIC_SITE_URL: https://example.test
+      PUBLIC_REGISTRATION_ENABLED: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,7 +72,7 @@ jobs:
           npm run build
           test -f dist/main.js
           echo "NestJS entrypoint generated: backend/dist/main.js"
-      - name: API runtime and authentication smoke test
+      - name: API runtime, health, authentication and throttling smoke tests
         env:
           PORT: 3101
         shell: bash
@@ -88,7 +89,7 @@ jobs:
 
           ready=0
           for attempt in $(seq 1 45); do
-            if curl --fail --silent http://127.0.0.1:3101/api/v1/health -o /tmp/velzon-health.json; then
+            if curl --fail --silent http://127.0.0.1:3101/api/v1/health/ready -o /tmp/velzon-health.json; then
               ready=1
               break
             fi
@@ -101,9 +102,12 @@ jobs:
 
           if [ "$ready" -ne 1 ]; then
             cat /tmp/velzon-backend.log
-            echo "Backend API did not become healthy"
+            echo "Backend API did not become ready"
             exit 1
           fi
+
+          curl --fail --silent --show-error http://127.0.0.1:3101/api/v1/health/live             | jq -e '.status == "ok"' >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:3101/api/v1/health             | jq -e '.status == "ok" and .database == "connected"' >/dev/null
 
           request_body="$(jq -n --arg email "$ADMIN_EMAIL" --arg password "$ADMIN_PASSWORD" '{email: $email, password: $password}')"
           status="$(curl --silent --show-error -o /tmp/velzon-login.json -w '%{http_code}' \
@@ -124,7 +128,53 @@ jobs:
             -H "Authorization: Bearer $access_token" \
             | jq -e --arg email "$ADMIN_EMAIL" '.email == $email' >/dev/null
 
-          echo "Backend health, POST /api/v1/auth/login and authenticated GET /api/v1/auth/me passed."
+          # The initial successful login counts as request 1. Four invalid
+          # attempts are still processed; the sixth request must be throttled.
+          bad_login_body='{"email":"missing-user@example.test","password":"wrong-password"}'
+          for attempt in 1 2 3 4; do
+            bad_status="$(curl --silent --show-error -o /tmp/velzon-bad-login.json -w '%{http_code}' \
+              -X POST http://127.0.0.1:3101/api/v1/auth/login \
+              -H 'Content-Type: application/json' --data "$bad_login_body")"
+            if [ "$bad_status" != "401" ]; then
+              cat /tmp/velzon-bad-login.json
+              echo "Expected HTTP 401 for invalid login attempt $attempt, received $bad_status"
+              exit 1
+            fi
+          done
+          throttled_login_status="$(curl --silent --show-error -o /tmp/velzon-throttled-login.json -w '%{http_code}' \
+            -X POST http://127.0.0.1:3101/api/v1/auth/login \
+            -H 'Content-Type: application/json' --data "$bad_login_body")"
+          if [ "$throttled_login_status" != "429" ]; then
+            cat /tmp/velzon-throttled-login.json
+            echo "Expected HTTP 429 after the login rate limit, received $throttled_login_status"
+            exit 1
+          fi
+
+          # Public registration is explicitly enabled for this isolated CI
+          # environment; three registrations are allowed and the fourth is throttled.
+          for attempt in 1 2 3; do
+            register_body="$(jq -n --arg email "ci-register-$attempt@example.test" \
+              '{name: "CI Rate Limit User", email: $email, password: "ci-registration-password-123"}')"
+            register_status="$(curl --silent --show-error -o /tmp/velzon-register.json -w '%{http_code}' \
+              -X POST http://127.0.0.1:3101/api/v1/auth/register \
+              -H 'Content-Type: application/json' --data "$register_body")"
+            if [ "$register_status" != "201" ]; then
+              cat /tmp/velzon-register.json
+              echo "Expected HTTP 201 for registration attempt $attempt, received $register_status"
+              exit 1
+            fi
+          done
+          final_register_body='{"name":"CI Rate Limit User","email":"ci-register-over-limit@example.test","password":"ci-registration-password-123"}'
+          throttled_register_status="$(curl --silent --show-error -o /tmp/velzon-throttled-register.json -w '%{http_code}' \
+            -X POST http://127.0.0.1:3101/api/v1/auth/register \
+            -H 'Content-Type: application/json' --data "$final_register_body")"
+          if [ "$throttled_register_status" != "429" ]; then
+            cat /tmp/velzon-throttled-register.json
+            echo "Expected HTTP 429 after the registration rate limit, received $throttled_register_status"
+            exit 1
+          fi
+
+          echo "Liveness/readiness, backward-compatible health, JWT login, authenticated /me, login throttling and registration throttling passed."
       - name: Development watch-mode runtime smoke test
         env:
           PORT: 3102
@@ -142,7 +192,7 @@ jobs:
 
           ready=0
           for attempt in $(seq 1 60); do
-            if curl --fail --silent http://127.0.0.1:3102/api/v1/health -o /tmp/velzon-watch-health.json; then
+            if curl --fail --silent http://127.0.0.1:3102/api/v1/health/ready -o /tmp/velzon-watch-health.json; then
               ready=1
               break
             fi
@@ -155,7 +205,7 @@ jobs:
 
           if [ "$ready" -ne 1 ]; then
             cat /tmp/velzon-backend-watch.log
-            echo "NestJS start:dev did not become healthy"
+            echo "NestJS start:dev did not become ready"
             exit 1
           fi
 
