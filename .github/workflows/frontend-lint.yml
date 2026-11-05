@@ -46,12 +46,18 @@ jobs:
           npx prettier --check
           "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
           "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
+          "src/app/(with-layout)/apps-cms/content/[id]/preview/page.tsx"
+          "src/app/(with-layout)/apps-cms/content/new/page.tsx"
+          "src/app/(with-layout)/apps-cms/content/page.tsx"
           "src/app/(with-layout)/apps-cms/users/page.tsx"
       - name: Lint maintained CMS pages
         run: >-
           npx eslint
           "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
           "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
+          "src/app/(with-layout)/apps-cms/content/[id]/preview/page.tsx"
+          "src/app/(with-layout)/apps-cms/content/new/page.tsx"
+          "src/app/(with-layout)/apps-cms/content/page.tsx"
           "src/app/(with-layout)/apps-cms/users/page.tsx"
       - name: Run full frontend lint
         run: npm run lint
