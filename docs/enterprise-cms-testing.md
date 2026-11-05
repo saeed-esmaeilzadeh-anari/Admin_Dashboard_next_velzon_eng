@@ -14,7 +14,7 @@ Workflow: `.github/workflows/frontend-ci.yml`
 - Verify BFF health proxy, rejected login, successful login, HttpOnly cookie, access-token non-disclosure, authenticated `/auth/me`, and logout cookie expiry.
 - Current branch extends this with a published CMS public-content Server Component smoke test. Check the exact final CI run before calling it passed.
 
-The frontend has no dedicated test script in the current root package.json and the audited tree had no Playwright/Cypress/Vitest component/E2E test suite. A separate **CMS Frontend Lint** workflow runs ESLint/Prettier on the new user-management page only; it does not lint the entire legacy template or every CMS file.
+The repository includes a focused Playwright Chromium browser suite in `e2e/portfolio-journeys.spec.ts`. Frontend CI installs the pinned runner and Chromium, then executes the suite against the production Next.js server and a disposable backend. It covers signup without auto-login, HttpOnly login, authenticated BFF requests, logout/cookie clearing, unauthorized access after logout, failed login and published public-page rendering. This is focused browser E2E coverage, not a full visual-regression, cross-browser or accessibility suite. The separate **CMS Frontend Quality** workflow runs Prettier and ESLint checks for maintained CMS sources and tracked legacy lint-debt files.
 
 ### Backend workflow
 
@@ -38,6 +38,17 @@ npm ci --legacy-peer-deps
 npm run type-check
 npm run build
 ```
+
+To run the browser suite locally against an already running Next.js server and backend:
+
+```powershell
+npm install --no-save --package-lock=false --legacy-peer-deps @playwright/test@1.64.1
+npx playwright install chromium
+$env:E2E_BASE_URL = "http://localhost:3000"
+npx playwright test
+```
+
+The CI job installs the same pinned runner and Chromium. Use a disposable test environment: browser tests create a test account and sign in/out through the configured backend.
 
 Backend from `backend/`:
 
