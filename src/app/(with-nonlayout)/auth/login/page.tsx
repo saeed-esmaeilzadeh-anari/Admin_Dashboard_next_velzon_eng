@@ -115,7 +115,7 @@ const Login = () => {
                     </Link>
                   </div>
                   <p className="mt-3 fs-15 fw-medium">
-                    Premium Admin & Dashboard Template
+                    Velzon Enterprise CMS
                   </p>
                 </div>
               </Col>
@@ -145,7 +145,9 @@ const Login = () => {
                             Email
                           </Label>
                           <Input
+                            id="email"
                             name="email"
+                            autoComplete="username"
                             className="form-control"
                             placeholder="Enter email"
                             type="email"
@@ -167,12 +169,9 @@ const Login = () => {
 
                         <div className="mb-3">
                           <div className="float-end">
-                            <Link
-                              href="/forgot-password"
-                              className="text-muted"
-                            >
-                              Forgot password?
-                            </Link>
+                            <span className="text-muted small">
+                              Contact your administrator to reset your password.
+                            </span>
                           </div>
                           <Label
                             className="form-label"
@@ -182,7 +181,9 @@ const Login = () => {
                           </Label>
                           <div className="position-relative auth-pass-inputgroup mb-3">
                             <Input
+                              id="password-input"
                               name="password"
+                              autoComplete="current-password"
                               value={validation.values.password || ""}
                               type={passwordShow ? "text" : "password"}
                               className="form-control pe-5"
