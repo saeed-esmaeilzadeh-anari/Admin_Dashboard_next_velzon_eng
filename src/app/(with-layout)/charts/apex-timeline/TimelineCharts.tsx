@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from "react";
 import ReactApexChart from "react-apexcharts";
 import moment from "moment";
@@ -164,9 +163,7 @@ const DifferentColor = ({ dataColors }: any) => {
         className="apex-charts"
         options={options}
         series={series}
-        type="rangeBar"
-        as
-        any
+        type={"rangeBar" as any}
         height={350}
       />
     </React.Fragment>
@@ -279,9 +276,7 @@ const MultiSeries = ({ dataColors }: any) => {
         className="apex-charts"
         options={options}
         series={series}
-        type="rangeBar"
-        as
-        any
+        type={"rangeBar" as any}
         height={350}
       />
     </React.Fragment>
@@ -442,9 +437,7 @@ const Advanced = ({ dataColors }: any) => {
         className="apex-charts"
         options={options}
         series={series}
-        type="rangeBar"
-        as
-        any
+        type={"rangeBar" as any}
         height={350}
       />
     </React.Fragment>
@@ -633,9 +626,7 @@ const MultipleSeries = ({ dataColors }: any) => {
         className="apex-charts"
         options={options}
         series={series}
-        type="rangeBar"
-        as
-        any
+        type={"rangeBar" as any}
         height={350}
       />
     </React.Fragment>
@@ -734,9 +725,7 @@ const Dumbbell = ({ dataColors }: any) => {
         className="apex-charts"
         options={options}
         series={series}
-        type="rangeBar"
-        as
-        any
+        type={"rangeBar" as any}
         height={350}
       />
     </React.Fragment>
