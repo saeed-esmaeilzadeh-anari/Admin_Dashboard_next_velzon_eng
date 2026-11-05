@@ -9,6 +9,8 @@ on:
       - "src/app/(with-layout)/apps-cms/content/[id]/preview/page.tsx"
       - "src/app/(with-layout)/apps-cms/content/new/page.tsx"
       - "src/app/(with-layout)/apps-cms/content/page.tsx"
+      - "src/app/(with-layout)/apps-cms/content-types/page.tsx"
+      - "src/app/(with-layout)/apps-cms/forms/page.tsx"
       - "src/app/(with-layout)/apps-cms/users/page.tsx"
       - ".github/workflows/frontend-lint.yml"
       - "package.json"
@@ -23,6 +25,8 @@ on:
       - "src/app/(with-layout)/apps-cms/content/[id]/preview/page.tsx"
       - "src/app/(with-layout)/apps-cms/content/new/page.tsx"
       - "src/app/(with-layout)/apps-cms/content/page.tsx"
+      - "src/app/(with-layout)/apps-cms/content-types/page.tsx"
+      - "src/app/(with-layout)/apps-cms/forms/page.tsx"
       - "src/app/(with-layout)/apps-cms/users/page.tsx"
       - ".github/workflows/frontend-lint.yml"
       - "package.json"
@@ -55,6 +59,8 @@ jobs:
           "src/app/(with-layout)/apps-cms/content/[id]/preview/page.tsx"
           "src/app/(with-layout)/apps-cms/content/new/page.tsx"
           "src/app/(with-layout)/apps-cms/content/page.tsx"
+          "src/app/(with-layout)/apps-cms/content-types/page.tsx"
+          "src/app/(with-layout)/apps-cms/forms/page.tsx"
           "src/app/(with-layout)/apps-cms/users/page.tsx"
       - name: Lint maintained CMS pages
         run: >-
@@ -64,6 +70,8 @@ jobs:
           "src/app/(with-layout)/apps-cms/content/[id]/preview/page.tsx"
           "src/app/(with-layout)/apps-cms/content/new/page.tsx"
           "src/app/(with-layout)/apps-cms/content/page.tsx"
+          "src/app/(with-layout)/apps-cms/content-types/page.tsx"
+          "src/app/(with-layout)/apps-cms/forms/page.tsx"
           "src/app/(with-layout)/apps-cms/users/page.tsx"
       - name: Run full frontend lint
         run: npm run lint
