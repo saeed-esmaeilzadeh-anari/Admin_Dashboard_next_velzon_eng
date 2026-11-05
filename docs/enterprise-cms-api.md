@@ -10,9 +10,10 @@ Swagger UI: `/docs`. OpenAPI JSON: `/docs-json`.
 
 ## Authentication
 
-- `POST /auth/register`: creates a standard USER account; client-supplied role is not accepted.
-- `POST /auth/login`: returns the short-lived 15-minute Bearer access token and user profile.
-- `GET /auth/me`: requires a valid Bearer token.
+- `POST /auth/register`: creates a standard USER account and returns `{ user }`; it does not sign the user in or issue a token. Client-supplied roles are not accepted.
+- `POST /auth/login`: creates a persisted 15-minute AuthSession and returns a Bearer access token and user profile.
+- `POST /auth/logout`: requires the current Bearer token and revokes only the matching server-side session.
+- `GET /auth/me`: requires a valid, unexpired and unrevoked session-bound Bearer token; its response does not expose the internal session ID.
 
 Browser CMS calls use the Next.js same-origin BFF under `/backend-api/*`. The BFF stores the access token in an HttpOnly cookie and forwards Authorization server-side. Postman calls the backend API directly and can keep the token in a local Postman environment; do not use that pattern for browser storage.
 
