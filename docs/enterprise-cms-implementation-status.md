@@ -128,7 +128,7 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 - PR #17 (`chore/cms-post-merge-validation`) was merged into `main` as `30230c55c51dbe3835beb95ea914242fef50014d`. The portfolio-readiness hardening branch is separate and has not been merged. No production deployment has been performed.
 
 
-## Portfolio-readiness hardening in progress (branch: `feat/portfolio-readiness-hardening`)
+## Portfolio-readiness hardening baseline and completion branch
 
 - [x] Apply endpoint-specific throttling to login (5 requests/minute) and public registration (3 requests/minute).
 - [x] Disable public registration by default in production unless `PUBLIC_REGISTRATION_ENABLED=true` is explicitly set; keep local development enabled by default.
@@ -167,3 +167,15 @@ A feature may be marked Production Ready only after:
 - licensing is reviewed.
 
 The implementation was merged via PR #16, and the follow-up quality changes in PR #17 were merged into `main` at `30230c55c51dbe3835beb95ea914242fef50014d`. The portfolio-readiness hardening branch (`feat/portfolio-readiness-hardening`) remains separate and has not been merged. No production deployment has been performed.
+
+### Completion increment — `feat/velzon-portfolio-completion`
+
+- [x] Added PostgreSQL AuthSession model and additive migration.
+- [x] Bound each login JWT to a persisted session ID; JWT validation checks session owner, revocation and expiry.
+- [x] Added authenticated server-side logout and wired the Next.js BFF to revoke before clearing the HttpOnly cookie.
+- [x] Changed registration to create the account without issuing a login token; login is an explicit second step.
+- [x] Corrected CMS audit status capture for failed requests (HTTP exception status or 500).
+- [x] Added AuthService and JwtStrategy unit coverage plus Backend CI HTTP checks for logout revocation.
+- [x] Added Frontend CI assertions for BFF backend logout and registration response sanitization.
+
+Remaining: refresh-token rotation, device/session management UI, password reset/email verification/MFA, global expired-session cleanup, content-owner/reviewer scoping, browser E2E coverage, accessibility/performance/security audits, staging storage and backup/restore validation. This branch is still not Production Ready until exact-head CI and the external operational checks pass.
