@@ -32,7 +32,7 @@ NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001/api/v1
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-The template's fake authentication remains the default until explicitly changed.
+The legacy template fake provider is available only when `NEXT_PUBLIC_DEFAULT_AUTH=fake` is explicitly selected. Customer installations should use `backend` and the secure Next.js BFF session.
 
 ## Authentication and security
 

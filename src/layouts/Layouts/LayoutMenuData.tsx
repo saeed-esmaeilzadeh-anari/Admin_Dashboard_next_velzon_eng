@@ -785,6 +785,7 @@ const Navdata = () => {
         { id: "cms-forms", label: "Forms and Submissions", link: "/apps-cms/forms", parentId: "cms" },
         { id: "cms-webhooks", label: "Webhooks", link: "/apps-cms/webhooks", parentId: "cms" },
         { id: "cms-import-export", label: "Import / Export", link: "/apps-cms/import-export", parentId: "cms" },
+        { id: "cms-users", label: "User Management", link: "/apps-cms/users", parentId: "cms" },
         { id: "cms-permissions", label: "CMS Permissions", link: "/apps-cms/permissions", parentId: "cms" },
         { id: "cms-audit", label: "CMS Audit Log", link: "/apps-cms/audit-logs", parentId: "cms" },
       ],
@@ -1486,6 +1487,37 @@ const Navdata = () => {
       ],
     },
   ];
+  const authProvider = (
+    process.env.NEXT_PUBLIC_DEFAULT_AUTH ||
+    process.env.NEXT_PUBLIC_DEFAULTAUTH ||
+    "backend"
+  ).trim().toLowerCase();
+
+  if (authProvider === "backend") {
+    // Customer installations expose the CMS product surface, not the full
+    // Velzon demo/template catalogue. Demo modules remain in the repository
+    // for future optional modules but are not presented as shipped features.
+    const cmsItem = menuItems.find((item: any) => item.id === "cms");
+    const productMenu = [
+      { label: "Menu", isHeader: true },
+      {
+        id: "cms-dashboard",
+        label: "Dashboard",
+        icon: "ri-dashboard-2-line",
+        link: "/apps-cms",
+      },
+      ...(cmsItem ? [cmsItem] : []),
+      {
+        id: "account-profile",
+        label: "Profile",
+        icon: "ri-user-3-line",
+        link: "/profile",
+      },
+    ];
+
+    return <React.Fragment>{productMenu}</React.Fragment>;
+  }
+
   return <React.Fragment>{menuItems}</React.Fragment>;
 };
 export default Navdata;

@@ -34,15 +34,17 @@ Health check: `GET /api/v1/health`
 The repository root already provides `.env.example`. Copy it to `.env.local` and verify these values:
 ```dotenv
 NEXT_PUBLIC_DEFAULT_AUTH=backend
+BACKEND_API_URL=http://localhost:3001/api/v1
 NEXT_PUBLIC_BACKEND_API_URL=http://localhost:3001/api/v1
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_SITE_NAME=Velzon
 ```
-Restart Next.js after changing environment variables.
+`BACKEND_API_URL` is a server-only value used by the Next.js BFF and server-rendered public CMS pages. Do not prefix it with `NEXT_PUBLIC_` or put credentials in the URL. Restart Next.js after changing environment variables.
 
 ## Authentication, permissions and security
 - `POST /auth/register` always creates a `USER`; it does not accept a role.
 - The seed bootstraps the administrator from backend environment variables.
+- The Postman collection calls NestJS directly and stores its Bearer token in the selected local Postman environment. This is a testing workflow; browser code must use the Next.js BFF and HttpOnly cookie.
 - CMS administration requires Bearer JWT plus a matching CMS permission; ADMIN bypasses CMS grants.
 - User management requires ADMIN. Business mutation routes are role-gated (mainly ADMIN/MANAGER).
 - Public CMS content, menus, form schema, form submission and redirect resolution do not require a Bearer token.

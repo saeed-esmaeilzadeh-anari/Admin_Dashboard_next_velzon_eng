@@ -1,69 +1,143 @@
 # Velzon Enterprise CMS — Implementation Status
 
-Last updated: 2026-11-03
-Baseline: `main@27783dac1cbc19b39eca1f2579be294bd8b3d21e`
-Working branch: `feat/enterprise-cms-production`
+Last updated: 2026-11-05
+Repository: `saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng`
+Baseline: `main@5ef8f23a390342703fec773a42d3be39ba4bec5b`
+Working branch: `feat/enterprise-cms-production-v2`
+Last verified branch HEAD before this status update: `2ad0430c7daf2df3648e1a2e2d1738d06405e9fd`
 
 ## Product boundary
 
-The current delivery target is an independently deployable Enterprise CMS installation for one customer organization. Multi-tenancy/SaaS is a future architecture extension, not part of the current release acceptance boundary.
+The current release target is one independently installed CMS for one customer organization. Multi-tenancy/SaaS is a future architecture extension and is not implemented in this release. The original Velzon template remains in the repository, but its legacy demo modules are not all real CMS/business features.
 
-## Existing functionality verified by repository inspection
+**Overall release status: Development in progress — not Production Ready.** A green CI pipeline is necessary but does not replace deployed staging, security, accessibility, load and backup/restore validation.
 
-| Area | Repository state | Production qualification |
+## Repository baseline verified
+
+- Main branch at the start of this increment: `5ef8f23a390342703fec773a42d3be39ba4bec5b`.
+- This branch was created directly from that exact main commit.
+- Latest comparison at this update: 48 commits ahead of `main`, 0 commits behind.
+- No changes were made to `main`, no production deployment was performed and no real secrets/customer data were added.
+- Current application stack: Next.js 15.5.28, React 19.2.7, TypeScript, Bootstrap 5.3.6, Redux Toolkit, i18next; NestJS 10, Prisma 6.12.0 and PostgreSQL 16 in CI.
+
+## Capability ledger
+
+| Area | Repository status | Current qualification |
 |---|---|---|
-| CMS content and translations | Backend/API and dashboard pages exist | Requires end-to-end regression tests |
-| Content types and dynamic fields | Models, API and editor pages exist | Validate every supported field type end-to-end |
-| Editorial workflow and revisions | API operations and UI exist | Verify permissions, concurrency and schedule worker |
-| Media library | API/UI and local/S3 adapters exist | Persistent storage and deployed upload tests required |
-| Taxonomies and menus | API/UI exist | Public rendering and access tests required |
-| Redirects and sitemap | API/middleware routes exist | Validate canonical URLs, loops, status codes and deployment |
-| Forms/submissions | API/UI exist | Spam/abuse controls and privacy controls need further verification |
-| Webhooks | HMAC, delivery records and retries exist | Durable worker, retry idempotency and network security tests required |
-| CMS permissions and audit | Fine-grained CMS permissions and audit records exist | Ownership/team scoping and complete event coverage remain |
-| E-commerce/CRM/projects/tickets | Some backend endpoints exist | Legacy pages are not all connected to real APIs |
-| Production operations | Documentation/checklists exist | No production infrastructure or restore rehearsal verified |
+| CMS content and localized translations | Implemented | Backend/DB-backed; end-to-end staging scenarios still required |
+| Dynamic content types and fields | Implemented | Enum-driven schema; validate every field type and schema changes |
+| Editorial workflow | Partially implemented | Submit/review/publish/schedule/archive actions exist; reviewer assignment/ownership scope is missing |
+| Revision history/publication snapshots | Implemented | Backend revision/snapshot behavior exists; concurrent editing needs broader tests |
+| Page builder | Partially implemented | Bounded hero/text/image/gallery/CTA/FAQ/card-grid blocks; not a freeform visual builder |
+| Media library | Partially implemented | Local/S3 adapters, signature checks and reference protection exist; production bucket persistence/ACL not verified |
+| Taxonomies and localized terms | Implemented | API/UI exist; comprehensive user acceptance remains |
+| Navigation menus | Implemented | Localized menu management/public tree exist; deep nested menu UX tests remain |
+| Redirects and sitemap | Implemented | Backend/public paths exist; deployed canonical/redirect validation remains |
+| Public content rendering | Implemented; server-render fix added this branch | Frontend CI server-render smoke test passed on the code commit identified below |
+| Public forms/submissions | Partially implemented | Server schema validation and throttling exist; CAPTCHA/honeypot, retention and privacy workflow incomplete |
+| Webhooks | Partially implemented | HMAC, HTTPS, DNS pinning, retries and reserved-IP filtering exist; durable queue/multi-instance operations need validation |
+| CMS permissions | Partially implemented | Role-wide action grants and ADMIN bypass; content owner/team/reviewer scoping missing |
+| User administration | Partially implemented | ADMIN-only UI/API for search, server pagination, name/role/activation updates; destructive confirmations and fa/en translations; self-lockout/last-admin safeguards unit-tested; invitations/recovery/session management missing |
+| Audit log | Partially implemented | Request-level CMS audit events; full before/after field history, IP/request correlation and rejected-event coverage incomplete |
+| Import/export | Partially implemented | Bounded versioned JSON with per-record results; media binaries excluded |
+| UI localization | Partially implemented | Existing i18next dictionaries include Persian/English and template languages; full route/state translation coverage incomplete |
+| White label / organization settings | Not implemented as a complete module | No complete backend settings API/UI verified |
+| Email / notification center | Not implemented as a complete module | No complete SMTP, templates, delivery queue and notification center verified |
+| Legacy e-commerce/CRM/projects/tickets | Partially implemented outside CMS | Some APIs exist; pages are not all migrated away from Fake Backend |
+| Production operations | Not verified | No customer infrastructure, backup automation/restore rehearsal or production deployment verified |
 
 ## Work completed in this branch
 
-### Phase 0 — Repository baseline
-- [x] Confirmed the repository, default branch, latest baseline SHA and permissions.
-- [x] Created an isolated feature branch from the verified baseline.
-- [x] Inspected frontend/backend authentication flow, API helper, middleware, Next.js rewrites and environment configuration.
+### Phase 0 — Synchronization and audit
 
-### Phase 1 — Secure browser-to-backend authentication (first implementation slice)
-- [x] Added a Next.js BFF Route Handler for `/backend-api/*`.
-- [x] Added a host-only HttpOnly `velzon_session` cookie with SameSite=Lax and a maximum 15-minute lifetime; Secure is enabled in Production.
-- [x] Removed backend Bearer token reads from browser sessionStorage and Authorization header injection.
-- [x] Sanitized login and registration responses so the access token is not exposed to browser JavaScript.
-- [x] Added server-side Bearer forwarding from the HttpOnly cookie.
-- [x] Added Origin validation for unsafe BFF requests.
-- [x] Added logout cookie expiry and 401 session expiry behavior.
-- [x] Updated middleware and removed the insecure API rewrite path.
-- [x] Updated CI to test the login/session lifecycle.
-- [ ] Confirm the updated GitHub Actions run passes on this branch.
-- [ ] Run a browser-level login/logout test against a deployed staging environment.
+- [x] Confirmed repository/default branch and verified main SHA.
+- [x] Created a new feature branch from the exact current main commit; did not continue the old, squash-diverged branch.
+- [x] Inspected repository tree, package manifests, app routes, CMS pages/helpers, Nest controllers/services, Prisma schema/migrations, seed, Postman files, GitHub Actions and existing docs.
+- [x] Created the enterprise audit and architecture/security/deployment/backup guides.
+- [x] Rewrote root README with current package versions, supported setup instructions and known limitations.
 
-## Known limitations / remaining production gates
+### Phase 1 — Authentication baseline inherited from merged main
 
-1. No refresh token rotation or persistent server-side session revocation is implemented; the current access session expires after 15 minutes.
-2. Middleware checks cookie presence only. NestJS remains authoritative for token verification and authorization.
-3. Registration, password recovery, email verification, MFA and account recovery need implementation and testing before a high-assurance enterprise rollout.
-4. Content ownership/team scoping and cross-user authorization tests remain.
-5. All field types, conditional workflows, media lifecycle and page-builder blocks need end-to-end regression coverage.
-6. Existing legacy template screens outside the CMS remain partly mock-backed and must not be presented as completed CMS functions.
-7. Persistent S3-compatible storage, TLS, production secrets, external scheduling/worker, monitoring and tested backup/restore need real environment validation.
-8. Accessibility, load, security penetration and browser compatibility testing remain open.
-9. Confirm Velzon's commercial license and the repository's third-party asset redistribution terms before customer distribution.
+The HttpOnly BFF authentication slice had already been merged to `main` through PR #15 before this branch was created. The current branch inherits:
+- [x] same-origin Next.js BFF and host-only HttpOnly `velzon_session` cookie;
+- [x] no browser JavaScript access to the backend access token;
+- [x] server-side Bearer forwarding, origin checks, logout and 401 cookie expiry;
+- [x] BFF login/session smoke coverage.
 
-## Release policy
+### Phase 2 — Public CMS server rendering
 
-A feature is not marked Production Ready based on code presence or a successful TypeScript build alone. Each released capability must have:
-- verified API and database behavior;
-- positive and negative authorization tests;
-- frontend loading, empty, success and error states;
-- automated tests for critical behavior;
-- operational configuration and recovery instructions;
-- evidence from the exact release commit.
+- [x] Fixed public CMS reads from Next.js Server Components/generateMetadata to use an absolute server-side Backend URL instead of a browser-relative Axios URL.
+- [x] Kept browser public reads same-origin through the BFF.
+- [x] Added a Frontend CI smoke test that requests a published CMS route from the production Next.js server and checks the returned content.
+- [x] Frontend CI passed for commit `7bc388d5269341ef9001778fb3cf3420362d3256`, including Type Check, Production Build and BFF/public content smoke job. [Run 41968296877](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41968296877).
 
-No Production deployment, merge into `main`, or publication of secrets is authorized by this implementation branch.
+### Phase 3 — Administrator account safety
+
+- [x] Passed the actor ID into user update service.
+- [x] Prevented the acting administrator from changing their own role or deactivating their own account.
+- [x] Prevented demotion/deactivation of the last active ADMIN.
+- [x] Wrapped the check and mutation in a serializable Prisma transaction.
+- [x] Added unit tests for self lockout, last administrator, allowed demotion with another active admin, normal user updates and missing users.
+- [x] Backend CI passed for commit `f9ec74f76a6f6c9282a406be7665efa52e378328`, including Prisma validation, PostgreSQL 16 migrations, seed/database smoke, TypeScript, Jest, Nest build and runtime/auth smoke. [Run 41968167782](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41968167782).
+
+### Phase 4 — Webhook SSRF range hardening
+
+- [x] Extended destination classification to reject 192.88.99.0/24, ORCHIDv2 IPv6 and 3fff::/20 documentation space.
+- [x] Added unit cases for those reserved ranges.
+- [x] Included these tests in the successful Backend CI run above.
+
+### Phase 6 — User administration UI and targeted quality checks
+
+- [x] Added typed frontend API contracts for `GET /users` and `PATCH /users/:id`.
+- [x] Added `/apps-cms/users` with API-backed search, server pagination, name/role/activation editing, refresh, loading, empty, error and success states.
+- [x] Restricts UI choices to the actual current Prisma roles: ADMIN, MANAGER and USER.
+- [x] Added confirmations for deactivation and administrator demotion.
+- [x] Added Persian and English labels and administrator safety/error messages.
+- [x] Added the user-management route to the CMS commercial navigation.
+- [x] Added targeted ESLint/Prettier workflow; it passed on the page source commit `5505a6d294812a76c989e45af71f5f6dc1498f05`. [Run 41969946277](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41969946277).
+- [x] Frontend Type Check, Production Build and production-server smoke tests all passed on the user-page source commit `5505a6d294812a76c989e45af71f5f6dc1498f05`. The smoke job verified the app page, public CMS Server Component rendering, BFF health proxy, rejected/successful login, HttpOnly cookie and token non-disclosure, authenticated `/auth/me`, and logout cookie expiry. [Frontend CI run 41969946337](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41969946337).
+- [x] Full frontend lint audit was executed as a non-blocking step. It found 160 Prettier errors in two existing CMS pages: `apps-cms/audit-logs/page.tsx` and `apps-cms/content/[id]/page.tsx`. Those are tracked as legacy CMS formatting debt, not reported as a full-repository lint pass. [Audit run 41970063536](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41970063536).
+
+### Phase 5 — Product navigation and documentation
+
+- [x] In backend auth mode, primary navigation exposes CMS Dashboard, CMS modules and Profile; legacy template/demo links are hidden but their source routes are retained.
+- [x] Replaced the stale root README with accurate dependency versions, setup commands, architecture, release status and limitations.
+- [x] Added enterprise CMS audit, architecture, security, deployment, backup/restore, administrator, editor/user, API, testing and release documentation.
+- [x] Updated this implementation ledger.
+
+## CI evidence and exactness
+
+- Frontend CI passed at `7bc388d5269341ef9001778fb3cf3420362d3256`. That commit includes all frontend source changes in this increment; subsequent commits through the current HEAD are documentation-only.
+- Backend CI passed at `f9ec74f76a6f6c9282a406be7665efa52e378328`. That commit includes the backend user safety, unit tests and webhook reserved-range changes; subsequent commits through the current HEAD are documentation-only.
+- These CI jobs use a disposable/mock upstream for Frontend BFF/public rendering and PostgreSQL 16 for Backend migrations/tests. They do not validate a real customer database, storage bucket or production network.
+- The frontend TypeScript check and production build passed. The backend Prisma/migration/type-check/unit/build/runtime smoke sequence passed. No full browser E2E suite, staging deployment or production restore rehearsal is claimed.
+
+## Remaining release blockers
+
+1. No refresh token rotation, server-side session revocation or device/session management; current access session expires after 15 minutes.
+2. Password reset, email verification, MFA and account recovery are not implemented.
+3. Content ownership/team-level authorization and reviewer assignment are not implemented.
+4. UI translation coverage and responsive/accessibility review for every CMS/legacy screen remain incomplete.
+5. Dynamic field types, conditional form behavior, revision concurrency and page-builder blocks need broader DB-backed E2E tests.
+6. Public forms need a complete anti-spam/privacy/retention strategy beyond current schema validation and throttling.
+7. Durable webhook/job queue semantics, multi-instance locking, retry idempotency and alerting need deployment validation.
+8. Audit log needs detailed before/after metadata, actor IP/request IDs and coverage of sensitive/rejected security events.
+9. Existing legacy template screens outside the CMS remain partly fake/demo-backed and must not be sold as working CMS modules.
+10. S3 object storage, TLS, secrets manager, rate limits, monitoring, database backups, media backups and restore procedures need customer staging verification.
+11. Frontend component/E2E tests, accessibility checks, browser compatibility, performance/load/soak and external penetration testing remain open.
+12. Confirm applicable Velzon/template/font/icon/image licensing and redistribution terms before commercial distribution.
+
+## Definition of release completion
+
+A feature may be marked Production Ready only after:
+- backend and UI behavior are verified with real staging PostgreSQL/storage;
+- positive and negative authorization tests prove server enforcement;
+- loading/error/empty/success states are checked;
+- CI passes on the exact release code;
+- browser E2E, accessibility, security and performance checks are recorded;
+- scheduled jobs and webhook deliveries are verified on the target infrastructure;
+- backups of both DB and media are created and restored successfully to a separate environment;
+- deployment/rollback and incident procedures are documented;
+- licensing is reviewed.
+
+No merge to `main` or production deployment has been performed in this branch.

@@ -1,0 +1,44 @@
+name: Format Legacy CMS Pages
+
+on:
+  push:
+    branches: [feat/enterprise-cms-production-v2]
+    paths:
+      - ".github/workflows/format-cms-pages.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Format the two outstanding CMS pages
+        run: >-
+          npx prettier --write
+          "src/app/(with-layout)/apps-cms/audit-logs/page.tsx"
+          "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
+      - name: Commit formatted pages to the feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- \
+            "src/app/(with-layout)/apps-cms/audit-logs/page.tsx" \
+            "src/app/(with-layout)/apps-cms/content/[id]/page.tsx"
+          if git diff --cached --quiet; then
+            echo "The selected CMS pages are already formatted."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "style(cms): format legacy audit and content editor pages"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

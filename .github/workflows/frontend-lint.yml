@@ -1,0 +1,44 @@
+name: CMS Frontend Lint
+
+on:
+  push:
+    branches: [feat/enterprise-cms-production-v2]
+    paths:
+      - "src/app/(with-layout)/apps-cms/users/page.tsx"
+      - ".github/workflows/frontend-lint.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "eslint.config.mjs"
+      - "tsconfig.json"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/app/(with-layout)/apps-cms/users/page.tsx"
+      - ".github/workflows/frontend-lint.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "eslint.config.mjs"
+      - "tsconfig.json"
+
+concurrency:
+  group: cms-ui-lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Lint the new CMS user-management page
+        run: npx eslint "src/app/(with-layout)/apps-cms/users/page.tsx"
+      - name: Audit full frontend lint debt (non-blocking)
+        continue-on-error: true
+        run: npm run lint
