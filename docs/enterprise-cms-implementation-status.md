@@ -124,7 +124,7 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 - The final blocking quality workflow passed Prettier checks for all CMS TSX and the additional lint-debt files, ESLint for all of those selected files, and full repository `npm run lint` on commit `6dba6aacd643758913232cd57f1e5d41eff548af`. [Run 41988772990](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41988772990).
 - Frontend CI passed on commit `2d3c11a06b54c2e37a732810a61551523ed40351`: Type Check, Production Build and production-server/BFF/public-CMS smoke tests all succeeded. The smoke test verified a rendered published article, BFF health, rejected and successful login, HttpOnly session cookie without token leakage, authenticated `/auth/me` and logout cookie expiry. [Run 41988863489](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41988863489).
 - CI uses a disposable/mock upstream for Frontend BFF/public rendering and PostgreSQL 16 for Backend migrations/tests. It does not validate a real customer database, media storage bucket or production network.
-- No full browser E2E suite, staging deployment, external penetration test or production restore rehearsal is claimed.
+- Focused Chromium Playwright E2E journeys now cover registration, BFF login and HttpOnly cookies, authenticated requests, logout, failed login and published public CMS rendering. Full cross-browser/device coverage, visual regression and accessibility review remain open; no staging deployment, external penetration test or production restore rehearsal is claimed.
 - PR #17 (`chore/cms-post-merge-validation`) was merged into `main` as `30230c55c51dbe3835beb95ea914242fef50014d`. The portfolio-readiness hardening branch is separate and has not been merged. No production deployment has been performed.
 
 
@@ -178,4 +178,4 @@ The implementation was merged via PR #16, and the follow-up quality changes in P
 - [x] Added AuthService and JwtStrategy unit coverage plus Backend CI HTTP checks for logout revocation.
 - [x] Added Frontend CI assertions for BFF backend logout and registration response sanitization.
 
-Remaining: refresh-token rotation, device/session management UI, password reset/email verification/MFA, global expired-session cleanup, content-owner/reviewer scoping, browser E2E coverage, accessibility/performance/security audits, staging storage and backup/restore validation. This branch is still not Production Ready until exact-head CI and the external operational checks pass.
+Remaining: refresh-token rotation, device/session management UI, password reset/email verification/MFA, content-owner/reviewer scoping, full cross-browser E2E, accessibility/performance/security audits, staging storage and backup/restore validation. This branch is still not Production Ready until exact-head CI and the external operational checks pass.
