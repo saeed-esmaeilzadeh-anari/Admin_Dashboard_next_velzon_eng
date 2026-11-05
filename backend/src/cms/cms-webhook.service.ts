@@ -17,7 +17,7 @@ function isPublicIpv4(value: string): boolean {
   if (a === 0 || a === 10 || a === 127 || a >= 224) return false;
   if (a === 169 && b === 254) return false;
   if (a === 172 && b >= 16 && b <= 31) return false;
-  if (a === 192 && (b === 168 || b === 0 || (b === 0 && c === 2))) return false;
+  if (a === 192 && (b === 168 || b === 0 || (b === 88 && c === 99))) return false;
   if (a === 100 && b >= 64 && b <= 127) return false;
   if (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100))) return false;
   if (a === 203 && b === 0 && c === 113) return false;
@@ -51,7 +51,11 @@ function isPublicIpv6(address: string): boolean {
   if (first < 0x2000 || first > 0x3fff) return false;
   // 2001:0000::/23 (special-purpose), 2001:db8::/32 (documentation) and 2002::/16 (6to4).
   if (first === 0x2001 && (second <= 0x01ff || second === 0x0db8)) return false;
+  // ORCHIDv2 (2001:20::/28) is not a globally reachable webhook destination.
+  if (first === 0x2001 && second >= 0x0020 && second <= 0x002f) return false;
   if (first === 0x2002) return false;
+  // 3fff::/20 is reserved for documentation and must not be dialed.
+  if (first === 0x3fff && second <= 0x0fff) return false;
   return true;
 }
 
