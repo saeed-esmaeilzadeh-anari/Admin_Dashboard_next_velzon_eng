@@ -1,4 +1,4 @@
-# Blocking Prettier, ESLint and repository-wide lint for maintained CMS UI.
+# Blocking Prettier and ESLint across every CMS TSX source, plus repository-wide lint.
 name: CMS Frontend Quality
 
 on:
