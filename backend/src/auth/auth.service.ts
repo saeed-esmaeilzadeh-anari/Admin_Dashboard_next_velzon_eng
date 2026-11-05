@@ -1,4 +1,10 @@
-import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { Role } from "@prisma/client";
 import * as bcrypt from "bcrypt";
@@ -8,16 +14,34 @@ import { RegisterDto } from "./dto/register.dto";
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwt: JwtService,
+    private readonly config: ConfigService
+  ) {}
 
   async register(dto: RegisterDto) {
+    if (!this.isPublicRegistrationEnabled()) {
+      throw new ForbiddenException(
+        "Public registration is disabled for this installation."
+      );
+    }
+
     const email = dto.email.trim().toLowerCase();
-    const existing = await this.prisma.user.findUnique({ where: { email }, select: { id: true } });
-    if (existing) throw new ConflictException("An account with this email already exists.");
+    const existing = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new ConflictException("An account with this email already exists.");
+    }
+
     const user = await this.prisma.user.create({
       data: {
-        name: dto.name.trim(), email,
-        passwordHash: await bcrypt.hash(dto.password, 12), role: Role.USER,
+        name: dto.name.trim(),
+        email,
+        passwordHash: await bcrypt.hash(dto.password, 12),
+        role: Role.USER,
       },
       select: { id: true, email: true, name: true, role: true, createdAt: true },
     });
@@ -27,17 +51,53 @@ export class AuthService {
   async login(dto: LoginDto) {
     const email = dto.email.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user || !user.isActive || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+    if (
+      !user ||
+      !user.isActive ||
+      !(await bcrypt.compare(dto.password, user.passwordHash))
+    ) {
       throw new UnauthorizedException("Invalid email or password.");
     }
-    return this.issueToken({ id: user.id, email: user.email, name: user.name, role: user.role });
+    return this.issueToken({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    });
   }
 
-  private async issueToken(user: { id: string; email: string; name: string; role: Role }) {
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role });
+  private isPublicRegistrationEnabled(): boolean {
+    const configured = this.config.get<string>("PUBLIC_REGISTRATION_ENABLED");
+    if (configured !== undefined && configured.trim() !== "") {
+      return configured.trim().toLowerCase() === "true";
+    }
+
+    // Convenience for local development; production installations are
+    // invitation/admin-provisioned until public account lifecycle is complete.
+    return this.config.get<string>("NODE_ENV") !== "production";
+  }
+
+  private async issueToken(user: {
+    id: string;
+    email: string;
+    name: string;
+    role: Role;
+  }) {
+    const accessToken = await this.jwt.signAsync({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
     return {
-      accessToken, tokenType: "Bearer", expiresIn: 900,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      accessToken,
+      tokenType: "Bearer",
+      expiresIn: 900,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
     };
   }
 }
