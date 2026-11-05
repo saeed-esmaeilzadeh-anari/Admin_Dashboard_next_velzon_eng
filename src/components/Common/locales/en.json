@@ -715,5 +715,7 @@
   "Reset": "Reset",
   "of": "of",
   "User invitation, password recovery, email verification and MFA are not available in this release.": "User invitation, password recovery, email verification and MFA are not available in this release.",
-  "You have unsaved user changes. Save each edited row before leaving this page.": "You have unsaved user changes. Save each edited row before leaving this page."
+  "You have unsaved user changes. Save each edited row before leaving this page.": "You have unsaved user changes. Save each edited row before leaving this page.",
+  "Deactivate this user account?": "Deactivate this user account?",
+  "Change this administrator's role?": "Change this administrator's role?"
 }
