@@ -111,6 +111,15 @@ export default function CmsUsersPage() {
     const draft = drafts[user.id];
     if (!draft) return;
 
+    if (user.isActive && !draft.isActive) {
+      const confirmed = window.confirm(t("Deactivate this user account?"));
+      if (!confirmed) return;
+    }
+    if (user.role === "ADMIN" && draft.role !== "ADMIN") {
+      const confirmed = window.confirm(t("Change this administrator's role?"));
+      if (!confirmed) return;
+    }
+
     setSavingId(user.id);
     setError("");
     setNotice("");
