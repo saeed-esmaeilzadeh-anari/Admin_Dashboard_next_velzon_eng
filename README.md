@@ -246,6 +246,7 @@ Install uses `npm ci --legacy-peer-deps` because the current template dependency
 
 - **Frontend CMS CI** installs dependencies, runs TypeScript checking and the production build, then starts Next.js with a disposable local upstream to exercise BFF authentication/session behavior and a published-content Server Component rendering smoke test.
 - **Backend CI** validates/generates Prisma, applies all migrations to a PostgreSQL 16 service, seeds test data, runs database smoke checks, TypeScript, Jest and the NestJS build/runtime smoke tests.
+- **CMS Frontend Lint** runs ESLint with the repository's Prettier rule on the newly added CMS User Management page. This is a targeted check, not a full-repository lint pass.
 - **CMS Scheduled Jobs** calls the authenticated publication and webhook dispatcher endpoints on a five-minute schedule. GitHub-hosted scheduled execution can be delayed; it is not a precise real-time scheduler.
 
 A passing CI run validates the tested commit and disposable CI environment only. It does not prove production provisioning, S3 persistence, backup restoration, browser accessibility, load capacity or customer-specific configuration.
