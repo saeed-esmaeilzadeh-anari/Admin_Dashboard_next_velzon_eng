@@ -14,7 +14,7 @@ Workflow: `.github/workflows/frontend-ci.yml`
 - Verify BFF health proxy, rejected login, successful login, HttpOnly cookie, access-token non-disclosure, authenticated `/auth/me`, and logout cookie expiry.
 - Current branch extends this with a published CMS public-content Server Component smoke test. Check the exact final CI run before calling it passed.
 
-The frontend has no dedicated test script in the current root package.json and the audited tree had no Playwright/Cypress/Vitest component/E2E test suite.
+The frontend has no dedicated test script in the current root package.json and the audited tree had no Playwright/Cypress/Vitest component/E2E test suite. A separate **CMS Frontend Lint** workflow runs ESLint/Prettier on the new user-management page only; it does not lint the entire legacy template or every CMS file.
 
 ### Backend workflow
 
