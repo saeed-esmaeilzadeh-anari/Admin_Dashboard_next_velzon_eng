@@ -717,5 +717,11 @@
   "User invitation, password recovery, email verification and MFA are not available in this release.": "User invitation, password recovery, email verification and MFA are not available in this release.",
   "You have unsaved user changes. Save each edited row before leaving this page.": "You have unsaved user changes. Save each edited row before leaving this page.",
   "Deactivate this user account?": "Deactivate this user account?",
-  "Change this administrator's role?": "Change this administrator's role?"
+  "Change this administrator's role?": "Change this administrator's role?",
+  "Unable to complete the user-management request.": "Unable to complete the user-management request.",
+  "You cannot deactivate your own account or change your own role.": "You cannot deactivate your own account or change your own role.",
+  "At least one active administrator must remain.": "At least one active administrator must remain.",
+  "User not found.": "User not found.",
+  "Forbidden resource": "You do not have permission to perform this action.",
+  "Unauthorized": "Your session has expired or you are not authenticated."
 }
