@@ -1,6 +1,7 @@
 import {
   CallHandler,
   ExecutionContext,
+  HttpException,
   Injectable,
   Logger,
   NestInterceptor,
@@ -50,7 +51,10 @@ export class CmsAuditInterceptor implements NestInterceptor {
 
     response.setHeader("X-Request-Id", requestId);
 
-    const writeAudit = async (outcome: "success" | "failure") => {
+    const writeAudit = async (
+      outcome: "success" | "failure",
+      statusCodeOverride?: number
+    ) => {
       if (!userId) return;
       try {
         await this.prisma.auditLog.create({
@@ -63,14 +67,17 @@ export class CmsAuditInterceptor implements NestInterceptor {
               route: String(route).slice(0, 300),
               role,
               outcome,
-              statusCode: Number(response.statusCode ?? 200),
+              statusCode: Number(
+                statusCodeOverride ??
+                  response.statusCode ??
+                  (outcome === "failure" ? 500 : 200)
+              ),
               requestId,
               ip: String(request.ip ?? "").slice(0, 64) || null,
             },
           },
         });
       } catch (error) {
-        // Auditing must not replace the original application response/error.
         this.logger.error(
           "Failed to write CMS audit entry.",
           error instanceof Error ? error.stack : String(error)
@@ -84,9 +91,12 @@ export class CmsAuditInterceptor implements NestInterceptor {
         return result;
       }),
       catchError(error =>
-        from(writeAudit("failure")).pipe(
-          mergeMap(() => throwError(() => error))
-        )
+        from(
+          writeAudit(
+            "failure",
+            error instanceof HttpException ? error.getStatus() : 500
+          )
+        ).pipe(mergeMap(() => throwError(() => error)))
       )
     );
   }
