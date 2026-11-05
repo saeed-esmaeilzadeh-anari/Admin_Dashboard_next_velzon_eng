@@ -6,9 +6,10 @@ export interface AuthenticatedUser {
   email: string;
   name: string;
   role: Role;
+  sessionId: string;
 }
 
 export const CurrentUser = createParamDecorator(
   (_data: unknown, context: ExecutionContext): AuthenticatedUser =>
-    context.switchToHttp().getRequest().user as AuthenticatedUser,
+    context.switchToHttp().getRequest().user as AuthenticatedUser
 );
