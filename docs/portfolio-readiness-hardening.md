@@ -17,6 +17,8 @@ Public registration should remain disabled for organization installations that u
 
 The liveness endpoint intentionally avoids a database query so an orchestrator can distinguish a live process from a process that is not ready to serve database-backed traffic. Use the readiness endpoint for traffic admission.
 
+CMS audit events now include a generated `X-Request-Id`, client IP (as reported by the configured HTTP adapter), outcome and HTTP status code. The interceptor records both successful and failed authenticated CMS requests, does not persist request bodies or credentials, and preserves the original response/error if audit persistence fails. This improves request correlation but does not replace a dedicated security-event pipeline or immutable audit retention.
+
 ## Verification
 
 The backend CI runtime smoke test is extended to verify both health endpoints and the login/registration rate limits against the actual NestJS server and the CI PostgreSQL service. Unit tests cover production registration defaults and explicit configuration behavior.
