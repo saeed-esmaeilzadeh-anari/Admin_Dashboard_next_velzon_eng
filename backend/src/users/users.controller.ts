@@ -4,6 +4,7 @@ import { Type } from "class-transformer";
 import { Role } from "@prisma/client";
 import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from "class-validator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { AuthenticatedUser, CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { RolesGuard } from "../common/guards/roles.guard";
 import { UsersService } from "./users.service";
@@ -33,7 +34,11 @@ export class UsersController {
   }
 
   @Patch(":id")
-  update(@Param("id", new ParseUUIDPipe()) id: string, @Body() dto: UpdateUserDto) {
-    return this.users.update(id, dto);
+  update(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() actor: AuthenticatedUser
+  ) {
+    return this.users.update(id, dto, actor.id);
   }
 }
