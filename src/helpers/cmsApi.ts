@@ -846,9 +846,7 @@ export const cmsApi = {
       )
     ).data;
   },
-  async publicForm(
-    key: string
-  ): Promise<{
+  async publicForm(key: string): Promise<{
     key: string;
     name: string;
     description?: string | null;
