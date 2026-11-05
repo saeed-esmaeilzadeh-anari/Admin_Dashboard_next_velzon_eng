@@ -204,6 +204,27 @@ S3_SECRET_ACCESS_KEY=...
 
 The bucket/public URL and access policy must be validated in a staging environment. This repository does not provision an object-storage account or verify a customer's storage ACLs.
 
+## Optional portfolio demo content
+
+A fresh installation seeds the administrator, locales, permissions, starter content types and menus. For a résumé/demo installation, you can add four published sample article translations (two Persian and two English) without changing the base seed:
+
+From `backend/` after running the standard migration and seed:
+
+```powershell
+$env:DEMO_SEED_ENABLED = "true"
+npm run prisma:seed:demo
+Remove-Item Env:DEMO_SEED_ENABLED
+```
+
+The optional demo seed is blocked when `NODE_ENV=production`, requires explicit opt-in, creates revision snapshots, and is idempotent. Existing records with the same locale/slug are skipped rather than overwritten. Do not run it against a customer database.
+
+Public demo article routes:
+
+- `/content/article/fa-IR/welcome-to-velzon-cms`
+- `/content/article/en-US/welcome-to-velzon-cms`
+- `/content/article/fa-IR/portfolio-full-stack-showcase`
+- `/content/article/en-US/portfolio-full-stack-showcase`
+
 ## API documentation and Postman
 
 - Swagger UI: `http://localhost:3001/docs`
