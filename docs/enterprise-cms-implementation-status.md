@@ -95,7 +95,7 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 - [x] Added Persian and English labels and administrator safety/error messages.
 - [x] Added the user-management route to the CMS commercial navigation.
 - [x] Added targeted ESLint/Prettier workflow; it passed on the page source commit `5505a6d294812a76c989e45af71f5f6dc1498f05`. [Run 41969946277](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41969946277).
-- [x] Frontend Type Check passed on the user-page source commit in [Frontend CI run 41969946337](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41969946337); Production Build and server smoke were still running at the time of this update.
+- [x] Frontend Type Check, Production Build and production-server smoke tests all passed on the user-page source commit `5505a6d294812a76c989e45af71f5f6dc1498f05`. The smoke job verified the app page, public CMS Server Component rendering, BFF health proxy, rejected/successful login, HttpOnly cookie and token non-disclosure, authenticated `/auth/me`, and logout cookie expiry. [Frontend CI run 41969946337](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41969946337).
 - [x] Full frontend lint audit was executed as a non-blocking step. It found 160 Prettier errors in two existing CMS pages: `apps-cms/audit-logs/page.tsx` and `apps-cms/content/[id]/page.tsx`. Those are tracked as legacy CMS formatting debt, not reported as a full-repository lint pass. [Audit run 41970063536](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41970063536).
 
 ### Phase 5 — Product navigation and documentation
