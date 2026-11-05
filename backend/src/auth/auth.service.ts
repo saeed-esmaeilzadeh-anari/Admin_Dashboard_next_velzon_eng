@@ -12,6 +12,8 @@ import { PrismaService } from "../prisma/prisma.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 
+const SESSION_TTL_SECONDS = 15 * 60;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -43,9 +45,17 @@ export class AuthService {
         passwordHash: await bcrypt.hash(dto.password, 12),
         role: Role.USER,
       },
-      select: { id: true, email: true, name: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+      },
     });
-    return this.issueToken(user);
+
+    // Registration creates an account; sign-in creates an authenticated session.
+    return { user };
   }
 
   async login(dto: LoginDto) {
@@ -58,6 +68,7 @@ export class AuthService {
     ) {
       throw new UnauthorizedException("Invalid email or password.");
     }
+
     return this.issueToken({
       id: user.id,
       email: user.email,
@@ -66,14 +77,19 @@ export class AuthService {
     });
   }
 
+  async logout(userId: string, sessionId: string) {
+    await this.prisma.authSession.updateMany({
+      where: { id: sessionId, userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    return { success: true };
+  }
+
   private isPublicRegistrationEnabled(): boolean {
     const configured = this.config.get<string>("PUBLIC_REGISTRATION_ENABLED");
     if (configured !== undefined && configured.trim() !== "") {
       return configured.trim().toLowerCase() === "true";
     }
-
-    // Convenience for local development; production installations are
-    // invitation/admin-provisioned until public account lifecycle is complete.
     return this.config.get<string>("NODE_ENV") !== "production";
   }
 
@@ -83,15 +99,33 @@ export class AuthService {
     name: string;
     role: Role;
   }) {
+    const now = new Date();
+    await this.prisma.authSession.deleteMany({
+      where: {
+        userId: user.id,
+        OR: [
+          { expiresAt: { lte: now } },
+          { revokedAt: { not: null } },
+        ],
+      },
+    });
+
+    const expiresAt = new Date(now.getTime() + SESSION_TTL_SECONDS * 1000);
+    const session = await this.prisma.authSession.create({
+      data: { userId: user.id, expiresAt },
+      select: { id: true },
+    });
     const accessToken = await this.jwt.signAsync({
       sub: user.id,
       email: user.email,
       role: user.role,
+      sid: session.id,
     });
+
     return {
       accessToken,
       tokenType: "Bearer",
-      expiresIn: 900,
+      expiresIn: SESSION_TTL_SECONDS,
       user: {
         id: user.id,
         email: user.email,
