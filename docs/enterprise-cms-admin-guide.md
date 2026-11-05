@@ -28,6 +28,21 @@ The CMS Permission page can manage grants for supported non-admin roles. ADMIN h
 
 Use least privilege. Do not grant publish, permission-management or webhook-management operations to author-only users.
 
+## User management
+
+The CMS navigation includes **User Management**. The page calls the database-backed administrator-only `GET /api/v1/users` and `PATCH /api/v1/users/:id` endpoints.
+
+Administrators can:
+- search users by name or email;
+- move through server-side paginated results;
+- edit a user's name;
+- assign one of the current backend roles (`ADMIN`, `MANAGER`, `USER`);
+- activate or deactivate an account.
+
+The backend rejects attempts to change the acting administrator's own role or deactivate their own account. It also prevents removal/demotion of the last active administrator in a serializable transaction. These safeguards are enforced server-side; the UI is not the security boundary.
+
+User invitation/creation, email verification, password reset, MFA and session-device management are not implemented in this release. Do not promise those capabilities to customer administrators.
+
 ## Content types and fields
 
 The seeded installation contains Page and Article content types. Administrators can manage content types and dynamic fields from **CMS → Content Types and Fields**.
