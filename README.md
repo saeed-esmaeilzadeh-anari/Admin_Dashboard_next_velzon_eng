@@ -24,6 +24,7 @@ The CMS core is database-backed. The repository also retains the original Velzon
 The repository contains real PostgreSQL/Prisma models, NestJS endpoints and Next.js pages for:
 
 - Content records, localized translations, dynamic content types and fields.
+- Administrator-only user listing/search/pagination and updates for the current ADMIN/MANAGER/USER roles (invitations and account recovery are not implemented).
 - Draft/review/publish/schedule/archive workflow actions and revision snapshots.
 - A first-version page builder with hero, text/Markdown, image/gallery, CTA, FAQ and card-grid blocks. This is not a freeform visual drag-and-drop website designer.
 - Media metadata, MIME/signature checks, upload size limits, local storage and an S3-compatible storage adapter.
