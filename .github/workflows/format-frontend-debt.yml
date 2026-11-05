@@ -1,0 +1,71 @@
+name: Format Remaining Frontend Lint Debt
+
+on:
+  push:
+    branches: [chore/cms-post-merge-validation]
+    paths:
+      - ".github/workflows/format-frontend-debt.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Format the exact files reported by full frontend lint
+        run: >-
+          npx prettier --write
+          "src/app/(with-layout)/charts/apex-bar/BarCharts.tsx"
+          "src/app/(with-layout)/charts/apex-range-area/RangeChart.tsx"
+          "src/app/(with-layout)/charts/apex-timeline/TimelineCharts.tsx"
+          "src/app/(with-layout)/charts/apex-treemap/TreemapCharts.tsx"
+          "src/app/(with-layout)/ui/utilities/page.tsx"
+          "src/app/(with-nonlayout)/auth/login/page.tsx"
+          "src/app/(with-nonlayout)/auth/register/page.tsx"
+          "src/app/(with-nonlayout)/content/[typeKey]/[localeCode]/[slug]/page.tsx"
+          "src/app/(with-nonlayout)/content/[typeKey]/[localeCode]/page.tsx"
+          "src/app/backend-api/[...path]/route.ts"
+          "src/app/robots.ts"
+          "src/app/sitemap.ts"
+          "src/components/ClientProviders.tsx"
+          "src/components/Cms/PageBuilderField.tsx"
+          "src/components/Cms/PagePreview.tsx"
+      - name: Commit formatting changes with fast-forward safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- \
+            "src/app/(with-layout)/charts/apex-bar/BarCharts.tsx" \
+            "src/app/(with-layout)/charts/apex-range-area/RangeChart.tsx" \
+            "src/app/(with-layout)/charts/apex-timeline/TimelineCharts.tsx" \
+            "src/app/(with-layout)/charts/apex-treemap/TreemapCharts.tsx" \
+            "src/app/(with-layout)/ui/utilities/page.tsx" \
+            "src/app/(with-nonlayout)/auth/login/page.tsx" \
+            "src/app/(with-nonlayout)/auth/register/page.tsx" \
+            "src/app/(with-nonlayout)/content/[typeKey]/[localeCode]/[slug]/page.tsx" \
+            "src/app/(with-nonlayout)/content/[typeKey]/[localeCode]/page.tsx" \
+            "src/app/backend-api/[...path]/route.ts" \
+            "src/app/robots.ts" \
+            "src/app/sitemap.ts" \
+            "src/components/ClientProviders.tsx" \
+            "src/components/Cms/PageBuilderField.tsx" \
+            "src/components/Cms/PagePreview.tsx"
+          if git diff --cached --quiet; then
+            echo "The full-lint debt files are already formatted."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "style(frontend): resolve remaining repository lint formatting"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
