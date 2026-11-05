@@ -28,11 +28,17 @@ function getBackendBaseUrl(): URL {
     throw new Error("BACKEND_API_URL must use HTTP or HTTPS.");
   }
   if (base.username || base.password || base.search || base.hash) {
-    throw new Error("BACKEND_API_URL must not contain credentials, query parameters or a hash.");
+    throw new Error(
+      "BACKEND_API_URL must not contain credentials, query parameters or a hash."
+    );
   }
 
   const isLoopback = ["localhost", "127.0.0.1", "::1"].includes(base.hostname);
-  if (process.env.NODE_ENV === "production" && base.protocol !== "https:" && !isLoopback) {
+  if (
+    process.env.NODE_ENV === "production" &&
+    base.protocol !== "https:" &&
+    !isLoopback
+  ) {
     throw new Error("Production BACKEND_API_URL must use HTTPS.");
   }
 
@@ -75,7 +81,9 @@ function rejectCrossOriginMutation(request: NextRequest): NextResponse | null {
 }
 
 function buildBackendUrl(base: URL, segments: string[], search: string): URL {
-  const relativePath = segments.map(segment => encodeURIComponent(segment)).join("/");
+  const relativePath = segments
+    .map(segment => encodeURIComponent(segment))
+    .join("/");
   return new URL(relativePath + search, base);
 }
 
@@ -120,15 +128,16 @@ async function sanitizeAuthenticationResponse(
     try {
       payload = JSON.parse(responseText) as unknown;
     } catch {
-      payload = { message: "The authentication service returned an invalid response." };
+      payload = {
+        message: "The authentication service returned an invalid response.",
+      };
     }
   }
 
   if (!upstream.ok) {
-    return NextResponse.json(
-      payload ?? { message: "Authentication failed." },
-      { status: upstream.status }
-    );
+    return NextResponse.json(payload ?? { message: "Authentication failed." }, {
+      status: upstream.status,
+    });
   }
 
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
@@ -146,7 +155,9 @@ async function sanitizeAuthenticationResponse(
     typeof publicPayload.user !== "object"
   ) {
     return NextResponse.json(
-      { message: "The authentication service returned an incomplete response." },
+      {
+        message: "The authentication service returned an incomplete response.",
+      },
       { status: 502 }
     );
   }
@@ -201,7 +212,10 @@ async function handle(
 
   if (pathKey === "auth/logout") {
     if (request.method !== "POST") {
-      return NextResponse.json({ message: "Method not allowed." }, { status: 405 });
+      return NextResponse.json(
+        { message: "Method not allowed." },
+        { status: 405 }
+      );
     }
 
     const response = NextResponse.json({ success: true });
@@ -220,11 +234,18 @@ async function handle(
     (pathKey === "auth/login" || pathKey === "auth/register") &&
     request.method !== "POST"
   ) {
-    return NextResponse.json({ message: "Method not allowed." }, { status: 405 });
+    return NextResponse.json(
+      { message: "Method not allowed." },
+      { status: 405 }
+    );
   }
 
   try {
-    const target = buildBackendUrl(getBackendBaseUrl(), path, request.nextUrl.search);
+    const target = buildBackendUrl(
+      getBackendBaseUrl(),
+      path,
+      request.nextUrl.search
+    );
     const headers = new Headers();
     const accept = request.headers.get("accept");
     const contentType = request.headers.get("content-type");

@@ -3,8 +3,9 @@
 Last updated: 2026-11-05
 Repository: `saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng`
 Baseline: `main@5ef8f23a390342703fec773a42d3be39ba4bec5b`
-Working branch: `feat/enterprise-cms-production-v2`
-Last verified branch HEAD before this status update: `2ad0430c7daf2df3648e1a2e2d1738d06405e9fd`
+Merged implementation branch: `feat/enterprise-cms-production-v2`
+Main merge: PR #16, merged 2026-11-05 07:11:42 UTC as `83fe58acb1a767603cc7c97b5adca8f063a8fb79`
+Current follow-up branch: `chore/cms-post-merge-validation`
 
 ## Product boundary
 
@@ -14,10 +15,11 @@ The current release target is one independently installed CMS for one customer o
 
 ## Repository baseline verified
 
-- Main branch at the start of this increment: `5ef8f23a390342703fec773a42d3be39ba4bec5b`.
-- This branch was created directly from that exact main commit.
-- Latest comparison at this update: 48 commits ahead of `main`, 0 commits behind.
-- No changes were made to `main`, no production deployment was performed and no real secrets/customer data were added.
+- The implementation branch `feat/enterprise-cms-production-v2` was created from `main@5ef8f23a390342703fec773a42d3be39ba4bec5b`.
+- PR #16 (`Feat/enterprise cms production v2`) was subsequently merged into `main` at `83fe58acb1a767603cc7c97b5adca8f063a8fb79` on 2026-11-05 07:11:42 UTC.
+- A follow-up quality branch `chore/cms-post-merge-validation` is based on that merge commit; it removes a one-time formatter helper and makes CMS formatting/lint checks blocking.
+- The merge did not deploy the application. No production deployment or real secrets/customer data were added.
+- The old implementation branch is no longer the release baseline; use `main` plus reviewed follow-up PRs.
 - Current application stack: Next.js 15.5.28, React 19.2.7, TypeScript, Bootstrap 5.3.6, Redux Toolkit, i18next; NestJS 10, Prisma 6.12.0 and PostgreSQL 16 in CI.
 
 ## Capability ledger
@@ -96,7 +98,7 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 - [x] Added the user-management route to the CMS commercial navigation.
 - [x] Added targeted ESLint/Prettier workflow; it passed on the page source commit `5505a6d294812a76c989e45af71f5f6dc1498f05`. [Run 41969946277](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41969946277).
 - [x] Frontend Type Check, Production Build and production-server smoke tests all passed on the user-page source commit `5505a6d294812a76c989e45af71f5f6dc1498f05`. The smoke job verified the app page, public CMS Server Component rendering, BFF health proxy, rejected/successful login, HttpOnly cookie and token non-disclosure, authenticated `/auth/me`, and logout cookie expiry. [Frontend CI run 41969946337](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41969946337).
-- [x] Full frontend lint audit was executed as a non-blocking step. It found 160 Prettier errors in two existing CMS pages: `apps-cms/audit-logs/page.tsx` and `apps-cms/content/[id]/page.tsx`. Those are tracked as legacy CMS formatting debt, not reported as a full-repository lint pass. [Audit run 41970063536](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41970063536).
+- [x] The initial full frontend lint audit found 160 Prettier violations in the audit-log and content-editor routes. This historical debt was corrected, then full lint exposed additional legacy formatting debt in CMS route pages, public CMS components/helpers, chart/demo screens and shared Redux slices. All reported formatting issues were normalized with the repository-locked Prettier version; the final blocking full-repository lint now passes on the source snapshot recorded in the CI section below.
 
 ### Phase 5 — Product navigation and documentation
 
@@ -105,12 +107,26 @@ The HttpOnly BFF authentication slice had already been merged to `main` through 
 - [x] Added enterprise CMS audit, architecture, security, deployment, backup/restore, administrator, editor/user, API, testing and release documentation.
 - [x] Updated this implementation ledger.
 
+### Phase 7 — Formatting debt closure and post-merge quality
+
+- [x] Applied the repository-locked Prettier version to all TSX routes under `src/app/(with-layout)/apps-cms`, including audit logs, content list/editor/preview/create, content types, forms, media, locales, menus, permissions, redirects, taxonomies, webhooks and import/export.
+- [x] Formatted every additional source file reported by full lint in public CMS components, CMS API helpers, BFF/public routes, chart/demo routes and shared Redux/menu state files. Formatting-only changes preserve existing behavior.
+- [x] Removed file-wide `@ts-nocheck` from three ApexCharts demo pages and fixed invalid JSX type-cast syntax; the frontend type-check passed after these changes.
+- [x] Removed all one-time formatter workflows after their jobs completed successfully. No temporary formatter helper remains in the follow-up branch.
+- [x] Added a blocking quality workflow: Prettier check for all CMS TSX plus reported frontend lint-debt files, targeted ESLint for those sources, and repository-wide `npm run lint`.
+- [x] The exact full quality workflow completed successfully: formatting checks, targeted lint and full frontend lint all passed on source commit `6dba6aacd643758913232cd57f1e5d41eff548af`. [Run 41988772990](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41988772990).
+
 ## CI evidence and exactness
 
-- Frontend CI passed at `7bc388d5269341ef9001778fb3cf3420362d3256`. That commit includes all frontend source changes in this increment; subsequent commits through the current HEAD are documentation-only.
-- Backend CI passed at `f9ec74f76a6f6c9282a406be7665efa52e378328`. That commit includes the backend user safety, unit tests and webhook reserved-range changes; subsequent commits through the current HEAD are documentation-only.
-- These CI jobs use a disposable/mock upstream for Frontend BFF/public rendering and PostgreSQL 16 for Backend migrations/tests. They do not validate a real customer database, storage bucket or production network.
-- The frontend TypeScript check and production build passed. The backend Prisma/migration/type-check/unit/build/runtime smoke sequence passed. No full browser E2E suite, staging deployment or production restore rehearsal is claimed.
+- Backend CI passed on the merged `main` commit `83fe58acb1a767603cc7c97b5adca8f063a8fb79`: Prisma validation, PostgreSQL 16 migrations, seed/database smoke, TypeScript, Jest, Nest build, runtime/auth smoke and watch-mode smoke. [Main Backend CI run 41985508363](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41985508363).
+- The merge's Frontend CI run `41985508374` passed on the exact main merge commit, including type-check, production build and production server/BFF/public CMS smoke. [Main Frontend CI run 41985508374](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41985508374).
+- Earlier Frontend CI passed at `41969946337`, including type-check, production build, published CMS server rendering, BFF health/login/session/authenticated-me/logout smoke. The formatted code is also covered by the post-merge main Frontend CI run above.
+- The final blocking quality workflow passed Prettier checks for all CMS TSX and the additional lint-debt files, ESLint for all of those selected files, and full repository `npm run lint` on commit `6dba6aacd643758913232cd57f1e5d41eff548af`. [Run 41988772990](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41988772990).
+- Frontend CI passed on commit `2d3c11a06b54c2e37a732810a61551523ed40351`: Type Check, Production Build and production-server/BFF/public-CMS smoke tests all succeeded. The smoke test verified a rendered published article, BFF health, rejected and successful login, HttpOnly session cookie without token leakage, authenticated `/auth/me` and logout cookie expiry. [Run 41988863489](https://github.com/saeed-esmaeilzadeh-anari/Admin_Dashboard_next_velzon_eng/actions/runs/41988863489).
+- CI uses a disposable/mock upstream for Frontend BFF/public rendering and PostgreSQL 16 for Backend migrations/tests. It does not validate a real customer database, media storage bucket or production network.
+- No full browser E2E suite, staging deployment, external penetration test or production restore rehearsal is claimed.
+- The follow-up PR #17 (`chore/cms-post-merge-validation`) is still draft and unmerged; no production deployment has been performed.
+
 
 ## Remaining release blockers
 
@@ -140,4 +156,4 @@ A feature may be marked Production Ready only after:
 - deployment/rollback and incident procedures are documented;
 - licensing is reviewed.
 
-No merge to `main` or production deployment has been performed in this branch.
+The implementation was merged to `main` via PR #16. The follow-up quality/cleanup changes in `chore/cms-post-merge-validation` are not merged. No production deployment has been performed.

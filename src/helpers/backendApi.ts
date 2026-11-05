@@ -22,13 +22,18 @@ backendApi.interceptors.response.use(
   error => {
     if (typeof window !== "undefined" && error?.response?.status === 401) {
       const requestUrl = String(error?.config?.url ?? "");
-      const isAuthenticationRequest = /\/auth\/(login|register|logout)(?:\?|$)/i.test(requestUrl);
+      const isAuthenticationRequest =
+        /\/auth\/(login|register|logout)(?:\?|$)/i.test(requestUrl);
       const isAuthRoute =
         window.location.pathname === "/auth/login" ||
         window.location.pathname === "/auth/register" ||
         window.location.pathname.startsWith("/auth/");
 
-      if (!isAuthenticationRequest && !isAuthRoute && !isRedirectingForExpiredSession) {
+      if (
+        !isAuthenticationRequest &&
+        !isAuthRoute &&
+        !isRedirectingForExpiredSession
+      ) {
         isRedirectingForExpiredSession = true;
         const returnTo = window.location.pathname + window.location.search;
         const loginUrl = new URL("/auth/login", window.location.origin);

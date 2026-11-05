@@ -1,10 +1,11 @@
-name: CMS Frontend Lint
+# Blocking full frontend formatting, ESLint and release-candidate lint checks.
+name: CMS Frontend Quality
 
 on:
   push:
-    branches: [feat/enterprise-cms-production-v2]
+    branches: [chore/cms-post-merge-validation]
     paths:
-      - "src/app/(with-layout)/apps-cms/users/page.tsx"
+      - "src/**"
       - ".github/workflows/frontend-lint.yml"
       - "package.json"
       - "package-lock.json"
@@ -13,7 +14,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "src/app/(with-layout)/apps-cms/users/page.tsx"
+      - "src/**"
       - ".github/workflows/frontend-lint.yml"
       - "package.json"
       - "package-lock.json"
@@ -21,11 +22,11 @@ on:
       - "tsconfig.json"
 
 concurrency:
-  group: cms-ui-lint-${{ github.ref }}
+  group: cms-ui-quality-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  lint:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -37,8 +38,73 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --no-audit --no-fund
-      - name: Lint the new CMS user-management page
-        run: npx eslint "src/app/(with-layout)/apps-cms/users/page.tsx"
-      - name: Audit full frontend lint debt (non-blocking)
-        continue-on-error: true
+      - name: Verify formatting of maintained CMS and lint-debt files
+        shell: bash
+        run: |
+          set -euo pipefail
+          find "src/app/(with-layout)/apps-cms" -type f -name '*.tsx' -print0 |
+            xargs -0 -r npx prettier --check
+          npx prettier --check \
+            "src/app/(with-layout)/charts/apex-bar/BarCharts.tsx" \
+            "src/app/(with-layout)/charts/apex-range-area/RangeChart.tsx" \
+            "src/app/(with-layout)/charts/apex-timeline/TimelineCharts.tsx" \
+            "src/app/(with-layout)/charts/apex-treemap/TreemapCharts.tsx" \
+            "src/app/(with-layout)/ui/utilities/page.tsx" \
+            "src/app/(with-nonlayout)/auth/login/page.tsx" \
+            "src/app/(with-nonlayout)/auth/register/page.tsx" \
+            "src/app/(with-nonlayout)/content/[typeKey]/[localeCode]/[slug]/page.tsx" \
+            "src/app/(with-nonlayout)/content/[typeKey]/[localeCode]/page.tsx" \
+            "src/app/backend-api/[...path]/route.ts" \
+            "src/app/robots.ts" \
+            "src/app/sitemap.ts" \
+            "src/components/ClientProviders.tsx" \
+            "src/components/Cms/PageBuilderField.tsx" \
+            "src/components/Cms/PagePreview.tsx" \
+            "src/components/Cms/PublicCmsHeader.tsx" \
+            "src/components/Cms/RelationField.tsx" \
+            "src/components/Cms/RepeaterField.tsx" \
+            "src/components/Common/ProfileDropdown.tsx" \
+            "src/helpers/backendApi.ts" \
+            "src/helpers/cmsApi.ts" \
+            "src/layouts/Layouts/LayoutMenuData.tsx" \
+            "src/slices/auth/authSlice.ts" \
+            "src/slices/auth/login/thunk.ts" \
+            "src/slices/auth/register/thunk.ts" \
+            "src/slices/settings/settingsSlice.ts" \
+            "src/slices/users/usersSlice.ts"
+      - name: Lint maintained CMS and lint-debt files
+        shell: bash
+        run: |
+          set -euo pipefail
+          find "src/app/(with-layout)/apps-cms" -type f -name '*.tsx' -print0 |
+            xargs -0 -r npx eslint
+          npx eslint \
+            "src/app/(with-layout)/charts/apex-bar/BarCharts.tsx" \
+            "src/app/(with-layout)/charts/apex-range-area/RangeChart.tsx" \
+            "src/app/(with-layout)/charts/apex-timeline/TimelineCharts.tsx" \
+            "src/app/(with-layout)/charts/apex-treemap/TreemapCharts.tsx" \
+            "src/app/(with-layout)/ui/utilities/page.tsx" \
+            "src/app/(with-nonlayout)/auth/login/page.tsx" \
+            "src/app/(with-nonlayout)/auth/register/page.tsx" \
+            "src/app/(with-nonlayout)/content/[typeKey]/[localeCode]/[slug]/page.tsx" \
+            "src/app/(with-nonlayout)/content/[typeKey]/[localeCode]/page.tsx" \
+            "src/app/backend-api/[...path]/route.ts" \
+            "src/app/robots.ts" \
+            "src/app/sitemap.ts" \
+            "src/components/ClientProviders.tsx" \
+            "src/components/Cms/PageBuilderField.tsx" \
+            "src/components/Cms/PagePreview.tsx" \
+            "src/components/Cms/PublicCmsHeader.tsx" \
+            "src/components/Cms/RelationField.tsx" \
+            "src/components/Cms/RepeaterField.tsx" \
+            "src/components/Common/ProfileDropdown.tsx" \
+            "src/helpers/backendApi.ts" \
+            "src/helpers/cmsApi.ts" \
+            "src/layouts/Layouts/LayoutMenuData.tsx" \
+            "src/slices/auth/authSlice.ts" \
+            "src/slices/auth/login/thunk.ts" \
+            "src/slices/auth/register/thunk.ts" \
+            "src/slices/settings/settingsSlice.ts" \
+            "src/slices/users/usersSlice.ts"
+      - name: Run full frontend lint
         run: npm run lint

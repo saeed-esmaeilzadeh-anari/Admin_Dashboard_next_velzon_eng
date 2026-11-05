@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from "react";
 import ReactApexChart from "react-apexcharts";
 
@@ -88,9 +87,7 @@ const BasicTreemap = ({ dataColors }: any) => {
       dir="rtl"
       series={series}
       options={options}
-      type="treemap"
-      as
-      any
+      type={"treemap" as any}
       height={365}
       className="apex-charts"
     />
@@ -172,9 +169,7 @@ const MultiTreemap = ({ dataColors }: any) => {
       dir="rtl"
       series={series}
       options={options}
-      type="treemap"
-      as
-      any
+      type={"treemap" as any}
       height={365}
       className="apex-charts"
     />
@@ -273,9 +268,7 @@ const DiffColorTreemap = ({ dataColors }: any) => {
       dir="rtl"
       series={series}
       options={options}
-      type="treemap"
-      as
-      any
+      type={"treemap" as any}
       height={365}
       className="apex-charts"
     />
@@ -397,9 +390,7 @@ const ColorRangeTreemap = ({ dataColors }: any) => {
       dir="rtl"
       series={series}
       options={options}
-      type="treemap"
-      as
-      any
+      type={"treemap" as any}
       height={365}
       className="apex-charts"
     />

@@ -37,7 +37,9 @@ const ProfileDropdown = () => {
       process.env.NEXT_PUBLIC_DEFAULT_AUTH ||
       process.env.NEXT_PUBLIC_DEFAULTAUTH ||
       "backend"
-    ).trim().toLowerCase();
+    )
+      .trim()
+      .toLowerCase();
 
     if (authProvider === "backend") {
       setUserName(

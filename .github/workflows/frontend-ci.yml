@@ -6,7 +6,7 @@ concurrency:
 # Keeps the CMS branch type-check and production build reproducible.
 on:
   push:
-    branches: [main, "feat/**"]
+    branches: [main, "feat/**", "chore/cms-post-merge-validation"]
     paths:
       - "src/**"
       - "public/**"

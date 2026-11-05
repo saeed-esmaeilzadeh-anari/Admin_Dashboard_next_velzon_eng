@@ -41,7 +41,9 @@ export const registerUser = (user: any) => async (dispatch: any) => {
     } else if (defaultAuth === "backend") {
       const response = await backendApi.post("/auth/register", {
         name: String(user.name ?? user.first_name ?? "").trim(),
-        email: String(user.email ?? "").trim().toLowerCase(),
+        email: String(user.email ?? "")
+          .trim()
+          .toLowerCase(),
         password: user.password,
       });
       data = response.data;
