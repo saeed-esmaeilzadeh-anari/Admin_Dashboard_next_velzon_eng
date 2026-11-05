@@ -5,6 +5,7 @@ import { PassportModule } from "@nestjs/passport";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
+import { AuthSessionCleanupService } from "./auth-session-cleanup.service";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 import { JwtStrategy } from "./jwt.strategy";
 
@@ -27,7 +28,7 @@ import { JwtStrategy } from "./jwt.strategy";
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard, AuthSessionCleanupService],
   exports: [JwtModule, JwtAuthGuard],
 })
 export class AuthModule {}
