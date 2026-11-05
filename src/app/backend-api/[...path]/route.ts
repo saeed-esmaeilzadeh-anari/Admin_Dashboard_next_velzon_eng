@@ -149,10 +149,10 @@ async function sanitizeAuthenticationResponse(
 
   const { accessToken, expiresIn, ...publicPayload } = payload as AuthPayload;
   if (
-    typeof accessToken !== "string" ||
-    accessToken.length < 20 ||
     !publicPayload.user ||
-    typeof publicPayload.user !== "object"
+    typeof publicPayload.user !== "object" ||
+    (setSessionCookie &&
+      (typeof accessToken !== "string" || accessToken.length < 20))
   ) {
     return NextResponse.json(
       {
@@ -162,11 +162,15 @@ async function sanitizeAuthenticationResponse(
     );
   }
 
-  // Never return the backend access token to browser JavaScript or Redux.
-  const response = NextResponse.json(publicPayload, {
-    status: upstream.status,
-    headers: { "Cache-Control": "no-store, max-age=0" },
-  });
+  // Never return backend access tokens to browser JavaScript or Redux.
+  // Registration returns a profile only and requires a separate sign-in.
+  const response = NextResponse.json(
+    setSessionCookie ? publicPayload : { user: publicPayload.user },
+    {
+      status: upstream.status,
+      headers: { "Cache-Control": "no-store, max-age=0" },
+    }
+  );
 
   if (setSessionCookie) {
     const requestedTtl =
@@ -218,7 +222,36 @@ async function handle(
       );
     }
 
-    const response = NextResponse.json({ success: true });
+    const token = request.cookies.get(SESSION_COOKIE)?.value;
+    let sessionRevoked = !token;
+
+    if (token) {
+      try {
+        const upstream = await fetch(
+          buildBackendUrl(getBackendBaseUrl(), ["auth", "logout"], ""),
+          {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              Authorization: "Bearer " + token,
+            },
+            cache: "no-store",
+            redirect: "manual",
+            signal: AbortSignal.timeout(10_000),
+          }
+        );
+        // A rejected/expired token is already unusable.
+        sessionRevoked = upstream.ok || upstream.status === 401;
+      } catch {
+        // Always clear the browser cookie. The JWT remains short-lived.
+        sessionRevoked = false;
+      }
+    }
+
+    const response = NextResponse.json(
+      { success: true, sessionRevoked },
+      { headers: { "Cache-Control": "no-store, max-age=0" } }
+    );
     clearSession(response);
     response.cookies.set(LEGACY_COOKIE, "", {
       httpOnly: false,
